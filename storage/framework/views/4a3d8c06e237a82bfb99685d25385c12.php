@@ -119,7 +119,7 @@ unset($__defined_vars, $__key, $__value); ?>
             <div>
                 <?php if (! ($outOfStock)): ?>
                     <button @click="$store.cart.add(<?php echo e($product->id); ?>)"
-                            class="w-full py-1.5 text-[11px] font-semibold text-white bg-accent-500 hover:bg-accent-600 rounded-md transition-colors shadow-sm">
+                            class="w-full py-1.5 text-[11px] font-semibold text-white bg-black hover:bg-neutral-800 rounded-md transition-colors shadow-sm">
                         Add to Cart
                     </button>
                 <?php else: ?>
@@ -256,7 +256,7 @@ unset($__defined_vars, $__key, $__value); ?>
                 <div class="mt-auto pt-2">
                     <?php if (! ($outOfStock)): ?>
                         <button @click="$store.cart.add(<?php echo e($product->id); ?>)"
-                                class="w-full py-1.5 text-[11px] font-semibold text-white bg-accent-500 hover:bg-accent-600 rounded-md transition-colors shadow-sm">
+                                class="w-full py-1.5 text-[11px] font-semibold text-white bg-black hover:bg-neutral-800 rounded-md transition-colors shadow-sm">
                             Add to Cart
                         </button>
                     <?php else: ?>

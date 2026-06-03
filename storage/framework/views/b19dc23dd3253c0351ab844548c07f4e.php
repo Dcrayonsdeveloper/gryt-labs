@@ -12,7 +12,7 @@
        :style="'top:0; transition: transform 0.3s ease; transform: translateY(' + (visible ? '0' : '-100%') + ')'">
     <!-- Top Bar: Announcement + Contact/About links -->
     <?php if($announcement): ?>
-    <div class="bg-primary-800 text-white py-1.5 text-[11px] sm:text-xs font-medium tracking-wide">
+    <div class="text-neutral-900 py-1.5 text-[11px] sm:text-xs font-medium tracking-wide" style="background-color:#B8DC24;">
         <div class="container mx-auto px-4 flex items-center justify-between">
             <div class="hidden sm:flex items-center gap-3">
                 <span><?php echo e($announcement); ?></span>
@@ -24,22 +24,22 @@
                     $headerEmail = $theme->get('contact_email', '');
                 ?>
                 <?php if($headerPhone): ?>
-                <a href="tel:<?php echo e($headerPhone); ?>" class="inline-flex items-center gap-1 text-white/90 hover:text-white transition">
+                <a href="tel:<?php echo e($headerPhone); ?>" class="inline-flex items-center gap-1 text-neutral-800 hover:text-black transition">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                     <?php echo e($headerPhone); ?>
 
                 </a>
                 <?php endif; ?>
                 <?php if($headerEmail): ?>
-                <a href="mailto:<?php echo e($headerEmail); ?>" class="inline-flex items-center gap-1 text-white/90 hover:text-white transition">
+                <a href="mailto:<?php echo e($headerEmail); ?>" class="inline-flex items-center gap-1 text-neutral-800 hover:text-black transition">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     <?php echo e($headerEmail); ?>
 
                 </a>
                 <?php endif; ?>
-                <span class="text-white/30">|</span>
-                <a href="<?php echo e(route('about')); ?>" class="text-white/90 hover:text-white transition">About Us</a>
-                <a href="<?php echo e(route('contact')); ?>" class="text-white/90 hover:text-white transition">Contact</a>
+                <span class="text-neutral-900/30">|</span>
+                <a href="<?php echo e(route('about')); ?>" class="text-neutral-800 hover:text-black transition">About Us</a>
+                <a href="<?php echo e(route('contact')); ?>" class="text-neutral-800 hover:text-black transition">Contact</a>
             </div>
         </div>
     </div>
@@ -70,7 +70,7 @@
                         <a href="<?php echo e(route('new-arrivals')); ?>" class="px-3 py-2 text-[13px] text-[#222] hover:text-primary-600 font-medium transition-colors tracking-wide uppercase">New Arrival</a>
                         <a href="<?php echo e(route('categories.index')); ?>" class="px-3 py-2 text-[13px] text-[#222] hover:text-primary-600 font-medium transition-colors tracking-wide uppercase">Collections</a>
                         <a href="<?php echo e(route('bestsellers')); ?>" class="px-3 py-2 text-[13px] text-[#222] hover:text-primary-600 font-medium transition-colors tracking-wide uppercase">Bestsellers</a>
-                        <a href="<?php echo e(route('offers')); ?>" class="px-3 py-2 text-[13px] text-accent-500 hover:text-accent-600 font-semibold transition-colors tracking-wide uppercase">Sale</a>
+                        <a href="<?php echo e(route('offers')); ?>" class="px-3 py-2 text-[13px] text-[#4D7C0F] hover:text-[#3F6212] font-semibold transition-colors tracking-wide uppercase">Sale</a>
                     </nav>
                 <?php endif; ?>
             </div>

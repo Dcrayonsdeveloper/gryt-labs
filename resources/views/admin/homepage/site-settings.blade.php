@@ -144,6 +144,25 @@
             </div>
         </div>
 
+        <!-- About Us Page -->
+        <div class="card p-6 lg:col-span-2 mt-6">
+            <h2 class="text-lg font-semibold text-neutral-900 mb-1">About Us Page</h2>
+            <p class="text-sm text-neutral-500 mb-4">Content shown on the <a href="{{ url('/pages/about-us') }}" target="_blank" class="text-blue-600 hover:underline">About Us</a> page. The hero headline uses the <strong>Tagline</strong> above.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">Intro / Story (hero summary)</label>
+                    <textarea name="about_story" rows="3" class="form-input" placeholder="Short summary shown in the page hero (first ~250 characters).">{{ $settings['about_story'] }}</textarea>
+                    <p class="text-xs text-neutral-400 mt-1">Plain text. Shown at the top of the About page.</p>
+                </div>
+                <div>
+                    <label class="form-label">Full Content (HTML)</label>
+                    <textarea name="about_html_content" rows="20" class="form-input font-mono text-xs leading-relaxed">{{ $settings['about_html_content'] }}</textarea>
+                    <p class="text-xs text-neutral-400 mt-1">Supports HTML — use &lt;h2&gt; for section titles, &lt;h3&gt; for sub-titles, &lt;p&gt; for paragraphs, and &lt;ul&gt;&lt;li&gt; for bullet lists. Leave blank to show the default values grid.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Homepage Appearance -->
         <div class="card p-6 lg:col-span-2 mt-6">
             <h2 class="text-lg font-semibold text-neutral-900 mb-1">Homepage Appearance</h2>

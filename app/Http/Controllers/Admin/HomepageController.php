@@ -33,6 +33,9 @@ class HomepageController extends Controller
             'site_description' => Setting::get('site_description', ''),
             'footer_about' => Setting::get('footer_about', ''),
             'footer_copyright' => Setting::get('footer_copyright', ''),
+            // About Us page
+            'about_story' => Setting::get('about_story', ''),
+            'about_html_content' => Setting::get('about_html_content', ''),
             'social_facebook' => Setting::get('social_facebook', ''),
             'social_instagram' => Setting::get('social_instagram', ''),
             'social_twitter' => Setting::get('social_twitter', ''),
@@ -84,6 +87,8 @@ class HomepageController extends Controller
         $fields = [
             'site_name', 'site_tagline', 'site_description',
             'footer_about', 'footer_copyright',
+            // About Us page
+            'about_story', 'about_html_content',
             'social_facebook', 'social_instagram', 'social_twitter',
             'social_youtube', 'social_tiktok', 'social_pinterest',
             'contact_email', 'contact_phone', 'contact_address',

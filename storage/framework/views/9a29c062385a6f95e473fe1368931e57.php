@@ -515,7 +515,7 @@
          BESTSELLERS - Horizontal Slider
          ========================================== -->
     <?php if($bestsellers->count() && (!isset($sections['bestsellers']) || $sections['bestsellers']->is_active)): ?>
-        <section class="py-8 lg:py-12 bg-white" style="background-color:#fefae0">
+        <section class="py-8 lg:py-12 bg-white" style="background-color:#F1F7E8">
             <div class="container mx-auto px-4">
                 <div class="section-header">
                     <h2 class="section-title"><?php echo e($sections['bestsellers']->title ?? 'Our Products'); ?></h2>
@@ -599,7 +599,7 @@
          TODAY'S DEALS
          ========================================== -->
     <?php if($deals->count() && (!isset($sections['deals']) || $sections['deals']->is_active)): ?>
-        <section class="deals-section bg-white" style="background-color:#fefae0">
+        <section class="deals-section bg-white" style="background-color:#F1F7E8">
             <div class="container mx-auto px-4">
                 <div class="section-header">
                     <h2 class="section-title"><?php echo e($sections['deals']->title ?? "Steal Deals"); ?></h2>
@@ -690,7 +690,7 @@
          HAPPY CUSTOMERS / TESTIMONIALS
          ========================================== -->
     <?php if($testimonials->count() && (!isset($sections['testimonials']) || $sections['testimonials']->is_active)): ?>
-        <section class="testimonial-section" style="background-color:#fefae0;">
+        <section class="testimonial-section" style="background-color:#F1F7E8;">
             <div class="container mx-auto px-4">
                 <div class="testimonial-layout">
                     
@@ -736,7 +736,7 @@
          NEW ARRIVALS GRID
          ========================================== -->
     <?php if($newArrivals->count() && (!isset($sections['new_arrivals']) || $sections['new_arrivals']->is_active)): ?>
-        <section class="py-8 lg:py-12 bg-white" style="background-color:#fefae0">
+        <section class="py-8 lg:py-12 bg-white" style="background-color:#F1F7E8">
             <div class="container mx-auto px-4">
                 <div class="section-header">
                     <h2 class="section-title"><?php echo e($sections['new_arrivals']->title ?? 'New Arrivals'); ?></h2>
@@ -826,7 +826,7 @@
                         </button>
                     </div>
                 </template>
-                <p x-show="message" x-text="message" class="text-sm mt-3" :class="success ? 'text-green-200 font-semibold' : 'text-red-200'" x-cloak></p>
+                <p x-show="message" x-text="message" class="text-sm mt-3" :class="success ? 'text-green-900 font-semibold' : 'text-red-800 font-semibold'" x-cloak></p>
             </form>
             <p class="newsletter-disclaimer">No spam, ever. Unsubscribe anytime.</p>
         </div>

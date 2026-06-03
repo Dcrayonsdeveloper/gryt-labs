@@ -46,7 +46,7 @@
         <div class="px-4 py-3 border-b border-neutral-100 shrink-0">
             @guest
                 <div class="flex gap-2">
-                    <a href="{{ route('login') }}" class="flex-1 py-2 text-center text-sm font-semibold text-white bg-accent-500 hover:bg-accent-600 rounded-lg transition-colors">Login</a>
+                    <a href="{{ route('login') }}" class="flex-1 py-2 text-center text-sm font-semibold text-white bg-black hover:bg-neutral-800 rounded-lg transition-colors">Login</a>
                     <a href="{{ route('register') }}" class="flex-1 py-2 text-center text-sm font-medium text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors">Register</a>
                 </div>
             @else

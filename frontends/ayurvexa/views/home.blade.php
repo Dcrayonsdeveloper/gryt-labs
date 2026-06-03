@@ -751,7 +751,7 @@
                         </button>
                     </div>
                 </template>
-                <p x-show="message" x-text="message" class="text-sm mt-3" :class="success ? 'text-green-200 font-semibold' : 'text-red-200'" x-cloak></p>
+                <p x-show="message" x-text="message" class="text-sm mt-3" :class="success ? 'text-green-900 font-semibold' : 'text-red-800 font-semibold'" x-cloak></p>
             </form>
             <p class="newsletter-disclaimer">No spam, ever. Unsubscribe anytime.</p>
         </div>

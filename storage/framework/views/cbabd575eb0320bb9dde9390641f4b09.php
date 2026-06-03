@@ -403,7 +403,7 @@
                 x-transition:leave-start="opacity-100 translate-y-0"
                 x-transition:leave-end="opacity-0 translate-y-4"
                 @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
-                class="fixed bottom-36 sm:bottom-24 right-6 sm:right-8 z-40 w-10 h-10 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+                class="fixed bottom-36 sm:bottom-24 right-6 sm:right-8 z-40 w-10 h-10 bg-[#B8DC24] hover:bg-[#A6C81F] text-neutral-900 rounded-full shadow-lg flex items-center justify-center transition-colors"
                 aria-label="Back to top">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
         </button>
@@ -560,14 +560,13 @@
                 recognition: null,
                 currentPlaceholder: '',
                 placeholders: <?php echo \Illuminate\Support\Js::from(
-                    \App\Models\Category::where('is_active', true)
-                        ->whereNull('parent_id')
-                        ->inRandomOrder()
-                        ->limit(12)
+                    \App\Models\Product::where('is_active', true)
+                        ->orderBy('id')
+                        ->limit(5)
                         ->pluck('name')
                         ->map(fn($n) => 'Search for ' . $n . '...')
                         ->values()
-                        ->toArray() ?: ['Search for products...']
+                        ->toArray() ?: ['Search products...']
                 )->toHtml() ?>,
                 placeholderIndex: 0,
                 charIndex: 0,

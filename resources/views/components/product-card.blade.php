@@ -90,7 +90,7 @@
             <div>
                 @unless($outOfStock)
                     <button @click="$store.cart.add({{ $product->id }})"
-                            class="w-full py-1.5 text-[11px] font-semibold text-white bg-accent-500 hover:bg-accent-600 rounded-md transition-colors shadow-sm">
+                            class="w-full py-1.5 text-[11px] font-semibold text-white bg-black hover:bg-neutral-800 rounded-md transition-colors shadow-sm">
                         Add to Cart
                     </button>
                 @else
@@ -226,7 +226,7 @@
                 <div class="mt-auto pt-2">
                     @unless($outOfStock)
                         <button @click="$store.cart.add({{ $product->id }})"
-                                class="w-full py-1.5 text-[11px] font-semibold text-white bg-accent-500 hover:bg-accent-600 rounded-md transition-colors shadow-sm">
+                                class="w-full py-1.5 text-[11px] font-semibold text-white bg-black hover:bg-neutral-800 rounded-md transition-colors shadow-sm">
                             Add to Cart
                         </button>
                     @else

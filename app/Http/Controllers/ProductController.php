@@ -95,10 +95,15 @@ class ProductController extends Controller
             ]);
         }
 
-        // Get categories, subcategories, and brands for filters
-        $categories = Category::whereNull('parent_id')->where('is_active', true)->get();
-        $subcategories = Category::whereNotNull('parent_id')->where('is_active', true)->orderBy('name')->get();
-        $brands = \App\Models\Brand::orderBy('name')->get();
+        // Get categories, subcategories, and brands for filters.
+        // Only surface taxonomy that actually has products so empty/leftover
+        // categories never clutter the filter sidebar.
+        $categories = Category::whereNull('parent_id')->where('is_active', true)
+            ->where(fn ($q) => $q->has('products')->orHas('children.products'))
+            ->orderBy('name')->get();
+        $subcategories = Category::whereNotNull('parent_id')->where('is_active', true)
+            ->has('products')->orderBy('name')->get();
+        $brands = \App\Models\Brand::has('products')->orderBy('name')->get();
 
         return view('products.index', compact('products', 'categories', 'subcategories', 'brands'));
     }

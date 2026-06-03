@@ -672,7 +672,7 @@
                             <button x-data="{ adding: false, added: false }"
                                     @click="if(adding) return; adding = true; const _qty = {{ $useStorePackQty ? '$store.pdpPack.currentQty' : 'quantity' }}; await $store.cart.add({{ $product->id }}, _qty); adding = false; added = true; setTimeout(() => added = false, 2000)"
                                     :disabled="adding"
-                                    class="flex-1 flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors disabled:opacity-70 shadow-sm">
+                                    class="flex-1 flex items-center justify-center gap-2 bg-black hover:bg-neutral-800 text-white font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors disabled:opacity-70 shadow-sm">
                                 <span x-text="adding ? 'Adding...' : (added ? 'Added!' : 'Add to Cart')"></span>
                             </button>
                             <button x-data="{ buying: false }"
@@ -973,7 +973,7 @@
                             </template>
                         </div>
                         <button @click="addAllToCart()" :disabled="adding"
-                                class="bg-accent-500 hover:bg-accent-600 text-white font-medium py-2.5 px-6 rounded-full text-sm transition-colors shadow-sm disabled:opacity-60">
+                                class="bg-black hover:bg-neutral-800 text-white font-medium py-2.5 px-6 rounded-full text-sm transition-colors shadow-sm disabled:opacity-60">
                             <span x-text="adding ? 'Adding...' : 'Add all to Cart'"></span>
                         </button>
                     </div>
@@ -1423,7 +1423,7 @@
                 + '<span id="sticky-qty-val" style="width:24px;text-align:center;font-size:13px;font-weight:600;color:#0F1111">1</span>'
                 + '<button id="sticky-qty-inc" style="width:28px;height:28px;background:#F0F2F2;border:none;font-size:14px;font-weight:700;cursor:pointer;color:#0F1111">+</button>'
                 + '</div>')
-                + '<button id="sticky-add-btn" style="flex-shrink:0;background:var(--color-accent-500);color:#fff;font-weight:600;padding:10px 14px;border-radius:999px;font-size:12px;border:none;cursor:pointer">Add to Cart</button>'
+                + '<button id="sticky-add-btn" style="flex-shrink:0;background:#000;color:#fff;font-weight:600;padding:10px 14px;border-radius:999px;font-size:12px;border:none;cursor:pointer">Add to Cart</button>'
                 + '<button id="sticky-buy-btn" style="flex-shrink:0;background:#FFD814;color:#0F1111;font-weight:600;padding:10px 14px;border-radius:999px;font-size:12px;border:none;cursor:pointer">Buy Now</button>'
                 + '</div>';
             document.body.appendChild(bar);
