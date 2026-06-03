@@ -1,0 +1,32 @@
+{
+    "name": "Default",
+    "version": "1.0.0",
+    "author": "Jikra Platform",
+    "description": "The standard Jikra e-commerce theme. Clean, modern, conversion-optimized.",
+    "screenshot": "screenshot.png",
+    "settings_schema": [
+        {
+            "name": "Colors",
+            "settings": [
+                {"id": "primary_color", "type": "color", "label": "Primary Color", "default": "#205258"},
+                {"id": "secondary_color", "type": "color", "label": "CTA / Accent Color", "default": "#F8931D"},
+                {"id": "link_color", "type": "color", "label": "Link Color", "default": "#007185"}
+            ]
+        },
+        {
+            "name": "Typography",
+            "settings": [
+                {"id": "font_family", "type": "select", "label": "Body Font", "default": "Poppins", "options": ["Poppins", "Inter", "Roboto", "Open Sans", "DM Sans"]},
+                {"id": "heading_font", "type": "select", "label": "Heading Font", "default": "Fredoka", "options": ["Fredoka", "Poppins", "Playfair Display", "DM Serif Display"]}
+            ]
+        },
+        {
+            "name": "Layout",
+            "settings": [
+                {"id": "button_radius", "type": "select", "label": "Button Style", "default": "rounded", "options": ["rounded", "pill", "square"]},
+                {"id": "header_style", "type": "select", "label": "Header", "default": "centered", "options": ["centered", "left", "mega"]}
+            ]
+        }
+    ],
+    "sections": ["hero_banner", "product_carousel", "category_grid", "trust_badges", "testimonials", "instagram_reels", "newsletter"]
+}

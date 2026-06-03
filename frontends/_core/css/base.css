@@ -1,0 +1,1357 @@
+/* ========================================
+   Global Heading Typography
+   Fredoka for all headings
+   ======================================== */
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+}
+
+.font-heading {
+    font-family: var(--font-heading);
+}
+
+/* ========================================
+   Custom Animations
+   ======================================== */
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes slide-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Animation Utilities */
+.animate-fade-in {
+    animation: fade-in 0.2s ease-out forwards;
+}
+
+.animate-fade-out {
+    animation: fade-out 0.2s ease-out forwards;
+}
+
+.animate-slide-up {
+    animation: slide-up 0.2s ease-out forwards;
+}
+
+.animate-slide-down {
+    animation: slide-down 0.2s ease-out forwards;
+}
+
+.animate-scale-in {
+    animation: scale-in 0.15s ease-out forwards;
+}
+
+.animate-shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+}
+
+/* ========================================
+   Base Styles
+   ======================================== */
+
+html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    max-width: 100%;
+    /* Prevent layout shifts from scrollbar */
+    scrollbar-gutter: stable;
+}
+
+body {
+    font-family: var(--font-sans);
+    color: var(--color-neutral-900);
+    background-color: white;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    max-width: 100%;
+    /* Improve text rendering on mobile */
+    text-rendering: optimizeSpeed;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* GPU-accelerate fixed/sticky elements for smooth scrolling */
+.fixed, [style*="position: fixed"], [style*="position:fixed"] {
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+button, [role="button"], a, select, label[for], input[type="checkbox"], input[type="radio"], summary {
+    cursor: pointer;
+}
+
+button:disabled, [disabled] {
+    cursor: not-allowed;
+}
+
+/* ========================================
+   Mobile Touch Targets (min 44px)
+   ======================================== */
+
+@media (max-width: 767px) {
+    /* Full-width container on mobile */
+    .container {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Prevent horizontal overflow */
+    table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Smoother momentum scrolling on iOS */
+    .overflow-x-auto, .overflow-y-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ========================================
+   Safe Area Insets (Notched Devices)
+   ======================================== */
+
+.safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-inset-top {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ========================================
+   Reduce Motion for Accessibility & Slow Devices
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+.hero-banner::after {
+    background: #f8f6f3;
+}
+
+/* Save-data mode: reduce non-essential visuals */
+@media (prefers-reduced-data: reduce) {
+    .hero-banner img {
+        image-rendering: pixelated;
+    }
+}
+
+/* ========================================
+   Accessibility Utilities
+   ======================================== */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.not-sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+/* ========================================
+   Global Focus — subtle 1px focus ring (WCAG 2.4.7)
+   ======================================== */
+
+/* Hide focus on mouse click, show on keyboard */
+*:focus {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 1px solid var(--color-primary-500);
+    outline-offset: 1px;
+}
+
+/* Global: Remove all button borders */
+button,
+[type="submit"],
+[type="button"],
+[type="reset"] {
+    border: none !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+}
+
+/* Also target anchor links styled as buttons */
+a[class*="px-"][class*="py-"],
+a[class*="btn"] {
+    border-color: transparent !important;
+    border-width: 0 !important;
+}
+
+/* ========================================
+   Form Component Styles (Pure CSS)
+   ======================================== */
+
+/* Input base styles - No outline, no ring, minimal focus indication */
+.form-input {
+    display: block;
+    width: 100%;
+    padding: 0.4375rem 0.6875rem;
+    font-size: 0.9375rem;
+    line-height: 1.25rem;
+    color: var(--color-neutral-900);
+    background-color: white;
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 0.375rem;
+    transition: border-color 150ms ease-in-out;
+}
+
+/* Admin-scoped form input reductions */
+.layout-admin .form-input {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    border-radius: 0.375rem;
+}
+
+.form-input::placeholder {
+    color: var(--color-neutral-500);
+}
+
+.form-input:focus {
+    outline: 1px solid var(--color-primary-500);
+    outline-offset: -1px;
+    border-color: var(--color-primary-500);
+}
+
+.form-input:disabled {
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-500);
+    cursor: not-allowed;
+}
+
+.form-input-error {
+    border-color: var(--color-error-500);
+}
+
+.form-input-error:focus {
+    outline: 1px solid var(--color-error-500);
+    outline-offset: -1px;
+    border-color: var(--color-error-600);
+}
+
+.form-input-success {
+    border-color: var(--color-success-500);
+}
+
+.form-input-success:focus {
+    outline: 1px solid var(--color-success-500);
+    outline-offset: -1px;
+    border-color: var(--color-success-600);
+}
+
+/* Textarea base styles */
+.form-textarea {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.375rem;
+    color: var(--color-neutral-900);
+    background-color: white;
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 0.5rem;
+    transition: border-color 150ms ease-in-out;
+    resize: vertical;
+}
+
+.layout-admin .form-textarea {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    border-radius: 0.375rem;
+}
+
+.form-textarea::placeholder {
+    color: var(--color-neutral-500);
+}
+
+.form-textarea:focus {
+    outline: 1px solid var(--color-primary-500);
+    outline-offset: -1px;
+    border-color: var(--color-primary-500);
+}
+
+.form-textarea:disabled {
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-500);
+    cursor: not-allowed;
+}
+
+/* Select base styles */
+.form-select {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.25rem;
+    color: var(--color-neutral-900);
+    background-color: white;
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 0.5rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23737373' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+}
+
+.form-select:focus {
+    outline: 1px solid var(--color-primary-500);
+    outline-offset: -1px;
+    border-color: var(--color-primary-500);
+}
+
+.layout-admin .form-select {
+    padding: 0.375rem 2.25rem 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    border-radius: 0.375rem;
+}
+
+/* Prevent iOS zoom on input focus — all inputs must be >= 16px on mobile */
+@media screen and (max-width: 767px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    textarea,
+    select,
+    .form-input,
+    .form-textarea,
+    .form-select {
+        font-size: 16px !important;
+    }
+}
+
+/* Checkbox base styles */
+.form-checkbox {
+    width: 1rem;
+    height: 1rem;
+    color: var(--color-primary-500);
+    border-color: var(--color-neutral-300);
+    border-radius: 0.25rem;
+}
+
+.form-checkbox:focus-visible {
+    outline: 1px solid var(--color-primary-500);
+    outline-offset: 1px;
+}
+
+/* Radio base styles */
+.form-radio {
+    width: 1rem;
+    height: 1rem;
+    color: var(--color-primary-500);
+    border-color: var(--color-neutral-300);
+}
+
+.form-radio:focus-visible {
+    outline: 1px solid var(--color-primary-500);
+    outline-offset: 1px;
+}
+
+/* Label styles */
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-neutral-700);
+    margin-bottom: 0.25rem;
+}
+
+.layout-admin .form-label {
+    font-size: 0.8125rem;
+}
+
+.form-label-required::after {
+    content: ' *';
+    color: var(--color-error-500);
+}
+
+/* Error message */
+.form-error {
+    font-size: 0.75rem;
+    color: var(--color-error-500);
+    margin-top: 0.25rem;
+}
+
+/* Help text */
+.form-help {
+    font-size: 0.75rem;
+    color: var(--color-neutral-500);
+    margin-top: 0.25rem;
+}
+
+/* ========================================
+   Button Component Styles (Pure CSS)
+   ======================================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    border-radius: 0.5rem;
+    transition: all 150ms ease-in-out;
+    cursor: pointer;
+    border: none;
+}
+
+/* Admin-scoped Shopify-like buttons */
+.layout-admin .btn {
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.8125rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+.layout-admin .btn-primary {
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.layout-admin .btn-primary:hover:not(:disabled) {
+    background: #333;
+}
+
+.layout-admin .btn-secondary {
+    background: #fff;
+    border: 1px solid #ccc;
+    color: #1a1a1a;
+}
+
+.layout-admin .btn-secondary:hover:not(:disabled) {
+    background: #f7f7f7;
+}
+
+.btn:focus-visible {
+    outline: 1px solid var(--color-primary-500);
+    outline-offset: 1px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    color: white;
+    background-color: var(--color-primary-600);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-700);
+}
+
+.btn-secondary {
+    color: var(--color-neutral-700);
+    background-color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-neutral-50);
+}
+
+.btn-outline {
+    color: var(--color-neutral-700);
+    background-color: transparent;
+}
+
+.btn-outline:hover:not(:disabled) {
+    background-color: var(--color-neutral-50);
+}
+
+.btn-ghost {
+    color: var(--color-primary-500);
+    background-color: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-primary-50);
+}
+
+.btn-danger {
+    color: white;
+    background-color: var(--color-error-500);
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: var(--color-error-600);
+}
+
+.btn-danger:focus-visible {
+    outline: 1px solid var(--color-error-500);
+    outline-offset: 1px;
+}
+
+.btn-success {
+    color: white;
+    background-color: var(--color-success-500);
+}
+
+.btn-success:hover:not(:disabled) {
+    background-color: var(--color-success-600);
+}
+
+.btn-success:focus-visible {
+    outline: 1px solid var(--color-success-500);
+    outline-offset: 1px;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+}
+
+.btn-lg {
+    padding: 0.4375rem 1rem;
+    font-size: 0.8125rem;
+}
+
+.btn-icon {
+    padding: 0.5rem;
+    color: var(--color-neutral-500);
+    background-color: transparent;
+    border-radius: 0.25rem;
+}
+
+.btn-icon:hover:not(:disabled) {
+    background-color: var(--color-neutral-100);
+}
+
+/* ========================================
+   Card Component Styles (Pure CSS)
+   ======================================== */
+
+.card {
+    background-color: white;
+    border: 1px solid var(--color-neutral-100);
+    border-radius: 0.375rem;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+.card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-neutral-100);
+}
+
+/* =====================================================
+   Admin Shopify-like Global Transform
+   Automatically transforms ALL old admin pages
+   ===================================================== */
+
+/* --- STAT CARD GRIDS: Transform to Shopify stats bar --- */
+
+/* Make stat grid a single row card */
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] {
+    display: flex !important;
+    gap: 0 !important;
+    background: #fff !important;
+    border-radius: 8px !important;
+    border: 1px solid #e3e3e3 !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04) !important;
+    overflow: hidden !important;
+    margin-bottom: 20px !important;
+}
+
+/* Each stat card becomes a flex cell */
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] > .card {
+    flex: 1 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border-right: 1px solid #e3e3e3 !important;
+    padding: 12px 16px !important;
+}
+
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] > .card:last-child {
+    border-right: none !important;
+}
+
+/* Hide icon circles inside stat cards */
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] .card > .flex > div:first-child[class*="rounded"] {
+    display: none !important;
+}
+
+/* Stat card numbers */
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] .card p[class*="font-bold"] {
+    color: #1a1a1a !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+}
+
+/* Stat card labels */
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] .card p[class*="text-neutral-600"],
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] .card p[class*="text-xs"],
+.layout-admin > .grid[class*="gap-4"][class*="mb-"] .card p[class*="text-sm"] {
+    color: #6d7175 !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+}
+
+/* --- HEADER: Remove subtitles under h1 --- */
+.layout-admin main > div:first-child h1 + p,
+.layout-admin main > div:first-child h1 + p.text-sm {
+    display: none !important;
+}
+
+/* H1 style */
+.layout-admin main h1 {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    color: #1a1a1a !important;
+}
+
+/* --- TABLES: Shopify clean style --- */
+.layout-admin table thead,
+.layout-admin table thead tr,
+.layout-admin thead.bg-neutral-50,
+.layout-admin thead[class*="bg-"] {
+    background: transparent !important;
+}
+
+.layout-admin table thead th {
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    color: #6d7175 !important;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid #e1e1e1 !important;
+    border-top: none !important;
+}
+
+.layout-admin table tbody td {
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+    color: #1a1a1a !important;
+    vertical-align: middle !important;
+}
+
+.layout-admin table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.layout-admin table tbody tr:hover {
+    background: #fafafa !important;
+}
+
+.layout-admin table tbody .divide-y > tr,
+.layout-admin table tbody.divide-y > tr {
+    border-color: #f0f0f0 !important;
+}
+
+/* --- CARDS: Clean style --- */
+.layout-admin .card {
+    border-radius: 8px !important;
+    border: 1px solid #e3e3e3 !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04) !important;
+}
+
+/* Remove card header colored backgrounds */
+.layout-admin .card > div[class*="border-b"][class*="bg-neutral"],
+.layout-admin .card > div[class*="border-b"][class*="bg-"] {
+    background: transparent !important;
+}
+
+/* Card header text - remove icons, simplify */
+.layout-admin .card > div[class*="border-b"] svg[class*="text-primary"] {
+    display: none !important;
+}
+
+/* --- BADGES: Shopify-style with dots --- */
+.layout-admin .badge {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+}
+
+.layout-admin .badge-success { background: #c8f9d4 !important; color: #1a7f37 !important; }
+.layout-admin .badge-warning { background: #fef3c7 !important; color: #92400e !important; }
+.layout-admin .badge-info { background: #dbeafe !important; color: #1e40af !important; }
+.layout-admin .badge-error { background: #fde8e8 !important; color: #c53030 !important; }
+.layout-admin .badge-primary { background: #e0e7ff !important; color: #3730a3 !important; }
+.layout-admin .badge-neutral { background: #e4e4e4 !important; color: #616161 !important; }
+
+/* --- BUTTONS: Shopify dark primary --- */
+.layout-admin .btn-primary {
+    background: #1a1a1a !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+}
+.layout-admin .btn-primary:hover:not(:disabled) {
+    background: #333 !important;
+}
+
+.layout-admin .btn-secondary {
+    background: #fff !important;
+    border: 1px solid #8a8a8a !important;
+    color: #323232 !important;
+    border-radius: 8px !important;
+}
+.layout-admin .btn-secondary:hover:not(:disabled) {
+    background: #f7f7f7 !important;
+}
+
+.layout-admin .btn-danger {
+    background: #fff !important;
+    border: 1px solid #e53e3e !important;
+    color: #c53030 !important;
+    border-radius: 8px !important;
+}
+
+/* --- ICON BUTTONS (view/edit/delete) --- */
+.layout-admin .btn-icon {
+    border-radius: 6px !important;
+    padding: 6px !important;
+}
+.layout-admin .btn-icon:hover {
+    background: #f0f0f0 !important;
+}
+
+/* --- FORMS: Clean Shopify inputs with proper padding --- */
+.layout-admin .form-input,
+.layout-admin .form-select,
+.layout-admin .form-textarea,
+.layout-admin input[type="text"],
+.layout-admin input[type="email"],
+.layout-admin input[type="number"],
+.layout-admin input[type="password"],
+.layout-admin input[type="date"],
+.layout-admin input[type="search"],
+.layout-admin input[type="url"],
+.layout-admin input[type="tel"],
+.layout-admin select,
+.layout-admin textarea {
+    border-radius: 8px !important;
+    border: 1px solid #c9cccf !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    min-height: 36px !important;
+    line-height: 1.4 !important;
+    background: #fff !important;
+}
+.layout-admin .form-input:focus,
+.layout-admin .form-select:focus,
+.layout-admin .form-textarea:focus,
+.layout-admin input:focus,
+.layout-admin select:focus,
+.layout-admin textarea:focus {
+    border-color: #1a1a1a !important;
+    outline: none !important;
+    box-shadow: 0 0 0 1px #1a1a1a !important;
+}
+
+/* Search inputs with icon - extra left padding */
+.layout-admin input[class*="pl-9"] {
+    padding-left: 36px !important;
+}
+
+/* Table cells should NOT get input padding */
+.layout-admin table td,
+.layout-admin table th {
+    padding: 10px 16px !important;
+    min-height: auto !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Form labels */
+.layout-admin .form-label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #1a1a1a !important;
+}
+
+/* --- FILTER/ACCORDION: Clean up old filter sections --- */
+.layout-admin .card > div[class*="cursor-pointer"] .flex.items-center.gap-2 svg {
+    display: none !important;
+}
+
+/* --- PAGINATION: Shopify minimal style --- */
+.layout-admin nav[role="navigation"] {
+    font-size: 13px !important;
+}
+
+/* --- INFO BAR: Clean up "Showing 1 to X" bars --- */
+.layout-admin .card > div[class*="border-b"][class*="px-5"][class*="py-3"] {
+    font-size: 13px !important;
+    color: #6d7175 !important;
+    padding: 8px 16px !important;
+}
+
+/* --- AVATAR CIRCLES in tables --- */
+.layout-admin table .rounded-full[class*="bg-"] {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+}
+.layout-admin .card {
+    border-radius: 8px;
+    border-color: #e1e1e1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 0 0 1px rgba(0,0,0,.03);
+}
+
+.layout-admin .card .card-header,
+.layout-admin .card > div:first-child.bg-neutral-50\/50 {
+    background: transparent !important;
+    border-radius: 8px 8px 0 0;
+}
+
+.layout-admin .form-input,
+.layout-admin .form-select,
+.layout-admin .form-textarea {
+    border-radius: 0.5rem;
+    border-color: #c9cccf;
+}
+
+.layout-admin .form-input:focus,
+.layout-admin .form-select:focus,
+.layout-admin .form-textarea:focus {
+    border-color: #1a1a1a;
+    outline: none;
+    box-shadow: 0 0 0 1px #1a1a1a;
+}
+
+.layout-admin .badge {
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+.layout-admin .badge-success {
+    background: #d4edda;
+    color: #1a7431;
+}
+
+.layout-admin .badge-neutral {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.layout-admin .card-header {
+    padding: 1rem 1.25rem;
+    font-size: 0.875rem;
+    background: transparent;
+    border-color: #e3e3e3;
+}
+
+.layout-admin .card-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.layout-admin .card span {
+    font-size: 0.8125rem;
+}
+
+.layout-admin h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.layout-admin table th {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6d7175;
+    text-transform: none;
+    letter-spacing: 0;
+    background: #fafafa;
+    border-bottom: 1px solid #e3e3e3;
+}
+
+.layout-admin table td {
+    font-size: 0.8125rem;
+    color: #1a1a1a;
+}
+
+.layout-admin table tbody tr:hover {
+    background: #fafafa;
+}
+
+.card-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--color-neutral-100);
+    background-color: var(--color-neutral-50);
+}
+
+/* ========================================
+   Badge Component Styles (Pure CSS)
+   ======================================== */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 0.25rem;
+}
+
+.layout-admin .badge {
+    padding: 0.0625rem 0.4375rem;
+    font-size: 0.6875rem;
+}
+
+.badge-primary {
+    background-color: var(--color-primary-100);
+    color: var(--color-primary-700);
+}
+
+.badge-success {
+    background-color: var(--color-success-50);
+    color: var(--color-success-700);
+}
+
+.badge-warning {
+    background-color: var(--color-warning-50);
+    color: var(--color-warning-700);
+}
+
+.badge-error {
+    background-color: var(--color-error-50);
+    color: var(--color-error-700);
+}
+
+.badge-info {
+    background-color: var(--color-info-50);
+    color: var(--color-info-700);
+}
+
+.badge-neutral {
+    background-color: var(--color-neutral-100);
+    color: var(--color-neutral-700);
+}
+
+/* ========================================
+   Typography Utilities
+   ======================================== */
+
+.text-price {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.text-price-sm {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+/* ========================================
+   Loading States
+   ======================================== */
+
+.skeleton {
+    border-radius: 0.25rem;
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+}
+
+.skeleton-text {
+    height: 1rem;
+    width: 100%;
+    border-radius: 0.25rem;
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+}
+
+.skeleton-heading {
+    height: 1.5rem;
+    width: 75%;
+    border-radius: 0.25rem;
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+}
+
+.skeleton-image {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    border-radius: 0.25rem;
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+}
+
+.skeleton-button {
+    height: 2.5rem;
+    width: 6rem;
+    border-radius: 0.25rem;
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+}
+
+/* ========================================
+   Scrollbar Styles (subtle)
+   ======================================== */
+
+.scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neutral-300) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-neutral-300);
+    border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-neutral-400);
+}
+
+/* Dark scrollbar for dark backgrounds */
+.scrollbar-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* ========================================
+   Overlay Utilities
+   ======================================== */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+}
+
+.overlay-light {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 40;
+}
+
+/* ========================================
+   Aspect Ratio Utilities
+   ======================================== */
+
+.aspect-product {
+    aspect-ratio: 1 / 1;
+}
+
+.aspect-banner {
+    aspect-ratio: 21 / 9;
+}
+
+.aspect-hero {
+    aspect-ratio: 16 / 9;
+}
+
+.aspect-card {
+    aspect-ratio: 4 / 3;
+}
+
+/* ========================================
+   Scrollbar Utilities (duplicate-safe)
+   ======================================== */
+
+/* ========================================
+   PWA / Mobile-First Optimizations
+   ======================================== */
+
+/* Standalone PWA mode — hide browser UI gaps */
+@media (display-mode: standalone) {
+    body {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* Allow text selection in content areas */
+    main, article, .selectable {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+}
+
+/* Content containment for better render performance */
+main, section, article {
+    contain: layout style;
+}
+
+/* Lazy load images below fold */
+img[loading="lazy"] {
+    content-visibility: auto;
+}
+
+/* Skeleton loading placeholder for images */
+img:not([src]), img[src=""] {
+    background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+}
+
+/* ========================================
+   Mobile Bottom Nav Safe Area Fix
+   ======================================== */
+
+@media (max-width: 1023px) {
+    /* Ensure content doesn't hide behind bottom nav */
+    body {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Add safe padding to fixed bottom elements */
+    nav.fixed[class*="bottom-0"] {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+/* ========================================
+   Performance: Font Display
+   ======================================== */
+
+@font-face {
+    font-display: swap;
+}
+
+/* ========================================
+   Global Accessibility + Focus Styles
+   (Moved from inline <style> in layout)
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ========================================
+   Accessibility — WCAG 2.1 AA/AAA improvements
+   ======================================== */
+
+/* Focus: only change border color, nothing else */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--color-primary-600);
+}
+
+/* Keyboard focus ring (tab navigation only) */
+:focus-visible {
+    outline: 2px solid var(--color-primary-600);
+    outline-offset: 2px;
+}
+
+/* Mouse click — no outline */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Touch target minimum 44x44px for buttons/links on mobile (WCAG 2.5.5 AAA) */
+@media (pointer: coarse) {
+    button, a[role="button"], [role="button"], a.btn, .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    /* Exclude inline links inside text */
+    p a, li a, span a {
+        min-height: auto;
+        min-width: auto;
+    }
+}
+
+/* Skip link visible on focus */
+.skip-link:focus {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    padding: 12px 20px;
+    background: var(--color-primary-600);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 0 0 6px 0;
+}
+
+/* ========================================
+   PDP (Product Detail Page) Styles
+   ======================================== */
+
+/* Sticky image column on desktop */
+@media (min-width: 768px) {
+    #pdp-image-col {
+        position: sticky;
+        top: 80px;
+        align-self: start;
+        height: fit-content;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+    #pdp-image-col::-webkit-scrollbar { width: 4px; }
+    #pdp-image-col::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+}
+
+/* PDP text slider animations */
+.pdp-slider-track { animation: pdp-hscroll 15s linear infinite; }
+@keyframes pdp-hscroll { 0% { transform: translateX(0) } 100% { transform: translateX(-50%) } }
+
+/* PDP product description typography */
+.pdp-desc { font-size: 14px; line-height: 1.8; color: #333; overflow-x: hidden; overflow-wrap: break-word; word-break: break-word; max-width: 100%; }
+.pdp-desc * { max-width: 100% !important; box-sizing: border-box; }
+.pdp-desc h2, .pdp-desc h3, .pdp-desc h4, .pdp-desc h5, .pdp-desc h6 {
+    color: #0F1111; font-weight: 700; margin: 24px 0 12px 0; font-size: 16px;
+}
+.pdp-desc h3 { font-size: 17px; }
+.pdp-desc h5, .pdp-desc h6 { font-size: 15px; }
+.pdp-desc p { margin: 10px 0; }
+.pdp-desc ul, .pdp-desc ol { margin: 12px 0; padding-left: 24px; }
+.pdp-desc ul { list-style-type: disc; }
+.pdp-desc ol { list-style-type: decimal; }
+.pdp-desc li { margin: 6px 0; line-height: 1.7; }
+.pdp-desc li p { margin: 0; display: inline; }
+.pdp-desc strong, .pdp-desc b { color: #0F1111; font-weight: 600; }
+.pdp-desc a { color: var(--color-primary-600); }
+.pdp-desc a:hover { text-decoration: underline; }
+.pdp-desc table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; display: block; overflow-x: auto; }
+.pdp-desc th { background: #f7f8fa; padding: 8px 12px; text-align: left; font-weight: 600; border: 1px solid #e3e6e6; white-space: nowrap; }
+.pdp-desc td { padding: 8px 12px; border: 1px solid #e3e6e6; }
+.pdp-desc img { border-radius: 8px; max-width: 100%; height: auto; margin: 12px 0; }
+.pdp-desc blockquote { border-left: 4px solid var(--color-primary-600); padding: 12px 16px; margin: 16px 0; background: #f7f8fa; border-radius: 0 8px 8px 0; }
+@media (max-width: 640px) {
+    .pdp-desc { font-size: 13px; line-height: 1.7; }
+    .pdp-desc h2, .pdp-desc h3 { font-size: 15px; }
+    .pdp-desc ul, .pdp-desc ol { padding-left: 18px; }
+}
