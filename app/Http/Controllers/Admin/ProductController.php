@@ -387,7 +387,7 @@ class ProductController extends Controller
         $validated['is_new_arrival'] = $request->boolean('is_new_arrival');
         $validated['seller_id'] = ($validated['seller_id'] ?? null) ?: null;
         $validated['brand_id'] = ($validated['brand_id'] ?? null) ?: null;
-        $validated['social_proof_text'] = $validated['social_proof_text'] ?: null;
+        $validated['social_proof_text'] = ($validated['social_proof_text'] ?? null) ?: null;
         $validated['amazon_url'] = ($validated['amazon_url'] ?? null) ?: null;
         $validated['flipkart_url'] = ($validated['flipkart_url'] ?? null) ?: null;
         $additionalCategories = $validated['additional_categories'] ?? [];

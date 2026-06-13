@@ -89,41 +89,82 @@
                     </div>
                 </div>
 
-                <!-- Existing Images -->
-                @if($product->images && $product->images->count())
-                    <div class="card p-6 space-y-4">
-                        <h2 class="font-semibold text-neutral-900">Current Images</h2>
-                        <div class="grid grid-cols-4 gap-4">
-                            @foreach($product->images as $image)
-                                <div class="relative group">
-                                    <img src="{{ $image->url }}" alt="{{ $product->name }}" class="w-full aspect-square object-cover rounded-lg">
-                                    @if($image->is_primary)
-                                        <span class="absolute top-2 left-2 badge badge-primary text-xs">Primary</span>
-                                    @endif
-                                    <button type="button" class="absolute top-2 right-2 p-1 bg-error-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onclick="if(confirm('Delete this image?')) document.getElementById('delete-image-{{ $image->id }}').submit()">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
+                @php $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first(); @endphp
 
-                <!-- Upload New Images -->
-                <div class="card p-6 space-y-4">
-                    <h2 class="font-semibold text-neutral-900">Add More Images</h2>
-                    <div class="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors">
-                        <input type="file" name="images[]" multiple accept="image/*" class="hidden" id="product-images">
-                        <label for="product-images" class="cursor-pointer">
-                            <svg class="w-12 h-12 mx-auto text-neutral-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <p class="text-neutral-600 mb-1">Click to upload more images</p>
-                            <p class="text-sm text-neutral-600">PNG, JPG up to 5MB each</p>
-                        </label>
+                <!-- Images -->
+                <div class="card p-6 space-y-5" x-data="{ deletedIds: [], mainPreview: null }">
+                    <!-- Main Image -->
+                    <div>
+                        <h2 class="font-semibold text-neutral-900 mb-1">Main Image</h2>
+                        <p class="text-sm text-neutral-600 mb-3">This is the primary display image shown in listings and on the product page.</p>
+                        <div class="flex items-start gap-4">
+                            <div class="w-32 h-32 rounded-lg overflow-hidden ring-1 ring-neutral-200 bg-neutral-50 shrink-0">
+                                <template x-if="mainPreview">
+                                    <img :src="mainPreview" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!mainPreview">
+                                    @if($primaryImage)
+                                        <img src="{{ $primaryImage->url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                    @else
+                                        <div class="w-full h-full flex items-center justify-center text-neutral-300">
+                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        </div>
+                                    @endif
+                                </template>
+                            </div>
+                            <div class="flex-1 border-2 border-dashed border-neutral-300 rounded-lg p-4 text-center hover:border-primary-500 transition-colors">
+                                <input type="file" name="main_image" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif" class="hidden" id="main-image-input"
+                                       @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => mainPreview = e.target.result; r.readAsDataURL(f); }">
+                                <label for="main-image-input" class="cursor-pointer block py-3">
+                                    <p class="text-neutral-700 font-medium">Click to replace main image</p>
+                                    <p class="text-sm text-neutral-600 mt-1">PNG, JPG, WebP, GIF up to 5MB</p>
+                                </label>
+                            </div>
+                        </div>
+                        @error('main_image')<p class="text-sm text-error-600 mt-2">{{ $message }}</p>@enderror
+                    </div>
+
+                    <!-- Current Gallery Images -->
+                    @if($product->images && $product->images->count())
+                        <div class="border-t border-neutral-100 pt-5">
+                            <h3 class="font-medium text-neutral-900 mb-3">Current Images</h3>
+                            <div class="grid grid-cols-4 gap-4">
+                                @foreach($product->images as $image)
+                                    <div class="relative group" x-show="!deletedIds.includes({{ $image->id }})">
+                                        <img src="{{ $image->url }}" alt="{{ $product->name }}" class="w-full aspect-square object-cover rounded-lg">
+                                        @if($image->is_primary)
+                                            <span class="absolute top-2 left-2 badge badge-primary text-xs">Primary</span>
+                                        @endif
+                                        <button type="button" title="Remove image"
+                                                class="absolute top-2 right-2 p-1 bg-error-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                @click="if (confirm('Remove this image? It will be deleted when you save.')) deletedIds.push({{ $image->id }})">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <template x-for="id in deletedIds" :key="id">
+                                <input type="hidden" name="delete_images[]" :value="id">
+                            </template>
+                        </div>
+                    @endif
+
+                    <!-- Add More Images -->
+                    <div class="border-t border-neutral-100 pt-5">
+                        <h3 class="font-medium text-neutral-900 mb-3">Add More Images</h3>
+                        <div class="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors">
+                            <input type="file" name="images[]" multiple accept="image/*" class="hidden" id="product-images">
+                            <label for="product-images" class="cursor-pointer">
+                                <svg class="w-12 h-12 mx-auto text-neutral-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p class="text-neutral-600 mb-1">Click to upload more images</p>
+                                <p class="text-sm text-neutral-600">PNG, JPG up to 5MB each</p>
+                            </label>
+                        </div>
+                        @error('images.*')<p class="text-sm text-error-600 mt-2">{{ $message }}</p>@enderror
                     </div>
                 </div>
 

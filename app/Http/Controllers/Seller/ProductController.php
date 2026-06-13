@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -128,9 +129,65 @@ class ProductController extends Controller
             'stock_quantity' => ['required', 'integer', 'min:0'],
             'weight' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
+            'main_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'delete_images' => ['nullable', 'array'],
+            'delete_images.*' => ['integer', 'exists:product_images,id'],
         ]);
 
+        // Only persist the plain product columns — image keys are handled separately.
+        unset($validated['main_image'], $validated['images'], $validated['delete_images']);
+
         $product->update($validated);
+
+        // Delete images the seller marked for removal (scoped to this product).
+        if ($request->filled('delete_images')) {
+            $imagesToDelete = ProductImage::whereIn('id', $request->delete_images)
+                ->where('product_id', $product->id)
+                ->get();
+
+            foreach ($imagesToDelete as $image) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $image->url));
+                $image->delete();
+            }
+        }
+
+        // Replace the main image when a new one is uploaded.
+        if ($request->hasFile('main_image')) {
+            $oldPrimary = $product->images()->where('is_primary', true)->first();
+            if ($oldPrimary) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $oldPrimary->url));
+                $oldPrimary->delete();
+            }
+
+            ProductImage::create([
+                'product_id' => $product->id,
+                'url' => $request->file('main_image')->store('products', 'public'),
+                'is_primary' => true,
+                'position' => 0,
+            ]);
+        }
+
+        // Append any additional gallery images.
+        if ($request->hasFile('images')) {
+            $maxPosition = $product->images()->max('position') ?? 0;
+            foreach ($request->file('images') as $index => $file) {
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'url' => $file->store('products', 'public'),
+                    'is_primary' => false,
+                    'position' => $maxPosition + $index + 1,
+                ]);
+            }
+        }
+
+        // Guarantee the product always has a primary image after edits.
+        if (! $product->images()->where('is_primary', true)->exists()) {
+            $product->images()->orderBy('position')->first()?->update(['is_primary' => true]);
+        }
+
+        \App\Http\Middleware\CacheResponse::bustAll();
 
         return redirect()->route('seller.products.index')
             ->with('success', 'Product updated successfully.');

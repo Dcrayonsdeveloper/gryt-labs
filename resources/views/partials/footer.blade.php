@@ -79,7 +79,6 @@
                         <li><a href="{{ route('about') }}" class="text-gray-500 hover:text-gray-900 transition-colors">About Us</a></li>
                         <li><a href="{{ route('contact') }}" class="text-gray-500 hover:text-gray-900 transition-colors">Contact Us</a></li>
                         <li><a href="{{ route('faq') }}" class="text-gray-500 hover:text-gray-900 transition-colors">FAQs</a></li>
-                        <li><a href="{{ route('blog') }}" class="text-gray-500 hover:text-gray-900 transition-colors">Blog</a></li>
                     </ul>
                 </div>
 

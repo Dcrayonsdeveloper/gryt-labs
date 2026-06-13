@@ -6,10 +6,10 @@
 
     @php $user = auth('admin')->user(); @endphp
 
-    <!-- Logo (dark bar matching header) -->
-    <div class="flex items-center h-14 px-4" style="background:#1a1a1a">
+    <!-- Logo -->
+    <div class="flex items-center h-14 px-4" style="background:#fff;border-bottom:1px solid #e0e0e0">
         <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2">
-            <x-application-logo class="h-5 w-auto brightness-0 invert" />
+            <x-application-logo class="h-8 w-auto" />
         </a>
     </div>
 

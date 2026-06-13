@@ -80,7 +80,6 @@
                         <li><a href="<?php echo e(route('about')); ?>" class="text-gray-500 hover:text-gray-900 transition-colors">About Us</a></li>
                         <li><a href="<?php echo e(route('contact')); ?>" class="text-gray-500 hover:text-gray-900 transition-colors">Contact Us</a></li>
                         <li><a href="<?php echo e(route('faq')); ?>" class="text-gray-500 hover:text-gray-900 transition-colors">FAQs</a></li>
-                        <li><a href="<?php echo e(route('blog')); ?>" class="text-gray-500 hover:text-gray-900 transition-colors">Blog</a></li>
                         <li><a href="<?php echo e(route('offers')); ?>" class="text-gray-500 hover:text-gray-900 transition-colors">Offers</a></li>
                         <?php if($theme->get('gallery_url', '')): ?>
                         <li><a href="<?php echo e($theme->get('gallery_url')); ?>" class="text-gray-500 hover:text-gray-900 transition-colors">Gallery</a></li>
