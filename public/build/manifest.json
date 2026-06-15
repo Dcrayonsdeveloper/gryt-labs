@@ -1,0 +1,72 @@
+{
+  "_module.esm-C_8lJS30.js": {
+    "file": "assets/module.esm-C_8lJS30.js",
+    "name": "module.esm"
+  },
+  "frontends/ayurvexa/css/app.css": {
+    "file": "assets/app-7L_P11RN.css",
+    "src": "frontends/ayurvexa/css/app.css",
+    "isEntry": true
+  },
+  "frontends/ayurvexa/css/home.css": {
+    "file": "assets/home-C50QRuB4.css",
+    "src": "frontends/ayurvexa/css/home.css",
+    "isEntry": true
+  },
+  "frontends/ayurvexa/js/app.js": {
+    "file": "assets/app-DOWtawea.js",
+    "name": "app",
+    "src": "frontends/ayurvexa/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_module.esm-C_8lJS30.js"
+    ]
+  },
+  "frontends/default/css/app.css": {
+    "file": "assets/app-Bi-6wAyA.css",
+    "src": "frontends/default/css/app.css",
+    "isEntry": true
+  },
+  "frontends/default/css/home.css": {
+    "file": "assets/home-DLtbJKjA.css",
+    "src": "frontends/default/css/home.css",
+    "isEntry": true
+  },
+  "frontends/default/js/app.js": {
+    "file": "assets/app-mVAY8MS0.js",
+    "name": "app",
+    "src": "frontends/default/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_module.esm-C_8lJS30.js"
+    ]
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-D9wzIyRR.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/critical.css": {
+    "file": "assets/critical-CfwONd4E.css",
+    "src": "resources/css/critical.css",
+    "isEntry": true
+  },
+  "resources/js/admin-editor.js": {
+    "file": "assets/admin-editor-D6wcnjFY.js",
+    "name": "admin-editor",
+    "src": "resources/js/admin-editor.js",
+    "isEntry": true,
+    "css": [
+      "assets/admin-editor-CfZ7kyuK.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BzhmUl07.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_module.esm-C_8lJS30.js"
+    ]
+  }
+}

@@ -46,12 +46,27 @@ return new class extends Migration
 
         // Mirror the partial unique index that the earlier index migration skips when the
         // column does not yet exist. Idempotent, so it is safe where it already ran.
-        DB::statement('CREATE UNIQUE INDEX IF NOT EXISTS orders_shiprocket_order_id_unique ON orders (shiprocket_order_id) WHERE shiprocket_order_id IS NOT NULL');
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('CREATE UNIQUE INDEX IF NOT EXISTS orders_shiprocket_order_id_unique ON orders (shiprocket_order_id) WHERE shiprocket_order_id IS NOT NULL');
+        } else {
+            // MySQL: plain UNIQUE index already allows multiple NULLs. No "IF NOT EXISTS".
+            $exists = collect(DB::select("SHOW INDEX FROM orders WHERE Key_name = 'orders_shiprocket_order_id_unique'"))->isNotEmpty();
+            if (! $exists) {
+                DB::statement('CREATE UNIQUE INDEX orders_shiprocket_order_id_unique ON orders (shiprocket_order_id)');
+            }
+        }
     }
 
     public function down(): void
     {
-        DB::statement('DROP INDEX IF EXISTS orders_shiprocket_order_id_unique');
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('DROP INDEX IF EXISTS orders_shiprocket_order_id_unique');
+        } else {
+            $exists = collect(DB::select("SHOW INDEX FROM orders WHERE Key_name = 'orders_shiprocket_order_id_unique'"))->isNotEmpty();
+            if ($exists) {
+                DB::statement('ALTER TABLE orders DROP INDEX orders_shiprocket_order_id_unique');
+            }
+        }
 
         Schema::table('orders', function (Blueprint $table) {
             foreach ([
