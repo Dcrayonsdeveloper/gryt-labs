@@ -62,7 +62,7 @@ class ProductController extends Controller
         $perPage = min((int) $request->input('per_page', 10), 100);
         $products = $query->latest()->paginate($perPage)->withQueryString();
 
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
         $sellers = Seller::with('user')->orderBy('store_name')->get();
 
         // Stats
@@ -92,7 +92,7 @@ class ProductController extends Controller
                 ->with('error', 'No valid products found.');
         }
 
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
 
         return view('admin.products.bulk-edit', compact('products', 'categories'));
     }
@@ -186,7 +186,7 @@ class ProductController extends Controller
 
     public function create(): View
     {
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
         $sellers = Seller::with('user')->orderBy('store_name')->get();
         $brands = Brand::where('is_active', true)->orderBy('name')->get();
         $attributes = Attribute::with('values')->orderBy('name')->get();
@@ -331,7 +331,7 @@ class ProductController extends Controller
 
     public function edit(Product $product): View
     {
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
         $sellers = Seller::with('user')->orderBy('store_name')->get();
         $brands = Brand::where('is_active', true)->orderBy('name')->get();
         $attributes = Attribute::with('values')->orderBy('name')->get();
