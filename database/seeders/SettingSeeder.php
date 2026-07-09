@@ -13,8 +13,8 @@ class SettingSeeder extends Seeder
             // General Settings
             ['group' => 'general', 'key' => 'site_name', 'value' => 'GRYT Health Labs', 'type' => 'string'],
             ['group' => 'general', 'key' => 'site_tagline', 'value' => 'Built Through Purpose. Driven By Grit.', 'type' => 'string'],
-            ['group' => 'general', 'key' => 'site_email', 'value' => 'support@gryt.co.in', 'type' => 'string'],
-            ['group' => 'general', 'key' => 'site_phone', 'value' => '+91 98765 43210', 'type' => 'string'],
+            ['group' => 'general', 'key' => 'site_email', 'value' => 'info@gryt.co.in', 'type' => 'string'],
+            ['group' => 'general', 'key' => 'site_phone', 'value' => '+91 70335864766', 'type' => 'string'],
             ['group' => 'general', 'key' => 'site_address', 'value' => 'Mumbai, Maharashtra, India', 'type' => 'string'],
             ['group' => 'general', 'key' => 'timezone', 'value' => 'Asia/Kolkata', 'type' => 'string'],
             ['group' => 'general', 'key' => 'date_format', 'value' => 'M d, Y', 'type' => 'string'],

@@ -11,9 +11,9 @@ class BusinessSettingsSeeder extends Seeder
     {
         $settings = [
             // Contact Information
-            ['group' => 'contact', 'key' => 'contact_phone', 'value' => '+91 93545 67705', 'type' => 'string'],
-            ['group' => 'contact', 'key' => 'contact_email', 'value' => 'support@jikra.in', 'type' => 'string'],
-            ['group' => 'contact', 'key' => 'contact_whatsapp', 'value' => '919354567705', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'contact_phone', 'value' => '+91 70335864766', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'contact_email', 'value' => 'info@gryt.co.in', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'contact_whatsapp', 'value' => '9170335864766', 'type' => 'string'],
             ['group' => 'contact', 'key' => 'company_address', 'value' => 'Jikra, G118 Deep Vihar, Rohini Sector 24, Delhi 110084', 'type' => 'string'],
             ['group' => 'contact', 'key' => 'business_hours', 'value' => 'Mon-Fri 9AM-6PM, Sat 10AM-4PM', 'type' => 'string'],
 
