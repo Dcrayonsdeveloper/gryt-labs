@@ -11,9 +11,9 @@ class SettingSeeder extends Seeder
     {
         $settings = [
             // General Settings
-            ['group' => 'general', 'key' => 'site_name', 'value' => 'Jikra', 'type' => 'string'],
-            ['group' => 'general', 'key' => 'site_tagline', 'value' => 'Your Go-To Store for Mobile Accessories', 'type' => 'string'],
-            ['group' => 'general', 'key' => 'site_email', 'value' => 'support@jikra.in', 'type' => 'string'],
+            ['group' => 'general', 'key' => 'site_name', 'value' => 'GRYT Health Labs', 'type' => 'string'],
+            ['group' => 'general', 'key' => 'site_tagline', 'value' => 'Built Through Purpose. Driven By Grit.', 'type' => 'string'],
+            ['group' => 'general', 'key' => 'site_email', 'value' => 'support@gryt.co.in', 'type' => 'string'],
             ['group' => 'general', 'key' => 'site_phone', 'value' => '+91 98765 43210', 'type' => 'string'],
             ['group' => 'general', 'key' => 'site_address', 'value' => 'Mumbai, Maharashtra, India', 'type' => 'string'],
             ['group' => 'general', 'key' => 'timezone', 'value' => 'Asia/Kolkata', 'type' => 'string'],
@@ -22,7 +22,7 @@ class SettingSeeder extends Seeder
             ['group' => 'general', 'key' => 'currency_symbol', 'value' => '₹', 'type' => 'string'],
             ['group' => 'general', 'key' => 'currency_position', 'value' => 'before', 'type' => 'string'],
             ['group' => 'general', 'key' => 'announcement_text', 'value' => 'Free Shipping on Orders Above ₹499 | COD Available | 7-Day Easy Returns', 'type' => 'string'],
-            ['group' => 'general', 'key' => 'footer_about', 'value' => 'Your one-stop shop for mobile accessories, Bluetooth speakers, earphones, chargers, and more. Quality tech accessories at great prices.', 'type' => 'string'],
+            ['group' => 'general', 'key' => 'footer_about', 'value' => 'Premium sports nutrition from GRYT Health Labs — whey protein, pre-workout and training essentials, made for people who show up every day. Built Through Purpose. Driven By Grit.', 'type' => 'string'],
 
             // Payment Settings
             ['group' => 'payment', 'key' => 'stripe_enabled', 'value' => '0', 'type' => 'boolean'],
@@ -47,13 +47,13 @@ class SettingSeeder extends Seeder
 
             // Email Settings
             ['group' => 'email', 'key' => 'mail_driver', 'value' => 'smtp', 'type' => 'string'],
-            ['group' => 'email', 'key' => 'mail_from_address', 'value' => 'noreply@jikra.in', 'type' => 'string'],
-            ['group' => 'email', 'key' => 'mail_from_name', 'value' => 'Jikra', 'type' => 'string'],
+            ['group' => 'email', 'key' => 'mail_from_address', 'value' => 'noreply@gryt.co.in', 'type' => 'string'],
+            ['group' => 'email', 'key' => 'mail_from_name', 'value' => 'GRYT Health Labs', 'type' => 'string'],
 
             // SEO Settings
-            ['group' => 'seo', 'key' => 'meta_title', 'value' => 'Jikra - Your Go-To Store for Mobile Accessories', 'type' => 'string'],
-            ['group' => 'seo', 'key' => 'meta_description', 'value' => 'Shop mobile accessories, Bluetooth speakers, earphones, chargers, power banks, phone cases and more at Jikra. Best prices with fast shipping across India.', 'type' => 'string'],
-            ['group' => 'seo', 'key' => 'meta_keywords', 'value' => 'mobile accessories, bluetooth speakers, earphones, phone cases, chargers, power banks, headphones, smartwatch, India', 'type' => 'string'],
+            ['group' => 'seo', 'key' => 'meta_title', 'value' => 'GRYT Health Labs - Whey Protein, Pre-Workout & Sports Nutrition', 'type' => 'string'],
+            ['group' => 'seo', 'key' => 'meta_description', 'value' => 'Shop GRYT Health Labs sports nutrition — whey protein concentrate, pre-workout and premium shakers. Built Through Purpose. Driven By Grit. Fast shipping across India.', 'type' => 'string'],
+            ['group' => 'seo', 'key' => 'meta_keywords', 'value' => 'whey protein, pre-workout, sports nutrition, protein supplements, protein shaker, gym supplements, fitness nutrition, India', 'type' => 'string'],
 
             // Social
             ['group' => 'social', 'key' => 'social_facebook', 'value' => '#', 'type' => 'string'],
