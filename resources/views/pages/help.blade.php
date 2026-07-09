@@ -120,7 +120,7 @@
                         </div>
                         <h3 class="text-sm font-semibold text-neutral-900 mb-1">Phone / WhatsApp</h3>
                         <p class="text-xs text-neutral-600 mb-3">{{ \App\Models\Setting::get('business_hours', 'Mon-Fri 9AM-6PM, Sat 10AM-4PM') }}</p>
-                        <a href="https://wa.me/{{ \App\Models\Setting::get('contact_whatsapp', '') }}" target="_blank" class="inline-flex items-center px-4 py-2 text-[13px] font-medium text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors">{{ \App\Models\Setting::get('contact_phone', '') }}</a>
+                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', (string) (\App\Models\Setting::get('contact_whatsapp', '') ?: \App\Models\Setting::get('contact_phone', ''))) }}" target="_blank" class="inline-flex items-center px-4 py-2 text-[13px] font-medium text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors">{{ \App\Models\Setting::get('contact_phone', '') }}</a>
                     </div>
                 </div>
             </div>

@@ -24,7 +24,7 @@
                         <p>GSTIN: {{ $theme->get('company_gstin') }}</p>
                         @endif
                         <p>
-                            <a href="tel:{{ $theme->get('contact_phone', '') }}" class="hover:text-gray-600 transition-colors">{{ $theme->get('contact_phone', '') }}</a>
+                            <a href="tel:{{ preg_replace('/[^0-9+]/', '', (string) $theme->get('contact_phone', '')) }}" class="hover:text-gray-600 transition-colors">{{ $theme->get('contact_phone', '') }}</a>
                             &middot;
                             <a href="mailto:{{ $theme->get('contact_email', '') }}" class="hover:text-gray-600 transition-colors">{{ $theme->get('contact_email', '') }}</a>
                         </p>

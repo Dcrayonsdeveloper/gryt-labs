@@ -186,7 +186,7 @@
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-neutral-900">{{ __('ui.phone') }}</p>
-                                    <a href="https://wa.me/{{ $theme->get('contact_whatsapp', '') }}" target="_blank" class="text-[13px] text-primary-600 hover:text-primary-700 transition-colors">{{ $theme->get('contact_phone', '') }} (WhatsApp)</a>
+                                    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', (string) ($theme->get('contact_whatsapp', '') ?: $theme->get('contact_phone', ''))) }}" target="_blank" class="text-[13px] text-primary-600 hover:text-primary-700 transition-colors">{{ $theme->get('contact_phone', '') }} (WhatsApp)</a>
                                 </div>
                             </div>
 
