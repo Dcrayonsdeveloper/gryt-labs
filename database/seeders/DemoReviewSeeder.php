@@ -79,8 +79,15 @@ class DemoReviewSeeder extends Seeder
             }
 
             DB::table('reviews')->insert($rows);
-            $avg = round(collect($rows)->avg('rating'), 2);
-            $this->command->info("  {$product->name}: " . count($rows) . " reviews (avg {$avg}★)");
+
+            // Rows are inserted directly, so the denormalised products.rating and
+            // products.review_count columns the storefront reads are still stale.
+            $product->updateRating();
+
+            $this->command->info(
+                "  {$product->name}: {$product->review_count} reviews "
+                . '(avg ' . number_format((float) $product->rating, 2) . '★)'
+            );
         }
     }
 
