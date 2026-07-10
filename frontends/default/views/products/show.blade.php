@@ -1043,12 +1043,6 @@
                                         </div>
 
                                         <div>
-                                            <label class="block text-sm font-medium text-[#0F1111] mb-1">Email Address</label>
-                                            <input type="email" name="guest_email" required class="w-full rounded-lg px-3 py-2 text-sm focus:ring-primary-600 focus:border-link" placeholder="your@email.com">
-                                            <p class="text-[11px] text-[#3a3a3a] mt-1">We will send you a discount code as a thank you!</p>
-                                        </div>
-
-                                        <div>
                                             <label class="block text-sm font-medium text-[#0F1111] mb-1">Rating</label>
                                             <div class="flex gap-0.5">
                                                 @for($i = 1; $i <= 5; $i++)

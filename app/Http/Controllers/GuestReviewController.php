@@ -13,29 +13,31 @@ class GuestReviewController extends Controller
     {
         $validated = $request->validate([
             'guest_name' => 'required|string|max:100',
-            'guest_email' => 'required|email|max:255',
+            'guest_email' => 'nullable|email|max:255',
             'rating' => 'required|integer|min:1|max:5',
             'title' => 'nullable|string|max:255',
             'content' => 'required|string|max:2000',
             'honeypot' => 'max:0', // anti-spam: must be empty
         ]);
 
-        // Check for duplicate guest review on same product
-        $exists = Review::where('product_id', $product->id)
-            ->where('guest_email', $validated['guest_email'])
-            ->exists();
+        // Check for duplicate guest review on same product (only when an email is provided)
+        if (!empty($validated['guest_email'])) {
+            $exists = Review::where('product_id', $product->id)
+                ->where('guest_email', $validated['guest_email'])
+                ->exists();
 
-        if ($exists) {
-            if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => 'You have already reviewed this product.'], 422);
+            if ($exists) {
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => 'You have already reviewed this product.'], 422);
+                }
+                return back()->with('error', 'You have already reviewed this product.');
             }
-            return back()->with('error', 'You have already reviewed this product.');
         }
 
         Review::create([
             'product_id' => $product->id,
             'guest_name' => $validated['guest_name'],
-            'guest_email' => $validated['guest_email'],
+            'guest_email' => $validated['guest_email'] ?? null,
             'rating' => $validated['rating'],
             'title' => $validated['title'],
             'content' => $validated['content'],
