@@ -29,12 +29,19 @@ class SendCouponAfterReview implements ShouldQueue
             return;
         }
 
-        // Check if we already rewarded this email for this product
-        $alreadyRewarded = DB::table('review_invitations')
+        // Only reward customers we actually invited (i.e. who bought and had the
+        // order delivered), and only once per invitation. Without this, every
+        // review from the same email minted a fresh discount coupon.
+        $invitation = DB::table('review_invitations')
             ->where('email', $email)
-            ->whereNotNull('coupon_id')
-            ->where('reviewed_at', '!=', null)
-            ->exists();
+            ->whereNull('reviewed_at')
+            ->whereNull('coupon_id')
+            ->orderBy('id')
+            ->first();
+
+        if (!$invitation) {
+            return;
+        }
 
         // Create unique coupon
         $couponValue = Setting::get('review_coupon_value', 5);
@@ -52,10 +59,9 @@ class SendCouponAfterReview implements ShouldQueue
             'expires_at' => now()->addDays(60),
         ]);
 
-        // Update invitation record if exists
+        // Consume this invitation so it cannot be rewarded twice
         DB::table('review_invitations')
-            ->where('email', $email)
-            ->whereNull('reviewed_at')
+            ->where('id', $invitation->id)
             ->update([
                 'reviewed_at' => now(),
                 'coupon_id' => $coupon->id,

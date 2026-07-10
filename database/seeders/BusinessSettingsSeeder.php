@@ -11,10 +11,10 @@ class BusinessSettingsSeeder extends Seeder
     {
         $settings = [
             // Contact Information
-            ['group' => 'contact', 'key' => 'contact_phone', 'value' => '+91 70335864766', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'contact_phone', 'value' => '+91 7033586466', 'type' => 'string'],
             ['group' => 'contact', 'key' => 'contact_email', 'value' => 'info@gryt.co.in', 'type' => 'string'],
-            ['group' => 'contact', 'key' => 'contact_whatsapp', 'value' => '9170335864766', 'type' => 'string'],
-            ['group' => 'contact', 'key' => 'company_address', 'value' => 'Jikra, G118 Deep Vihar, Rohini Sector 24, Delhi 110084', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'contact_whatsapp', 'value' => '917033586466', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'company_address', 'value' => '1st Floor, Riddhi Siddhi Complex, Patliputra Path, near Central Bank, Rajendra Nagar, Patna, Bihar 800016', 'type' => 'string'],
             ['group' => 'contact', 'key' => 'business_hours', 'value' => 'Mon-Fri 9AM-6PM, Sat 10AM-4PM', 'type' => 'string'],
 
             // Shipping
