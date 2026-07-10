@@ -199,8 +199,8 @@ class ProductController extends Controller
             }
         }
 
-        // Latest 10 reviews for display (all loaded for schema)
-        $displayReviews = $product->approvedReviews->sortByDesc('created_at')->take(10);
+        // Reviews for display: first 10 shown, rest revealed via "Show all" button (client-side)
+        $displayReviews = $product->approvedReviews->sortByDesc('created_at')->take(60);
 
         // JSON-LD structured data for SEO
         $schemaService = app(ReviewSchemaService::class);
