@@ -1084,9 +1084,10 @@
                     <h3 class="text-base font-bold text-[#0F1111] mb-4">Top Reviews</h3>
 
                     @if($displayReviews->count())
+                        <div x-data="{ showAll: false }">
                         <div class="space-y-6">
                             @foreach($displayReviews as $review)
-                                <div class="border-b border-[#E3E6E6] pb-5">
+                                <div class="border-b border-[#E3E6E6] pb-5" @if($loop->index >= 10) x-show="showAll" x-cloak @endif>
                                     <!-- Reviewer -->
                                     <div class="flex items-center gap-2 mb-1.5">
                                         <div class="w-8 h-8 bg-[#F0F2F2] rounded-full flex items-center justify-center">
@@ -1159,11 +1160,17 @@
                             @endforeach
                         </div>
 
-                        @if($product->review_count > 10)
-                            <p class="mt-4 text-sm text-link">
-                                Showing {{ $displayReviews->count() }} of {{ number_format($product->review_count) }} reviews
-                            </p>
+                        @if($displayReviews->count() > 10)
+                            <button type="button" @click="showAll = !showAll"
+                                    class="mt-5 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-[#0F1111] border border-[#D5D9D9] rounded-lg px-5 py-2.5 hover:bg-[#F7F8FA] transition-colors">
+                                <span x-show="!showAll">Show all {{ number_format($displayReviews->count()) }} reviews</span>
+                                <span x-show="showAll" x-cloak>Show fewer reviews</span>
+                                <svg class="w-4 h-4 transition-transform" :class="showAll ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
                         @endif
+                        </div>
                     @else
                         <div class="text-center py-8 bg-[#F7F8FA] rounded-lg border border-[#E3E6E6]">
                             <p class="text-sm text-[#3a3a3a] mb-2">No reviews yet.</p>
