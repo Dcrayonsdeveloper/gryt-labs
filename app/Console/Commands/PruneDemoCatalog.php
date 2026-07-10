@@ -29,7 +29,8 @@ class PruneDemoCatalog extends Command
     {
         $keepCats = Category::where('is_active', true)->pluck('id');
         $removeCats = Category::whereNotIn('id', $keepCats)->pluck('id');
-        $removeProducts = Product::whereIn('category_id', $removeCats)->pluck('id');
+        // Include soft-deleted demo products — they still physically hold the FK.
+        $removeProducts = Product::withTrashed()->whereIn('category_id', $removeCats)->pluck('id');
 
         $this->info('Keeping categories: '.$keepCats->implode(', ').' ('.$keepCats->count().')');
         $this->info('Removing categories: '.$removeCats->count());
@@ -57,7 +58,7 @@ class PruneDemoCatalog extends Command
         $backup = [
             'generated_at' => now()->toIso8601String(),
             'categories'   => Category::whereIn('id', $removeCats)->get()->toArray(),
-            'products'     => Product::whereIn('id', $removeProducts)->get()->toArray(),
+            'products'     => Product::withTrashed()->whereIn('id', $removeProducts)->get()->toArray(),
             'child_rows'   => [],
         ];
         foreach ($childTables as $t) {
@@ -75,7 +76,8 @@ class PruneDemoCatalog extends Command
                 if ($n) $this->line("  {$t}: deleted {$n}");
             }
             DB::table('category_product')->whereIn('category_id', $removeCats)->delete();
-            $dp = Product::whereIn('id', $removeProducts)->delete();
+            // Raw delete bypasses the soft-delete scope for a permanent removal.
+            $dp = DB::table('products')->whereIn('id', $removeProducts)->delete();
             $dc = Category::whereIn('id', $removeCats)->delete();
             $this->info("Deleted {$dp} products and {$dc} categories.");
         } finally {
