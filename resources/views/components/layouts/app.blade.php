@@ -157,6 +157,9 @@
     </script>
     @endif
 
+    {{-- Page-specific styles pushed via @push('styles') --}}
+    @stack('styles')
+
 </head>
 <body class="font-sans antialiased bg-white text-[#222222] overflow-x-hidden" style="font-family: 'Poppins', sans-serif;" x-data data-authenticated="{{ auth()->check() ? 'true' : 'false' }}">
     <!-- Toast Notifications -->
