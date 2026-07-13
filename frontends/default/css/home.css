@@ -333,6 +333,13 @@
     .newsletter-fields { padding: 0; }
 }
 
+/* Desktop: product rows carry 5 cards, so stretch them to fill the row width
+   instead of leaving a gap at the end. A row with more than 5 still overflows
+   and scrolls, since the items keep flex-shrink: 0. */
+@media (min-width: 1025px) {
+    .product-slider .slide-item { width: calc((100% - 4 * 16px) / 5); }
+}
+
 /* Scrollbar hide utility */
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
