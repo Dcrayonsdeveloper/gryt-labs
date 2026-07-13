@@ -65,6 +65,11 @@ return [
 
         // Central database — stores tenants, domains, super_admins only
         // Uses same driver as default connection (pgsql)
+        //
+        // tenancy.database.template_tenant_connection is null, so stancl/tenancy clones this
+        // block for the `tenant` connection too. On MySQL the charset must be utf8mb4: utf8mb3
+        // makes MariaDB 11 pick utf8mb3_uca1400_ai_ci, which collides with the utf8mb3_general_ci
+        // returned by json_type() in Laravel's JSON where-clauses (error 1267).
         'central' => [
             'driver' => env('DB_CONNECTION', 'pgsql'),
             'url' => env('DB_URL'),
@@ -73,7 +78,8 @@ return [
             'database' => env('CENTRAL_DB_DATABASE', 'jikra_central'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
-            'charset' => env('DB_CHARSET', 'utf8'),
+            'charset' => env('DB_CHARSET', env('DB_CONNECTION', 'pgsql') === 'pgsql' ? 'utf8' : 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
