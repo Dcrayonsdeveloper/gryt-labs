@@ -442,10 +442,20 @@
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    @foreach($bestsellers->take(10) as $product)
-                        <x-product-card :product="$product" />
-                    @endforeach
+                <div class="relative" x-data="{ el: null }" x-init="el = $refs.bestsellerSlider">
+                    <button @click="el.scrollBy({left: -300, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="left: -4px;" aria-label="Previous products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button @click="el.scrollBy({left: 300, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="right: -4px;" aria-label="Next products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <div class="product-slider" x-ref="bestsellerSlider">
+                        @foreach($bestsellers->take(10) as $product)
+                            <div class="slide-item">
+                                <x-product-card :product="$product" :compact="true" />
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </section>
@@ -506,10 +516,20 @@
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    @foreach($deals->take(12) as $product)
-                        <x-product-card :product="$product" />
-                    @endforeach
+                <div class="relative" x-data="{ el: null }" x-init="el = $refs.dealsSlider">
+                    <button @click="el.scrollBy({left: -300, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="left: -4px;" aria-label="Previous deals">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button @click="el.scrollBy({left: 300, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="right: -4px;" aria-label="Next deals">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <div class="product-slider" x-ref="dealsSlider">
+                        @foreach($deals->take(12) as $product)
+                            <div class="slide-item">
+                                <x-product-card :product="$product" :compact="true" />
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </section>
