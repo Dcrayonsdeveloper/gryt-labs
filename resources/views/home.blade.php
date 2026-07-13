@@ -343,22 +343,25 @@
                     @endforeach
                 </div>
                 @else
-                <div class="product-slider">
-                    @foreach($featuredProducts->take(10) as $product)
-                        <div class="slide-item">
-                            <x-product-card :product="$product" :compact="true" />
-                        </div>
-                    @endforeach
+                <div class="relative" x-data="{ el: null }" x-init="el = $refs.featuredSlider">
+                    <button @click="el.scrollBy({left: -300, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="left: -4px;" aria-label="Previous products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button @click="el.scrollBy({left: 300, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="right: -4px;" aria-label="Next products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <div class="product-slider" x-ref="featuredSlider">
+                        @foreach($featuredProducts->take(10) as $product)
+                            <div class="slide-item">
+                                <x-product-card :product="$product" :compact="true" />
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
                 @endif
             </div>
         </section>
     @endif
-
-    <!-- ==========================================
-         SHOP OUR REELS - Shoppable Instagram Carousel
-         ========================================== -->
-    <x-instagram-reels />
 
     <!-- ==========================================
          COFFEE LOVERS COLLECTION
@@ -534,6 +537,11 @@
             </div>
         </section>
     @endif
+
+    <!-- ==========================================
+         SHOP OUR REELS - Shoppable Instagram Carousel
+         ========================================== -->
+    <x-instagram-reels />
 
     <!-- ==========================================
          PRODUCT BANNER 2 (Configurable)
