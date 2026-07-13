@@ -99,6 +99,7 @@
                         <li><a href="{{ route('privacy') }}" class="text-gray-500 hover:text-gray-900 transition-colors">Privacy Policy</a></li>
                         <li><a href="{{ route('terms') }}" class="text-gray-500 hover:text-gray-900 transition-colors">Terms of Service</a></li>
                         <li><a href="{{ route('cookie-policy') }}" class="text-gray-500 hover:text-gray-900 transition-colors">Cookie Policy</a></li>
+                        <li><a href="{{ route('fssai-license') }}" class="text-gray-500 hover:text-gray-900 transition-colors">FSSAI License</a></li>
                     </ul>
                 </div>
             </div>

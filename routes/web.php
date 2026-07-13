@@ -483,6 +483,7 @@ Route::get('/bmi-calculator', [App\Http\Controllers\PageController::class, 'bmi'
 Route::get('/privacy-policy', [App\Http\Controllers\PageController::class, 'privacy'])->name('privacy');
 Route::get('/terms-of-service', [App\Http\Controllers\PageController::class, 'terms'])->name('terms');
 Route::get('/cookie-policy', [App\Http\Controllers\PageController::class, 'cookiePolicy'])->name('cookie-policy');
+Route::get('/fssai-license', [App\Http\Controllers\PageController::class, 'fssaiLicense'])->name('fssai-license');
 
 
 // Shipping Policy (legal page from DB)

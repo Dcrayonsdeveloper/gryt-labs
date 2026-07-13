@@ -288,7 +288,8 @@
     @endif
 
     <!-- COMPANY INFO -->
-    @if($legalName || $gstin || $address)
+    {{-- Always rendered: the parent company and FSSAI licence below are constant, even when
+         the optional theme-settings fields (legal name, GSTIN, address) are blank. --}}
     <section class="py-12 bg-neutral-50 border-t border-neutral-100">
         <div class="container mx-auto px-4">
             <div class="max-w-3xl mx-auto">
@@ -325,12 +326,25 @@
                             <p class="text-neutral-900 text-[13px]">{{ $address }}</p>
                         </div>
                         @endif
+                        <div>
+                            <p class="text-[11px] font-semibold text-neutral-500 uppercase mb-0.5">Parent Company</p>
+                            <p class="text-neutral-900 text-[13px]">Suyash Enterprise</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-semibold text-neutral-500 uppercase mb-0.5">FSSAI License</p>
+                            <p class="text-neutral-900 text-[13px] font-mono">10425999000390</p>
+                            <a href="{{ route('fssai-license') }}" class="text-[12px] text-primary-600 font-semibold hover:underline">View licence details</a>
+                        </div>
                     </div>
+                    <p class="text-[13px] text-neutral-600 leading-relaxed mt-5 pt-5 border-t border-neutral-100">
+                        Suyash Enterprise is the parent company of GRYT Health Labs. Our products are manufactured and sold
+                        under FSSAI licence number <span class="font-semibold text-neutral-900">10425999000390</span>, issued under the
+                        Food Safety and Standards Act, 2006.
+                    </p>
                 </div>
             </div>
         </div>
     </section>
-    @endif
 
     <!-- CTA -->
     <section class="py-14 sm:py-18 bg-white">
