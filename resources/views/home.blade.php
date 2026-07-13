@@ -364,11 +364,6 @@
     @endif
 
     <!-- ==========================================
-         SHOP OUR REELS - Shoppable Instagram Carousel
-         ========================================== -->
-    <x-instagram-reels />
-
-    <!-- ==========================================
          COFFEE LOVERS COLLECTION
          ========================================== -->
     @if(isset($coffeeProducts) && $coffeeProducts->count())
@@ -542,6 +537,11 @@
             </div>
         </section>
     @endif
+
+    <!-- ==========================================
+         SHOP OUR REELS - Shoppable Instagram Carousel
+         ========================================== -->
+    <x-instagram-reels />
 
     <!-- ==========================================
          PRODUCT BANNER 2 (Configurable)
