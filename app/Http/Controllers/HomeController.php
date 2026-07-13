@@ -17,10 +17,10 @@ class HomeController extends Controller
     public function index(): View
     {
         // Homepage display settings (all from single cached query now)
-        $featuredCount    = (int) Setting::get('homepage_featured_count', 10);
-        $newArrivalsCount = (int) Setting::get('homepage_new_arrivals_count', 10);
-        $bestsellersCount = (int) Setting::get('homepage_bestsellers_count', 10);
-        $dealsCount       = (int) Setting::get('homepage_deals_count', 10);
+        $featuredCount    = (int) Setting::get('homepage_featured_count', 5);
+        $newArrivalsCount = (int) Setting::get('homepage_new_arrivals_count', 5);
+        $bestsellersCount = (int) Setting::get('homepage_bestsellers_count', 5);
+        $dealsCount       = (int) Setting::get('homepage_deals_count', 5);
         $testimonialsCount = (int) Setting::get('homepage_testimonials_count', 6);
         $newArrivalsDays  = (int) Setting::get('homepage_new_arrivals_days', 30);
 
@@ -39,9 +39,7 @@ class HomeController extends Controller
 
         // Too few products carry the "featured" flag to fill the row, which leaves the section
         // looking half-empty. Top it up with the newest other in-stock products.
-        $featuredMinimum = 6;
-
-        if ($featuredProducts->count() < $featuredMinimum) {
+        if ($featuredProducts->count() < $featuredCount) {
             $featuredProducts = $featuredProducts->concat(
                 Product::query()
                     ->where('is_active', true)
