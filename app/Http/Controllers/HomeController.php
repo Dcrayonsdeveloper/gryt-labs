@@ -37,6 +37,23 @@ class HomeController extends Controller
             ->take($featuredCount)
             ->get();
 
+        // Too few products carry the "featured" flag to fill the row, which leaves the section
+        // looking half-empty. Top it up with the newest other in-stock products.
+        $featuredMinimum = 6;
+
+        if ($featuredProducts->count() < $featuredMinimum) {
+            $featuredProducts = $featuredProducts->concat(
+                Product::query()
+                    ->where('is_active', true)
+                    ->where('stock_quantity', '>', 0)
+                    ->whereNotIn('id', $featuredProducts->pluck('id'))
+                    ->with($productEager)
+                    ->orderBy('created_at', 'desc')
+                    ->take($featuredCount - $featuredProducts->count())
+                    ->get()
+            );
+        }
+
         // New arrivals — manually curated by admins via the "Show in New Arrivals" flag
         $newArrivals = Product::query()
             ->where('is_active', true)
