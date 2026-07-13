@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Events\OrderDelivered;
 use App\Events\OrderShipped;
 use App\Events\OrderStatusChanged;
+use App\Helpers\DbCompat;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryPartner;
 use App\Models\Order;
@@ -164,7 +165,12 @@ class OrderController extends Controller
                 'Tracking Number', 'Courier',
             ]);
 
-            $query->with('user')->orderByRaw("CAST(NULLIF(REGEXP_REPLACE(order_number, '[^0-9]', '', 'g'), '') AS BIGINT) DESC NULLS LAST")->chunk(500, function ($orders) use ($handle) {
+            // MySQL sorts NULLs last on DESC already, and its REGEXP_REPLACE is global by default.
+            $orderByNumber = DbCompat::isPostgres()
+                ? "CAST(NULLIF(REGEXP_REPLACE(order_number, '[^0-9]', '', 'g'), '') AS BIGINT) DESC NULLS LAST"
+                : "CAST(NULLIF(REGEXP_REPLACE(order_number, '[^0-9]', ''), '') AS UNSIGNED) DESC";
+
+            $query->with('user')->orderByRaw($orderByNumber)->chunk(500, function ($orders) use ($handle) {
                 foreach ($orders as $order) {
                     $items = $order->items->map(fn($i) => ($i->product_name ?? 'Product') . ' x' . $i->quantity)->implode(', ');
                     $address = $order->shipping_address_snapshot ?? [];
