@@ -610,28 +610,6 @@
     @endif
 
     <!-- ==========================================
-         NEW ARRIVALS GRID
-         ========================================== -->
-    @if($newArrivals->count() && (!isset($sections['new_arrivals']) || $sections['new_arrivals']->is_active))
-        <section class="py-8 lg:py-12 bg-white" style="background-color:#F1F7E8">
-            <div class="container mx-auto px-4">
-                <div class="section-header">
-                    <h2 class="section-title">{{ $sections['new_arrivals']->title ?? 'New Arrivals' }}</h2>
-                    <a href="{{ route('new-arrivals') }}" class="view-all-link">
-                        View All
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    @foreach($newArrivals->take(10) as $product)
-                        <x-product-card :product="$product" />
-                    @endforeach
-                </div>
-            </div>
-        </section>
-    @endif
-
-    <!-- ==========================================
          VIEW ON AMAZON (only if store has Amazon link)
          ========================================== -->
     @php $amazonUrl = $theme->get('amazon_store_url', ''); @endphp
