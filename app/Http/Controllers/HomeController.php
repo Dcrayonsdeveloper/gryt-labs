@@ -17,10 +17,12 @@ class HomeController extends Controller
     public function index(): View
     {
         // Homepage display settings (all from single cached query now)
-        $featuredCount    = (int) Setting::get('homepage_featured_count', 5);
-        $newArrivalsCount = (int) Setting::get('homepage_new_arrivals_count', 5);
-        $bestsellersCount = (int) Setting::get('homepage_bestsellers_count', 5);
-        $dealsCount       = (int) Setting::get('homepage_deals_count', 5);
+        // The rows show 5 cards at a time (CSS sizes each card to 1/5 of the row) and scroll the
+        // rest behind the arrows, so fetch more than 5 — a row of exactly 5 has nothing to scroll.
+        $featuredCount    = (int) Setting::get('homepage_featured_count', 10);
+        $newArrivalsCount = (int) Setting::get('homepage_new_arrivals_count', 10);
+        $bestsellersCount = (int) Setting::get('homepage_bestsellers_count', 10);
+        $dealsCount       = (int) Setting::get('homepage_deals_count', 10);
         $testimonialsCount = (int) Setting::get('homepage_testimonials_count', 6);
         $newArrivalsDays  = (int) Setting::get('homepage_new_arrivals_days', 30);
 
