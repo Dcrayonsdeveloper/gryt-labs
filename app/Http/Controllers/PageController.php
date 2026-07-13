@@ -244,6 +244,11 @@ class PageController extends Controller
         return view('pages.size-guide');
     }
 
+    public function fssaiLicense(): View
+    {
+        return view('pages.fssai-license');
+    }
+
     public function privacy(): View
     {
         $page = Page::where('slug', 'privacy-policy')->firstOrFail();
