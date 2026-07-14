@@ -159,6 +159,9 @@
     </script>
     <?php endif; ?>
 
+    
+    <?php echo $__env->yieldPushContent('styles'); ?>
+
 </head>
 <body class="font-sans antialiased bg-white text-[#222222] overflow-x-hidden" style="font-family: 'Poppins', sans-serif;" x-data data-authenticated="<?php echo e(auth()->check() ? 'true' : 'false'); ?>">
     <!-- Toast Notifications -->

@@ -1,8 +1,16 @@
 <?php
-    $whatsappNumber = $theme->get('whatsapp_number', '');
+    // Fall back through the other contact settings so the button never renders a
+    // recipient-less wa.me link. Strip formatting: wa.me only accepts digits.
+    $whatsappNumber = preg_replace('/[^0-9]/', '', (string) (
+        $theme->get('whatsapp_number', '')
+            ?: $theme->get('contact_whatsapp', '')
+            ?: $theme->get('contact_phone', '')
+    ));
     $storeName = $theme->get('store_name', config('app.name'));
     $whatsappMessage = $theme->get('whatsapp_message', "Hi {$storeName}! I have a question about your products.");
 ?>
+
+<?php if($whatsappNumber): ?>
 
 <div x-data="{ open: false, pulse: true }"
      x-init="setTimeout(() => pulse = false, 5000)"
@@ -49,4 +57,5 @@
         </svg>
     </button>
 </div>
+<?php endif; ?>
 <?php /**PATH D:\projects\grytlabs345\resources\views/components/whatsapp-button.blade.php ENDPATH**/ ?>
