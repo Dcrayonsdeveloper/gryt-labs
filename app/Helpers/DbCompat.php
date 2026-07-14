@@ -125,6 +125,29 @@ class DbCompat
     }
 
     /**
+     * Transaction-scoped advisory lock, used to serialize order creation when a
+     * Shiprocket callback and webhook fire for the same checkout concurrently.
+     *
+     * PostgreSQL: pg_advisory_xact_lock() — released automatically at commit/rollback.
+     * MySQL: has no such function (it 1305s), so use GET_LOCK(), which is session-scoped
+     * and released when the request's connection closes. A wait timeout returns 0 rather
+     * than throwing; we proceed anyway, since the unique index on orders.shiprocket_order_id
+     * plus the in-transaction idempotency check are the real duplicate backstops.
+     */
+    public static function advisoryLock(string $key): void
+    {
+        $conn = DB::connection();
+
+        if ($conn->getDriverName() === 'pgsql') {
+            $conn->select('SELECT pg_advisory_xact_lock(hashtext(?))', [$key]);
+            return;
+        }
+
+        // MySQL lock names are capped at 64 chars; hash to stay within it.
+        $conn->select('SELECT GET_LOCK(?, 10)', ['sr_' . md5($key)]);
+    }
+
+    /**
      * JSON_EXTRACT / ->> operator.
      * MySQL: JSON_EXTRACT(col, '$.key') or col->'$.key'
      * PostgreSQL: col->>'key'

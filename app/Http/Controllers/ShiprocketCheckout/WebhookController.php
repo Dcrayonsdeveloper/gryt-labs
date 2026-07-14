@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ShiprocketCheckout;
 
 use App\Events\OrderPlaced;
+use App\Helpers\DbCompat;
 use App\Http\Controllers\Controller;
 use App\Models\AbandonedCheckout;
 use App\Models\Order;
@@ -800,7 +801,7 @@ class WebhookController extends Controller
                 // Lock on cart_id when available — Shiprocket may emit multiple
                 // order_ids for the same cart (pending+confirmed), but cart_id is stable.
                 $lockKey = $cartIdForLock ?: $shiprocketOrderId;
-                DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', [$lockKey]);
+                DbCompat::advisoryLock($lockKey);
 
                 // Idempotency: check by order_id, then by cart_id within 30 min.
                 // Expanded to kill the duplicate-order race where the browser callback
