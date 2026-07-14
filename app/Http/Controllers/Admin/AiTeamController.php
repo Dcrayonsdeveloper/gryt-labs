@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\DbCompat;
 use App\Http\Controllers\Controller;
 use App\Models\AiTeamConversation;
 use App\Models\AiTeamDailyBrief;
@@ -92,9 +93,10 @@ class AiTeamController extends Controller
         $query = AiTeamKnowledge::with('member')
             ->when($search !== '', function ($q) use ($search) {
                 $like = '%' . $search . '%';
-                $q->where(function ($inner) use ($like) {
-                    $inner->where('title', 'ilike', $like)
-                        ->orWhere('content', 'ilike', $like);
+                $op   = DbCompat::ilike();
+                $q->where(function ($inner) use ($like, $op) {
+                    $inner->where('title', $op, $like)
+                        ->orWhere('content', $op, $like);
                 });
             })
             ->when($memberId, fn ($q) => $q->where('ai_team_member_id', $memberId))

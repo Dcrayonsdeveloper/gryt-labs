@@ -115,6 +115,16 @@ class DbCompat
     }
 
     /**
+     * Case-insensitive LIKE operator.
+     * PostgreSQL: ILIKE. MySQL: plain LIKE, which is already case-insensitive under the
+     * *_ci collations this app uses — MySQL has no ILIKE and errors out on it.
+     */
+    public static function ilike(): string
+    {
+        return static::isPostgres() ? 'ilike' : 'like';
+    }
+
+    /**
      * JSON_EXTRACT / ->> operator.
      * MySQL: JSON_EXTRACT(col, '$.key') or col->'$.key'
      * PostgreSQL: col->>'key'

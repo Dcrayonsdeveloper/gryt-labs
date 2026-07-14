@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\DbCompat;
 use App\Http\Controllers\Controller;
 use App\Models\Attribute;
 use App\Models\Product;
@@ -27,9 +28,10 @@ class ProductController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('sku', 'ilike', "%{$search}%");
+            $like   = DbCompat::ilike();
+            $query->where(function ($q) use ($search, $like) {
+                $q->where('name', $like, "%{$search}%")
+                  ->orWhere('sku', $like, "%{$search}%");
             });
         }
 
@@ -608,9 +610,10 @@ class ProductController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('sku', 'ilike', "%{$search}%");
+            $like   = DbCompat::ilike();
+            $query->where(function ($q) use ($search, $like) {
+                $q->where('name', $like, "%{$search}%")
+                  ->orWhere('sku', $like, "%{$search}%");
             });
         }
 

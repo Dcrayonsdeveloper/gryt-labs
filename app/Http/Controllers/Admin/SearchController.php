@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\DbCompat;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
@@ -19,9 +20,11 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
+        $like = DbCompat::ilike();
+
         $products = Product::select('id', 'name', 'price', 'mrp', 'sku', 'stock_quantity')
             ->with('primaryImage')
-            ->where('name', 'ilike', "%{$query}%")
+            ->where('name', $like, "%{$query}%")
             ->orderBy('name')
             ->limit(15)
             ->get()
@@ -46,10 +49,12 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
+        $like = DbCompat::ilike();
+
         $orders = Order::with('user')
-            ->where(function ($q) use ($query) {
-                $q->where('order_number', 'ilike', "%{$query}%")
-                  ->orWhereHas('user', fn ($uq) => $uq->where('email', 'ilike', "%{$query}%"));
+            ->where(function ($q) use ($query, $like) {
+                $q->where('order_number', $like, "%{$query}%")
+                  ->orWhereHas('user', fn ($uq) => $uq->where('email', $like, "%{$query}%"));
             })
             ->latest()
             ->limit(15)
@@ -71,11 +76,13 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
+        $like = DbCompat::ilike();
+
         $customers = User::where('role', 'customer')
-            ->where(function ($q) use ($query) {
-                $q->where('first_name', 'ilike', "%{$query}%")
-                  ->orWhere('last_name', 'ilike', "%{$query}%")
-                  ->orWhere('email', 'ilike', "%{$query}%");
+            ->where(function ($q) use ($query, $like) {
+                $q->where('first_name', $like, "%{$query}%")
+                  ->orWhere('last_name', $like, "%{$query}%")
+                  ->orWhere('email', $like, "%{$query}%");
             })
             ->latest()
             ->limit(15)
