@@ -108,6 +108,27 @@ class Setting extends Model
     }
 
     /**
+     * Clear cached settings so a write is visible on the next read.
+     *
+     * Must resolve the store the same way get()/getGroup() do. The Cache facade
+     * resolves to Stancl's tenancy wrapper, which is a *different* store — calling
+     * Cache::forget() there clears a key nothing reads and leaves the cached
+     * 'settings.all.*' entry that get() actually reads untouched, so saved
+     * settings stay invisible until the 300s TTL lapses.
+     */
+    public static function flushCache(?string $group = null): void
+    {
+        $store  = Cache::store(config('cache.default'));
+        $prefix = static::tenantCachePrefix();
+
+        $store->forget('settings.all.' . $prefix);
+
+        if ($group !== null) {
+            $store->forget("settings.group.{$group}.{$prefix}");
+        }
+    }
+
+    /**
      * Get tenant-scoped cache prefix to prevent cross-tenant cache pollution.
      */
     private static function tenantCachePrefix(): string

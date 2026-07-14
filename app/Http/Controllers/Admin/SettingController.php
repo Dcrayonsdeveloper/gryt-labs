@@ -183,8 +183,7 @@ class SettingController extends Controller
         }
 
         // Bust tenant-scoped caches so new credentials take effect immediately
-        Cache::forget('settings.all.' . DB::connection()->getDatabaseName());
-        Cache::forget('settings.group.shipping.' . DB::connection()->getDatabaseName());
+        Setting::flushCache('shipping');
         ShiprocketService::forgetToken();
 
         return back()->with('success', 'Shipping settings updated successfully.');
@@ -248,8 +247,7 @@ class SettingController extends Controller
             );
         }
 
-        $dbName = DB::connection()->getDatabaseName();
-        Cache::forget('settings.all.' . $dbName);
+        Setting::flushCache('email');
 
         return back()->with('success', 'Email settings updated successfully.');
     }
