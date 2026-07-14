@@ -53,7 +53,7 @@
             </form>
 
             {{-- Autocomplete dropdown --}}
-            <div x-show="showResults && (results.length > 0 || (query.length >= 2 && !loading))" x-cloak
+            <div x-show="showResults && (results.length > 0 || (query.length >= 1 && !loading))" x-cloak
                  x-transition:enter="transition ease-out duration-150"
                  x-transition:enter-start="opacity-0 -translate-y-1"
                  x-transition:enter-end="opacity-100 translate-y-0"
@@ -76,7 +76,7 @@
                         </template>
                     </ul>
                 </div>
-                <div x-show="query.length >= 2 && results.length === 0 && !loading" class="px-4 py-4 text-center">
+                <div x-show="query.length >= 1 && results.length === 0 && !loading" class="px-4 py-4 text-center">
                     <p class="text-sm text-neutral-600">No results found</p>
                 </div>
             </div>

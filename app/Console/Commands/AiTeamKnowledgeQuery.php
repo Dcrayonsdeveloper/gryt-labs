@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers\DbCompat;
 use App\Models\AiTeamKnowledge;
 use App\Models\AiTeamMember;
 use Illuminate\Console\Command;
@@ -62,9 +63,10 @@ class AiTeamKnowledgeQuery extends Command
         }
 
         $like = '%' . $keyword . '%';
-        $query->where(function ($q) use ($like) {
-            $q->where('title', 'ILIKE', $like)
-              ->orWhere('content', 'ILIKE', $like);
+        $op   = DbCompat::ilike();
+        $query->where(function ($q) use ($like, $op) {
+            $q->where('title', $op, $like)
+              ->orWhere('content', $op, $like);
         });
 
         $results = $query->orderByDesc('knowledge_date')
@@ -129,7 +131,7 @@ class AiTeamKnowledgeQuery extends Command
         }
 
         return AiTeamMember::where('is_active', true)
-            ->where('name', 'ILIKE', $arg)
+            ->where('name', DbCompat::ilike(), $arg)
             ->first();
     }
 

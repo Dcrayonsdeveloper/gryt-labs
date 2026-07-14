@@ -649,7 +649,7 @@
                 },
 
                 async fetchSuggestions() {
-                    if (this.query.length < 2) {
+                    if (this.query.trim().length < 1) {
                         this.results = [];
                         return;
                     }

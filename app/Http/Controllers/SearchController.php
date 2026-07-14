@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\DbCompat;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
@@ -40,12 +41,14 @@ class SearchController extends Controller
             $productIds = Product::search($query)->keys();
             $productsQuery->whereIn('id', $productIds);
         } else {
-            $productsQuery->where(function ($q) use ($query) {
-                $q->where('name', 'ilike', "%{$query}%")
-                  ->orWhere('description', 'ilike', "%{$query}%")
-                  ->orWhere('sku', 'ilike', "%{$query}%")
-                  ->orWhereHas('category', fn ($cq) => $cq->where('name', 'ilike', "%{$query}%"))
-                  ->orWhereHas('brand', fn ($bq) => $bq->where('name', 'ilike', "%{$query}%"));
+            $like = DbCompat::ilike();
+
+            $productsQuery->where(function ($q) use ($query, $like) {
+                $q->where('name', $like, "%{$query}%")
+                  ->orWhere('description', $like, "%{$query}%")
+                  ->orWhere('sku', $like, "%{$query}%")
+                  ->orWhereHas('category', fn ($cq) => $cq->where('name', $like, "%{$query}%"))
+                  ->orWhereHas('brand', fn ($bq) => $bq->where('name', $like, "%{$query}%"));
             });
         }
 
@@ -118,16 +121,18 @@ class SearchController extends Controller
 
     public function suggestions(Request $request): JsonResponse
     {
-        $query = $request->get('q', '');
+        $query = trim($request->get('q', ''));
 
-        if (strlen($query) < 2) {
+        if ($query === '') {
             return response()->json(['suggestions' => []]);
         }
 
-        // Product suggestions (ILIKE for case-insensitive match on PostgreSQL)
+        // Case-insensitive match: ILIKE on PostgreSQL, LIKE on MySQL (which has no ILIKE).
+        $like = DbCompat::ilike();
+
         $products = Product::query()
             ->where('is_active', true)
-            ->where('name', 'ilike', "%{$query}%")
+            ->where('name', $like, "%{$query}%")
             ->with(['category', 'primaryImage'])
             ->orderBy('sales_count', 'desc')
             ->take(5)
@@ -145,7 +150,7 @@ class SearchController extends Controller
         // Category suggestions
         $categories = Category::query()
             ->where('is_active', true)
-            ->where('name', 'ilike', "%{$query}%")
+            ->where('name', $like, "%{$query}%")
             ->take(3)
             ->get()
             ->map(fn ($category) => [
@@ -159,7 +164,7 @@ class SearchController extends Controller
         // Brand suggestions
         $brands = Brand::query()
             ->where('is_active', true)
-            ->where('name', 'ilike', "%{$query}%")
+            ->where('name', $like, "%{$query}%")
             ->take(3)
             ->get()
             ->map(fn ($brand) => [
