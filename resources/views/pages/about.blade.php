@@ -135,8 +135,11 @@
                 <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-5">
                     {{ $tagline }}
                 </h1>
-                <p class="text-[15px] sm:text-base text-neutral-300 leading-relaxed max-w-xl mx-auto mb-8">
+                <p class="text-[15px] sm:text-base text-neutral-300 leading-relaxed max-w-xl mx-auto mb-4">
                     {{ Str::limit($aboutText, 250) }}
+                </p>
+                <p class="text-[13px] sm:text-sm text-neutral-400 mb-8">
+                    A brand owned by <span class="font-semibold text-white">Suyash Enterprise</span>
                 </p>
                 <div class="flex flex-wrap items-center justify-center gap-3">
                     <a href="{{ route('products.index') }}" class="gryt-btn-lime inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-full transition-colors">
