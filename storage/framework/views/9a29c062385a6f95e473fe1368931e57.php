@@ -368,10 +368,17 @@
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
                 <?php else: ?>
-                <div class="product-slider">
-                    <?php $__currentLoopData = $featuredProducts->take(10); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <div class="slide-item">
-                            <?php if (isset($component)) { $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a = $component; } ?>
+                <div class="relative" x-data="{ el: null }" x-init="el = $refs.featuredSlider">
+                    <button @click="el.scrollBy({left: -300, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="left: -4px;" aria-label="Previous products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button @click="el.scrollBy({left: 300, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="right: -4px;" aria-label="Next products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <div class="product-slider" x-ref="featuredSlider">
+                        <?php $__currentLoopData = $featuredProducts->take(10); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="slide-item">
+                                <?php if (isset($component)) { $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.product-card','data' => ['product' => $product,'compact' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('product-card'); ?>
@@ -391,37 +398,14 @@
 <?php $component = $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a; ?>
 <?php unset($__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a); ?>
 <?php endif; ?>
-                        </div>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </div>
                 </div>
                 <?php endif; ?>
             </div>
         </section>
     <?php endif; ?>
-
-    <!-- ==========================================
-         SHOP OUR REELS - Shoppable Instagram Carousel
-         ========================================== -->
-    <?php if (isset($component)) { $__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.instagram-reels','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('instagram-reels'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes([]); ?>
-<?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c)): ?>
-<?php $attributes = $__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c; ?>
-<?php unset($__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c)): ?>
-<?php $component = $__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c; ?>
-<?php unset($__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c); ?>
-<?php endif; ?>
 
     <!-- ==========================================
          COFFEE LOVERS COLLECTION
@@ -524,18 +508,26 @@
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    <?php $__currentLoopData = $bestsellers->take(10); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <?php if (isset($component)) { $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a = $component; } ?>
+                <div class="relative" x-data="{ el: null }" x-init="el = $refs.bestsellerSlider">
+                    <button @click="el.scrollBy({left: -300, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="left: -4px;" aria-label="Previous products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button @click="el.scrollBy({left: 300, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="right: -4px;" aria-label="Next products">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <div class="product-slider" x-ref="bestsellerSlider">
+                        <?php $__currentLoopData = $bestsellers->take(10); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="slide-item">
+                                <?php if (isset($component)) { $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.product-card','data' => ['product' => $product]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.product-card','data' => ['product' => $product,'compact' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('product-card'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product)]); ?>
+<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product),'compact' => true]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a)): ?>
@@ -546,7 +538,9 @@
 <?php $component = $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a; ?>
 <?php unset($__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a); ?>
 <?php endif; ?>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </div>
                 </div>
             </div>
         </section>
@@ -608,18 +602,26 @@
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    <?php $__currentLoopData = $deals->take(12); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <?php if (isset($component)) { $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a = $component; } ?>
+                <div class="relative" x-data="{ el: null }" x-init="el = $refs.dealsSlider">
+                    <button @click="el.scrollBy({left: -300, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="left: -4px;" aria-label="Previous deals">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button @click="el.scrollBy({left: 300, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white" style="right: -4px;" aria-label="Next deals">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <div class="product-slider" x-ref="dealsSlider">
+                        <?php $__currentLoopData = $deals->take(12); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="slide-item">
+                                <?php if (isset($component)) { $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.product-card','data' => ['product' => $product]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.product-card','data' => ['product' => $product,'compact' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('product-card'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product)]); ?>
+<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product),'compact' => true]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a)): ?>
@@ -630,11 +632,37 @@
 <?php $component = $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a; ?>
 <?php unset($__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a); ?>
 <?php endif; ?>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </div>
                 </div>
             </div>
         </section>
     <?php endif; ?>
+
+    <!-- ==========================================
+         SHOP OUR REELS - Shoppable Instagram Carousel
+         ========================================== -->
+    <?php if (isset($component)) { $__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.instagram-reels','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('instagram-reels'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c)): ?>
+<?php $attributes = $__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c; ?>
+<?php unset($__attributesOriginal48aaed9a0c1f7c5ef041be0616b7fb7c); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c)): ?>
+<?php $component = $__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c; ?>
+<?php unset($__componentOriginal48aaed9a0c1f7c5ef041be0616b7fb7c); ?>
+<?php endif; ?>
 
     <!-- ==========================================
          PRODUCT BANNER 2 (Configurable)
@@ -727,47 +755,6 @@
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
-    <?php endif; ?>
-
-    <!-- ==========================================
-         NEW ARRIVALS GRID
-         ========================================== -->
-    <?php if($newArrivals->count() && (!isset($sections['new_arrivals']) || $sections['new_arrivals']->is_active)): ?>
-        <section class="py-8 lg:py-12 bg-white" style="background-color:#F1F7E8">
-            <div class="container mx-auto px-4">
-                <div class="section-header">
-                    <h2 class="section-title"><?php echo e($sections['new_arrivals']->title ?? 'New Arrivals'); ?></h2>
-                    <a href="<?php echo e(route('new-arrivals')); ?>" class="view-all-link">
-                        View All
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    <?php $__currentLoopData = $newArrivals->take(10); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <?php if (isset($component)) { $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.product-card','data' => ['product' => $product]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('product-card'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product)]); ?>
-<?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a)): ?>
-<?php $attributes = $__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a; ?>
-<?php unset($__attributesOriginal3fd2897c1d6a149cdb97b41db9ff827a); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a)): ?>
-<?php $component = $__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a; ?>
-<?php unset($__componentOriginal3fd2897c1d6a149cdb97b41db9ff827a); ?>
-<?php endif; ?>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
             </div>
         </section>
