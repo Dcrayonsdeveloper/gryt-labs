@@ -561,7 +561,7 @@
                                 <span x-text="adding ? 'Adding...' : (added ? '✓ Added!' : 'Add to Cart')"></span>
                             </button>
                             <button x-data="{ buying: false }"
-                                    @click="if(buying) return; buying = true; const _qty = quantity; axios.post('/cart/add', { product_id: {{ $product->id }}, quantity: _qty }).then(() => { window.location.href = '{{ route('checkout.index') }}'; }).catch(e => { $store.toast.error(e.response?.data?.error || 'Failed'); buying = false; })"
+                                    @click="if (typeof window.__srBuyNow === 'function') { __srBuyNow($event, $el, {{ $product->id }}, quantity); return; } if(buying) return; buying = true; const _qty = quantity; axios.post('/cart/add', { product_id: {{ $product->id }}, quantity: _qty }).then(() => { window.location.href = '{{ route('checkout.index') }}'; }).catch(e => { $store.toast.error(e.response?.data?.error || 'Failed'); buying = false; })"
                                     :disabled="buying"
                                     class="w-full flex items-center justify-center gap-2 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] font-semibold py-2.5 rounded-full text-sm transition-colors disabled:opacity-70">
                                 <span x-text="buying ? 'Please wait...' : 'Buy Now'"></span>
@@ -1266,9 +1266,13 @@
                 }
             });
 
-            // Wire up Buy Now
-            document.getElementById('sticky-buy-btn').addEventListener('click', function() {
+            // Wire up Buy Now: open Shiprocket Checkout if available, else add to cart + checkout
+            document.getElementById('sticky-buy-btn').addEventListener('click', function(evt) {
                 var qty = getQty();
+                if (typeof window.__srBuyNow === 'function') {
+                    window.__srBuyNow(evt, this, {{ $product->id }}, qty);
+                    return;
+                }
                 axios.post('/cart/add', {product_id: {{ $product->id }}, quantity: qty}).then(function(){
                     window.location.href = '{{ route("checkout.index") }}';
                 });
