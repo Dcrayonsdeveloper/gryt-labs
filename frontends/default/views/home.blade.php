@@ -190,6 +190,23 @@
     @endif
 
     @if($banners->count())
+    @php
+        // Size the slide box to the real banner instead of a hardcoded ratio.
+        // .hero-slides used a fixed 16/5 (3.2) while uploads are whatever the
+        // designer exports — a 2062x763 (2.7) banner got ~18% cropped off the
+        // top and bottom by object-fit: cover. Measured once and cached; falls
+        // back to the CSS ratio when the file is missing or unreadable.
+        $heroRatio = \Illuminate\Support\Facades\Cache::remember(
+            'hero_ratio.' . $banners->first()->id . '.' . md5((string) $banners->first()->image_url),
+            86400,
+            function () use ($banners) {
+                $path = storage_path('app/public/' . $banners->first()->image_url);
+                if (!is_file($path)) return null;
+                $size = @getimagesize($path);
+                return ($size && $size[1] > 0) ? round($size[0] / $size[1], 4) : null;
+            }
+        );
+    @endphp
     <section class="hero-banner"
              x-data="{
                 current: 0,
@@ -205,7 +222,7 @@
                 prev() { this.current = (this.current - 1 + this.slides.length) % this.slides.length; },
                 goTo(i) { this.current = i; clearInterval(this.timer); this.startTimer(); }
              }">
-        <div class="hero-slides">
+        <div class="hero-slides" @if($heroRatio) style="aspect-ratio: {{ $heroRatio }};" @endif>
             <template x-for="(slide, index) in slides" :key="index">
                 <a :href="slide.link"
                    x-show="current === index"
