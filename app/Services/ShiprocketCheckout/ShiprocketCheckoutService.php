@@ -31,6 +31,10 @@ class ShiprocketCheckoutService
     private const ORDER_ENDPOINT   = 'https://checkout-api.shiprocket.com/api/v1/orders';
     private const LEGACY_ORDER_URL = 'https://checkout-dashboard.shiprocket.in/api/v1/orders';
 
+    // Order details — POST + HMAC. Returns customer name/phone/email/address for a
+    // completed checkout, so we never depend on webhooks to learn who bought.
+    private const ORDER_DETAILS_ENDPOINT = 'https://checkout-api.shiprocket.com/api/v1/custom-platform-order/details';
+
     // Catalog push webhooks — Shiprocket charges from its own cached catalog,
     // so every product/collection update must be pushed to these.
     private const CATALOG_PRODUCT_ENDPOINT    = 'https://checkout-api.shiprocket.com/wh/v1/custom/product';
@@ -134,34 +138,81 @@ class ShiprocketCheckoutService
      */
     public function getOrder(string $checkoutOrderId): ?array
     {
-        $apiKey = $this->getCheckoutApiKey();
-        if (empty($apiKey)) {
+        [$apiKey, $secretKey] = $this->getApiCredentials();
+        if (empty($apiKey) || empty($secretKey)) {
             return null;
         }
 
-        $endpoints = [
-            self::ORDER_ENDPOINT . "/{$checkoutOrderId}",
-            self::ORDER_ENDPOINT . "/show/{$checkoutOrderId}",
-            self::LEGACY_ORDER_URL . "/{$checkoutOrderId}",
-        ];
+        // POST + HMAC — NOT a GET. The old GET /api/v1/orders/{id} form 404s:
+        // that endpoint does not exist. This is the documented shape.
+        $body = json_encode([
+            'order_id'  => $checkoutOrderId,
+            'timestamp' => gmdate('Y-m-d\TH:i:s.v\Z'),
+        ]);
+        $signature = base64_encode(hash_hmac('sha256', $body, $secretKey, true));
 
-        foreach ($endpoints as $url) {
-            try {
-                $response = Http::withHeaders([
-                    'X-Api-Key'    => $apiKey,
-                    'Content-Type' => 'application/json',
-                ])->timeout(10)->get($url);
+        try {
+            $response = Http::withHeaders([
+                'X-Api-Key'         => $apiKey,
+                'X-Api-HMAC-SHA256' => $signature,
+                'Content-Type'      => 'application/json',
+            ])->withBody($body, 'application/json')
+              ->timeout(15)
+              ->post(self::ORDER_DETAILS_ENDPOINT);
 
-                if ($response->successful() && !empty($response->json())) {
-                    $data = $response->json();
-                    return is_array($data['data'] ?? null) ? $data['data'] : (is_array($data) ? $data : null);
+            if ($response->successful()) {
+                $data = $response->json();
+                // Shape: {"ok":true,"result":{...}}
+                if (!empty($data['result']) && is_array($data['result'])) {
+                    return $data['result'];
                 }
-            } catch (\Exception $e) {
-                Log::warning("ShiprocketCheckout: getOrder failed [{$url}] — " . $e->getMessage());
+                Log::warning('ShiprocketCheckout: getOrder returned no result', [
+                    'order_id' => $checkoutOrderId,
+                    'body'     => substr((string) $response->body(), 0, 300),
+                ]);
+                return null;
             }
+
+            Log::warning('ShiprocketCheckout: getOrder failed', [
+                'order_id' => $checkoutOrderId,
+                'status'   => $response->status(),
+                'body'     => substr((string) $response->body(), 0, 300),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('ShiprocketCheckout: getOrder exception — ' . $e->getMessage(), [
+                'order_id' => $checkoutOrderId,
+            ]);
         }
 
         return null;
+    }
+
+    /**
+     * Flatten a getOrder() payload into the customer fields we store on an Order.
+     *
+     * @return array{name: ?string, phone: ?string, email: ?string, address: ?array}
+     */
+    public function extractCustomer(array $order): array
+    {
+        $addr = $order['shipping_address'] ?? $order['billing_address'] ?? [];
+
+        $name = trim(($addr['first_name'] ?? '') . ' ' . ($addr['last_name'] ?? ''));
+
+        return [
+            'name'    => $name !== '' ? $name : null,
+            'phone'   => $order['phone'] ?? $addr['phone'] ?? null,
+            'email'   => $order['email'] ?? $addr['email'] ?? null,
+            'address' => empty($addr) ? null : [
+                'name'           => $name,
+                'phone'          => $addr['phone'] ?? '',
+                'address_line_1' => $addr['line1'] ?? '',
+                'address_line_2' => $addr['line2'] ?? '',
+                'city'           => $addr['city'] ?? '',
+                'state'          => $addr['state'] ?? '',
+                'postal_code'    => $addr['pincode'] ?? '',
+                'country'        => $addr['country'] ?? 'India',
+            ],
+        ];
     }
 
     // ─── Catalog Push (us → Shiprocket) ───────────────────────────────────────

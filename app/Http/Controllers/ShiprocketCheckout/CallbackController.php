@@ -142,6 +142,45 @@ class CallbackController extends Controller
             }
         }
 
+        // Ask Shiprocket directly for anything still missing.
+        //
+        // Every source above depends on the webhook having arrived (it carries the
+        // customer data into AbandonedCheckout). When webhooks are not delivered —
+        // which is the norm on this account — orders land with no name, phone, email
+        // or address, and no confirmation email can be sent.
+        //
+        // The order-details API always has the data once checkout completes, so it is
+        // the reliable source, not a fallback. Best-effort: never let it break the
+        // order, which already exists and is paid for by this point.
+        if (empty($customerName) || empty($customerPhone) || empty($customerEmail) || !$hasAddress) {
+            try {
+                $srOrder = $this->checkout->getOrder($shiprocketOrderId);
+                if ($srOrder) {
+                    $api = $this->checkout->extractCustomer($srOrder);
+                    $customerName  = $customerName  ?: $api['name'];
+                    $customerPhone = $customerPhone ?: $api['phone'];
+                    $customerEmail = $customerEmail ?: $api['email'];
+
+                    if (!$hasAddress && !empty($api['address'])) {
+                        $webhookAddress = $api['address'];
+                        $hasAddress = true;
+                    }
+
+                    Log::info('ShiprocketCheckout: customer details fetched from API', [
+                        'oid'         => $shiprocketOrderId,
+                        'got_name'    => !empty($api['name']),
+                        'got_phone'   => !empty($api['phone']),
+                        'got_email'   => !empty($api['email']),
+                        'got_address' => !empty($api['address']),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('ShiprocketCheckout: API customer fetch failed — ' . $e->getMessage(), [
+                    'oid' => $shiprocketOrderId,
+                ]);
+            }
+        }
+
         Log::info('ShiprocketCheckout: address extraction', [
             'abandoned_id' => $abandoned?->id,
             'has_address'  => $hasAddress,
