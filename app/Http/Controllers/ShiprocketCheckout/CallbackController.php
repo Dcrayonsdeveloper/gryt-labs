@@ -152,33 +152,34 @@ class CallbackController extends Controller
         // The order-details API always has the data once checkout completes, so it is
         // the reliable source, not a fallback. Best-effort: never let it break the
         // order, which already exists and is paid for by this point.
-        if (empty($customerName) || empty($customerPhone) || empty($customerEmail) || !$hasAddress) {
-            try {
-                $srOrder = $this->checkout->getOrder($shiprocketOrderId);
-                if ($srOrder) {
-                    $api = $this->checkout->extractCustomer($srOrder);
-                    $customerName  = $customerName  ?: $api['name'];
-                    $customerPhone = $customerPhone ?: $api['phone'];
-                    $customerEmail = $customerEmail ?: $api['email'];
+        // Fetched unconditionally: this is also the only trustworthy source for what
+        // the customer ACTUALLY bought (see cart reconciliation in the transaction).
+        $srOrder = null;
+        try {
+            $srOrder = $this->checkout->getOrder($shiprocketOrderId);
+            if ($srOrder) {
+                $api = $this->checkout->extractCustomer($srOrder);
+                $customerName  = $customerName  ?: $api['name'];
+                $customerPhone = $customerPhone ?: $api['phone'];
+                $customerEmail = $customerEmail ?: $api['email'];
 
-                    if (!$hasAddress && !empty($api['address'])) {
-                        $webhookAddress = $api['address'];
-                        $hasAddress = true;
-                    }
-
-                    Log::info('ShiprocketCheckout: customer details fetched from API', [
-                        'oid'         => $shiprocketOrderId,
-                        'got_name'    => !empty($api['name']),
-                        'got_phone'   => !empty($api['phone']),
-                        'got_email'   => !empty($api['email']),
-                        'got_address' => !empty($api['address']),
-                    ]);
+                if (!$hasAddress && !empty($api['address'])) {
+                    $webhookAddress = $api['address'];
+                    $hasAddress = true;
                 }
-            } catch (\Throwable $e) {
-                Log::warning('ShiprocketCheckout: API customer fetch failed — ' . $e->getMessage(), [
-                    'oid' => $shiprocketOrderId,
+
+                Log::info('ShiprocketCheckout: customer details fetched from API', [
+                    'oid'         => $shiprocketOrderId,
+                    'got_name'    => !empty($api['name']),
+                    'got_phone'   => !empty($api['phone']),
+                    'got_email'   => !empty($api['email']),
+                    'got_address' => !empty($api['address']),
                 ]);
             }
+        } catch (\Throwable $e) {
+            Log::warning('ShiprocketCheckout: API customer fetch failed — ' . $e->getMessage(), [
+                'oid' => $shiprocketOrderId,
+            ]);
         }
 
         Log::info('ShiprocketCheckout: address extraction', [
@@ -314,7 +315,8 @@ class CallbackController extends Controller
             $cartIdForLock = $abandoned->metadata['shiprocket_cart_id'] ?? null;
             $order = DB::transaction(function () use (
                 $abandoned, $shiprocketOrderId, $cartIdForLock, $ost, $payment,
-                $customerName, $customerEmail, $customerPhone, $loggedUser, $webhookAddress
+                $customerName, $customerEmail, $customerPhone, $loggedUser, $webhookAddress,
+                $srOrder
             ) {
                 // Lock on cart_id when available — Shiprocket may emit multiple
                 // order_ids for the same cart (pending+confirmed), but cart_id is stable.
@@ -410,7 +412,59 @@ class CallbackController extends Controller
                 if (!$abandoned || empty($abandoned->cart_snapshot)) return null;
 
                 $cartSnapshot = $abandoned->cart_snapshot;
-                $subtotal     = 0.0;
+
+                // Reconcile against what Shiprocket ACTUALLY charged for.
+                //
+                // cart_snapshot is frozen at token-generation time, but the customer can
+                // still change quantities (or remove lines) inside Shiprocket's checkout.
+                // Shiprocket bills its own cart, so trusting the snapshot silently creates
+                // orders for more than was paid — e.g. buy 2, drop to 1 at checkout, and
+                // we ship 2 having collected for 1.
+                //
+                // Shiprocket's cart_data is the authority on what was purchased.
+                if (!empty($srOrder['cart_data']['items'])) {
+                    $srQty = [];
+                    foreach ($srOrder['cart_data']['items'] as $srItem) {
+                        $key = (string) ($srItem['variant_id'] ?? $srItem['product_id'] ?? '');
+                        if ($key !== '') {
+                            $srQty[$key] = (int) ($srItem['quantity'] ?? 1);
+                        }
+                    }
+
+                    if (!empty($srQty)) {
+                        $reconciled = [];
+                        foreach ($cartSnapshot as $item) {
+                            $key = (string) ($item['variant_id'] ?? $item['product_id'] ?? '');
+
+                            // Line removed at checkout — drop it.
+                            if (!isset($srQty[$key])) {
+                                Log::info('ShiprocketCheckout: line dropped at checkout', [
+                                    'oid'        => $shiprocketOrderId,
+                                    'product_id' => $item['product_id'] ?? null,
+                                ]);
+                                continue;
+                            }
+
+                            if ((int) ($item['quantity'] ?? 1) !== $srQty[$key]) {
+                                Log::info('ShiprocketCheckout: quantity changed at checkout', [
+                                    'oid'        => $shiprocketOrderId,
+                                    'product_id' => $item['product_id'] ?? null,
+                                    'ours'       => (int) ($item['quantity'] ?? 1),
+                                    'shiprocket' => $srQty[$key],
+                                ]);
+                                $item['quantity'] = $srQty[$key];
+                            }
+
+                            $reconciled[] = $item;
+                        }
+
+                        if (!empty($reconciled)) {
+                            $cartSnapshot = $reconciled;
+                        }
+                    }
+                }
+
+                $subtotal = 0.0;
                 foreach ($cartSnapshot as $item) {
                     $subtotal += ((float) ($item['price'] ?? 0)) * ((int) ($item['quantity'] ?? 1));
                 }
