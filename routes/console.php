@@ -28,10 +28,14 @@ Schedule::command('cart:abandoned-summary')->dailyAt('08:30');
 // Sync all carrier tracking statuses every 30 minutes (Delhivery, BlueDart, etc.)
 Schedule::command('shipping:sync-tracking')->everyThirtyMinutes();
 
-// Detect Shiprocket Checkout orders that never synced into the local DB
-// (callback missed AND webhook missed) and WhatsApp the admin so they can be
-// recovered with `php artisan shiprocket:reconcile-orders --tenant=<id> --create`.
-Schedule::command('shiprocket:reconcile-orders --alert')->hourly();
+// Recover Shiprocket Checkout orders that never synced into the local DB
+// (customer paid but the success redirect was missed AND the webhook was missed —
+// the norm on this account, where webhooks are not delivered). --create rebuilds
+// the missing Order + dispatches OrderPlaced so it shows in admin and the customer
+// gets their confirmation; --alert still WhatsApps the admin. Idempotent (advisory
+// lock + existence check), so re-running never duplicates. Every 15 min keeps the
+// gap between payment and the order appearing small.
+Schedule::command('shiprocket:reconcile-orders --create --alert')->everyFifteenMinutes();
 
 // Refresh Instagram reels cache every 2 hours
 Schedule::command('instagram:refresh-reels')->everyTwoHours();
