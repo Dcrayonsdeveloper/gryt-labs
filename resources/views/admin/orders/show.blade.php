@@ -222,7 +222,8 @@
         <!-- Sidebar -->
         <div class="space-y-6">
             <!-- Update Order Status -->
-            <div class="card overflow-hidden" x-data="{ status: '{{ $order->status }}' }">
+            @php $transitions = \App\Models\Order::ALLOWED_TRANSITIONS[$order->status] ?? []; @endphp
+            <div class="card overflow-hidden" x-data="{ status: '{{ $transitions[0] ?? '' }}' }">
                 <div class="px-5 py-4 border-b border-neutral-200 flex items-center justify-between">
                     <h2 class="font-semibold text-neutral-900">Update Status</h2>
                     @php
@@ -247,7 +248,6 @@
                             <label class="form-label">New Status</label>
                             <select name="status" x-model="status" class="form-select w-full">
                                 @php
-                                    $transitions = \App\Models\Order::ALLOWED_TRANSITIONS[$order->status] ?? [];
                                     $labels = [
                                         'confirmed' => 'Confirmed', 'processing' => 'Processing', 'packed' => 'Packed',
                                         'shipped' => 'Shipped', 'out_for_delivery' => 'Out for Delivery',
