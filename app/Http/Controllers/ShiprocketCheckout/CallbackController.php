@@ -312,7 +312,7 @@ class CallbackController extends Controller
         }
 
         try {
-            $cartIdForLock = $abandoned->metadata['shiprocket_cart_id'] ?? null;
+            $cartIdForLock = $abandoned?->metadata['shiprocket_cart_id'] ?? null;
             $order = DB::transaction(function () use (
                 $abandoned, $shiprocketOrderId, $cartIdForLock, $ost, $payment,
                 $customerName, $customerEmail, $customerPhone, $loggedUser, $webhookAddress,
