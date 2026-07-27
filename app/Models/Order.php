@@ -385,6 +385,14 @@ class Order extends Model
                 'timestamp' => $this->confirmed_at,
             ],
             [
+                'key' => 'processing',
+                'label' => 'Processing',
+                'icon' => 'clipboard-check',
+                'completed' => in_array($this->status, ['packed', 'shipped', 'out_for_delivery', 'delivered'], true),
+                'current' => $this->status === 'processing',
+                'timestamp' => null,
+            ],
+            [
                 'key' => 'packed',
                 'label' => 'Packed',
                 'icon' => 'cube',
