@@ -284,6 +284,50 @@
                 </div>
             </div>
 
+            <!-- Transactions Details -->
+            @php $srPayments = (is_array($order->metadata ?? null) ? ($order->metadata['sr_payments'] ?? []) : []); @endphp
+            <div class="bg-white rounded-[8px] p-4 mt-4" style="border: 2px solid rgb(240, 240, 240);">
+                <div class="flex items-center gap-2">
+                    <span role="img" aria-label="unordered-list" class="anticon anticon-unordered-list text-md text-neutral-800 leading-none">
+                        <svg viewBox="64 64 896 896" focusable="false" data-icon="unordered-list" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M912 192H328c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h584c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 284H328c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h584c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 284H328c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h584c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM104 228a56 56 0 10112 0 56 56 0 10-112 0zm0 284a56 56 0 10112 0 56 56 0 10-112 0zm0 284a56 56 0 10112 0 56 56 0 10-112 0z"></path></svg>
+                    </span>
+                    <h3 class="text-lg font-bold m-0 text-neutral-900">Transactions Details</h3>
+                </div>
+                <div class="mt-4" style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;">
+                        <thead>
+                            <tr style="text-align:left;color:#38446D;">
+                                <th style="padding:8px;font-weight:600;">Payment Gateway</th>
+                                <th style="padding:8px;font-weight:600;">Transaction Type</th>
+                                <th style="padding:8px;font-weight:600;">Transaction Date</th>
+                                <th style="padding:8px;font-weight:600;text-align:right;">Transaction Amount</th>
+                                <th style="padding:8px;font-weight:600;text-align:right;">Transaction Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($srPayments as $p)
+                                @php
+                                    $pDate = !empty($p['created_at']) ? \Illuminate\Support\Carbon::parse($p['created_at'])->format('d-F-Y') : '—';
+                                    $pStatusRaw = (string) ($p['payment_status'] ?? '');
+                                    $pStatus = strtolower($pStatusRaw);
+                                    $statusColor = str_contains($pStatus, 'success') ? 'rgb(3,153,63)' : (str_contains($pStatus, 'fail') ? '#dc2626' : '#38446D');
+                                    $pAmount = $p['amount'] ?? $p['amount_received'] ?? 0;
+                                @endphp
+                                <tr style="border-top:1px solid #f0f0f0;color:#0F172A;">
+                                    <td style="padding:8px;font-weight:500;">{{ $p['gateway'] ?? '—' }}</td>
+                                    <td style="padding:8px;">{{ $p['payment_method'] ?? 'payment' }}</td>
+                                    <td style="padding:8px;">{{ $pDate }}</td>
+                                    <td style="padding:8px;text-align:right;font-weight:600;">{{ format_price($pAmount) }}</td>
+                                    <td style="padding:8px;text-align:right;font-weight:600;color:{{ $statusColor }};">{{ $pStatusRaw ?: '—' }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" style="padding:14px;text-align:center;color:#38446D;">No online transactions (COD / pending).</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Order Notes -->
             @if($order->notes)
                 <div class="card overflow-hidden">
