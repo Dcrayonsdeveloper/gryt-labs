@@ -157,7 +157,7 @@ class InfluencerController extends Controller
         );
 
         $scoped = $influencer->ordersQuery();
-        $a = InfluencerAnalyticsService::compute($scoped, $start, $end);
+        $a = InfluencerAnalyticsService::compute($scoped, $start, $end, (float) ($influencer->commission_percentage ?? 0));
 
         $orders = (clone $scoped)
             ->whereBetween('created_at', [$start, $end])

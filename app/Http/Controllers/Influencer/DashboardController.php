@@ -23,7 +23,7 @@ class DashboardController extends Controller
         // Scoped strictly to THIS influencer's coupon — never an id from the URL.
         $scoped = $influencer->ordersQuery();
 
-        $analytics = InfluencerAnalyticsService::compute($scoped, $start, $end);
+        $analytics = InfluencerAnalyticsService::compute($scoped, $start, $end, (float) ($influencer->commission_percentage ?? 0));
 
         $orders = (clone $scoped)
             ->whereBetween('created_at', [$start, $end])
