@@ -221,43 +221,65 @@
                     </span>
                     <h3 class="text-lg font-bold m-0 text-neutral-900">Payment Summary</h3>
                 </div>
+                @php
+                    // Shiprocket reports the real breakdown in metadata.sr_pricing; fall back to the order columns.
+                    $srp = (is_array($order->metadata ?? null) ? ($order->metadata['sr_pricing'] ?? []) : []);
+                    $psSubtotal = $srp['total_price']    ?? $order->subtotal;
+                    $psTax      = $srp['tax']            ?? $order->tax;
+                    $psShipping = $srp['shipping_price'] ?? $order->shipping_cost;
+                    $psCod      = $srp['cod_charges']    ?? (is_array($order->metadata ?? null) ? ($order->metadata['cod_charge'] ?? null) : null);
+                    $psPrepaid  = $srp['prepaid_discount'] ?? null;
+                    $psCouponCodes = array_values(array_filter((array) ($srp['coupon_codes'] ?? [])));
+                    if (!$psCouponCodes && $order->coupon) { $psCouponCodes = [$order->coupon->code]; }
+                    $psCouponDiscount = (float) ($srp['coupon_discount'] ?? $srp['total_discount'] ?? $order->discount ?? 0);
+                    $psTotal    = $srp['total_amount_payable'] ?? $order->total;
+                @endphp
                 <div class="mt-4 text-sm text-neutral-700">
                     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                         <span>Subtotal</span>
-                        <span style="font-weight:600;">{{ format_price($order->subtotal) }}</span>
+                        <span style="font-weight:600;">{{ format_price($psSubtotal) }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                         <span>Tax</span>
-                        <span style="font-weight:600;">{{ format_price($order->tax) }}</span>
+                        <span style="font-weight:600;">{{ format_price($psTax) }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                         <span>Shipping Charges</span>
-                        <span style="font-weight:600;">{{ format_price($order->shipping_cost) }}</span>
+                        <span style="font-weight:600;">{{ format_price($psShipping) }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                         <span>COD Charges</span>
-                        <span style="font-weight:600;">&mdash;</span>
+                        <span style="font-weight:600;">{{ ($psCod !== null && $psCod !== '') ? format_price($psCod) : '—' }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                         <span>Prepaid Discount</span>
-                        <span style="font-weight:600;">&mdash;</span>
+                        <span style="font-weight:600;">{{ ($psPrepaid !== null && $psPrepaid !== '' && (float) $psPrepaid > 0) ? '-'.format_price($psPrepaid) : '—' }}</span>
                     </div>
-                    @if($order->coupon || $order->discount > 0)
+                    @if(count($psCouponCodes) > 0 || $psCouponDiscount > 0)
                         <div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
                         <div style="display:flex;justify-content:space-between;">
                             <span style="font-weight:600;font-size:12px;color:rgb(3,153,63);">Discount Codes Applied</span>
                         </div>
-                        <div style="display:flex;justify-content:space-between;margin-top:4px;">
-                            <span style="font-size:11px;font-weight:500;color:rgb(3,153,63);">
-                                <span style="height:8px;width:8px;background-color:rgb(2,197,80);border-radius:50%;display:inline-block;margin-right:4px;"></span>{{ $order->coupon->code ?? 'Discount' }}
-                            </span>
-                            <span style="font-weight:600;color:rgb(3,153,63);">-{{ format_price($order->discount) }}</span>
-                        </div>
+                        @forelse($psCouponCodes as $i => $code)
+                            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                                <span style="font-size:11px;font-weight:500;color:rgb(3,153,63);">
+                                    <span style="height:8px;width:8px;background-color:rgb(2,197,80);border-radius:50%;display:inline-block;margin-right:4px;"></span>{{ is_array($code) ? ($code['code'] ?? $code['name'] ?? 'Discount') : $code }}
+                                </span>
+                                @if($i === 0)<span style="font-weight:600;color:rgb(3,153,63);">-{{ format_price($psCouponDiscount) }}</span>@endif
+                            </div>
+                        @empty
+                            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                                <span style="font-size:11px;font-weight:500;color:rgb(3,153,63);">
+                                    <span style="height:8px;width:8px;background-color:rgb(2,197,80);border-radius:50%;display:inline-block;margin-right:4px;"></span>Discount
+                                </span>
+                                <span style="font-weight:600;color:rgb(3,153,63);">-{{ format_price($psCouponDiscount) }}</span>
+                            </div>
+                        @endforelse
                     @endif
                     <div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
                     <div style="display:flex;justify-content:space-between;">
                         <span style="font-weight:600;font-size:14px;">Total Amount</span>
-                        <span style="font-weight:700;font-size:14px;color:rgb(29,78,216);">{{ format_price($order->total) }}</span>
+                        <span style="font-weight:700;font-size:14px;color:rgb(29,78,216);">{{ format_price($psTotal) }}</span>
                     </div>
                 </div>
             </div>
