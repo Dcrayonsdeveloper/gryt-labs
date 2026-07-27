@@ -24,11 +24,7 @@
             <div style="position:absolute;bottom:-120px;left:-70px;width:400px;height:400px;border-radius:9999px;background:radial-gradient(circle,rgba(16,185,129,.22),transparent 70%);"></div>
 
             <div class="relative z-10">
-                @if($logo)
-                    <img src="{{ asset($logo) }}" alt="{{ $store }}" class="h-9 w-auto brightness-0 invert" style="max-height:40px">
-                @else
-                    <span class="text-xl font-extrabold tracking-tight">{{ $store }}</span>
-                @endif
+                <span class="text-xl font-extrabold tracking-tight text-white">{{ $store }}</span>
             </div>
 
             <div class="relative z-10 max-w-md">
