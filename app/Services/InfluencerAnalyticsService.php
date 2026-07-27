@@ -35,11 +35,11 @@ class InfluencerAnalyticsService
      * Compute summary cards + chart datasets from an orders query already
      * scoped to one coupon/influencer.
      */
-    public static function compute(Builder $scoped, Carbon $start, Carbon $end): array
+    public static function compute(Builder $scoped, Carbon $start, Carbon $end, float $commissionPct = 0): array
     {
         $rows = (clone $scoped)
             ->whereBetween('created_at', [$start, $end])
-            ->get(['total', 'subtotal', 'discount', 'user_id', 'guest_phone', 'guest_email', 'created_at']);
+            ->get(['total', 'subtotal', 'discount', 'status', 'user_id', 'guest_phone', 'guest_email', 'created_at']);
 
         $orders    = $rows->count();
         $sales     = round((float) $rows->sum('total'), 2);
@@ -47,6 +47,10 @@ class InfluencerAnalyticsService
         $customers = $rows->map(fn ($o) => $o->user_id ?: $o->guest_phone ?: $o->guest_email)
             ->filter()->unique()->count();
         $aov = $orders > 0 ? round($sales / $orders, 2) : 0.0;
+
+        // Commission is earned on the value of real (non-cancelled) sales.
+        $commissionableSales = round((float) $rows->reject(fn ($o) => $o->status === 'cancelled')->sum('total'), 2);
+        $commission = round($commissionableSales * $commissionPct / 100, 2);
 
         // Daily buckets across the whole range (so the chart has a continuous x-axis).
         $days = [];
@@ -69,7 +73,7 @@ class InfluencerAnalyticsService
         ksort($monthly);
 
         return [
-            'cards' => compact('orders', 'sales', 'discount', 'customers', 'aov'),
+            'cards' => compact('orders', 'sales', 'discount', 'customers', 'aov', 'commission') + ['commission_pct' => $commissionPct],
             'daily_labels'   => array_map(fn ($k) => Carbon::parse($k)->format('d M'), array_keys($days)),
             'daily_orders'   => array_map(fn ($v) => $v['orders'], array_values($days)),
             'daily_sales'    => array_map(fn ($v) => round($v['sales'], 2), array_values($days)),

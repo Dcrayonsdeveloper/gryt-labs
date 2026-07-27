@@ -1,6 +1,7 @@
 @php
     $ranges = ['today' => 'Today', '7days' => 'Last 7 Days', '30days' => 'Last 30 Days', 'this_month' => 'This Month'];
     $c = $a['cards'];
+    $cpct = rtrim(rtrim(number_format($c['commission_pct'] ?? 0, 2), '0'), '.');
 @endphp
 
 <x-layouts.admin title="Influencer Analytics">
@@ -30,6 +31,15 @@
             <input type="date" name="to" value="{{ $to }}" class="form-input text-xs py-1.5">
             <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50">Apply</button>
         </form>
+    </div>
+
+    {{-- Commission earned --}}
+    <div class="card p-4 mb-4 flex items-center justify-between gap-4" style="border-left:4px solid #10b981;">
+        <div>
+            <p class="text-xs text-neutral-500 mb-1">Total Commission Earned <span class="text-neutral-400">({{ $cpct }}% of non-cancelled sales in this period)</span></p>
+            <p class="text-2xl font-bold text-emerald-600">₹{{ number_format($c['commission'], 2) }}</p>
+        </div>
+        <span class="text-xs text-neutral-400 whitespace-nowrap">Commission rate: {{ $cpct }}%</span>
     </div>
 
     {{-- Cards --}}
@@ -70,6 +80,7 @@
                         <th class="px-4 py-2.5 font-medium text-right">Amount</th>
                         <th class="px-4 py-2.5 font-medium text-right">Discount</th>
                         <th class="px-4 py-2.5 font-medium text-right">Final</th>
+                        <th class="px-4 py-2.5 font-medium text-right">Commission</th>
                         <th class="px-4 py-2.5 font-medium">Status</th>
                         <th class="px-4 py-2.5 font-medium">Payment</th>
                     </tr>
@@ -84,11 +95,12 @@
                             <td class="px-4 py-2.5 text-right text-neutral-700">₹{{ number_format((float) $o->subtotal, 2) }}</td>
                             <td class="px-4 py-2.5 text-right text-amber-600">₹{{ number_format((float) $o->discount, 2) }}</td>
                             <td class="px-4 py-2.5 text-right font-semibold text-neutral-900">₹{{ number_format((float) $o->total, 2) }}</td>
+                            <td class="px-4 py-2.5 text-right font-semibold {{ $o->status === 'cancelled' ? 'text-neutral-300' : 'text-emerald-600' }}">{{ $o->status === 'cancelled' ? '—' : '₹' . number_format((float) $o->total * ($c['commission_pct'] ?? 0) / 100, 2) }}</td>
                             <td class="px-4 py-2.5 capitalize text-xs text-neutral-600">{{ str_replace('_', ' ', $o->status) }}</td>
                             <td class="px-4 py-2.5 capitalize text-xs text-neutral-600">{{ str_replace('_', ' ', $o->payment_status) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="px-4 py-10 text-center text-neutral-400">No orders in this period.</td></tr>
+                        <tr><td colspan="10" class="px-4 py-10 text-center text-neutral-400">No orders in this period.</td></tr>
                     @endforelse
                 </tbody>
             </table>
