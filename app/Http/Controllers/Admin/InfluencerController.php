@@ -220,7 +220,10 @@ class InfluencerController extends Controller
     }
 
     /**
-     * Aggregate orders/sales/discount per coupon code in one query.
+     * Orders/sales/discount per coupon code from BOTH sources (platform coupon_id
+     * and Shiprocket sr_pricing.coupon_codes) — the same dual source the dashboard
+     * uses, so the list matches. One aggregate query per code (page size is small).
+     *
      * @param  \Illuminate\Support\Collection  $codes
      * @param  array|null  $bounds  [Carbon $start, Carbon $end] to scope by date
      * @return array<string, array{orders:int,sales:float,discount:float}>
@@ -228,32 +231,19 @@ class InfluencerController extends Controller
     private function statsByCouponCodes($codes, ?array $bounds = null): array
     {
         $codes = collect($codes)->filter()->unique()->values();
-        if ($codes->isEmpty()) {
-            return [];
-        }
-
-        $codeToId = Coupon::whereIn('code', $codes)->pluck('id', 'code'); // [code => id]
-        if ($codeToId->isEmpty()) {
-            return [];
-        }
-        $idToCode = $codeToId->flip();
-
-        $agg = Order::whereIn('coupon_id', $codeToId->values())
-            ->when($bounds, fn ($q) => $q->whereBetween('created_at', $bounds))
-            ->selectRaw('coupon_id, COUNT(*) as orders, COALESCE(SUM(total),0) as sales, COALESCE(SUM(discount),0) as discount')
-            ->groupBy('coupon_id')
-            ->get();
 
         $out = [];
-        foreach ($agg as $row) {
-            $code = $idToCode[$row->coupon_id] ?? null;
-            if ($code !== null) {
-                $out[$code] = [
-                    'orders'   => (int) $row->orders,
-                    'sales'    => (float) $row->sales,
-                    'discount' => (float) $row->discount,
-                ];
-            }
+        foreach ($codes as $code) {
+            $row = Influencer::ordersQueryForCode($code)
+                ->when($bounds, fn ($x) => $x->whereBetween('created_at', $bounds))
+                ->selectRaw('COUNT(*) as orders, COALESCE(SUM(total),0) as sales, COALESCE(SUM(discount),0) as discount')
+                ->first();
+
+            $out[$code] = [
+                'orders'   => (int) ($row->orders ?? 0),
+                'sales'    => (float) ($row->sales ?? 0),
+                'discount' => (float) ($row->discount ?? 0),
+            ];
         }
 
         return $out;

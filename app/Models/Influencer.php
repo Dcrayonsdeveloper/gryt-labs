@@ -67,7 +67,19 @@ class Influencer extends Authenticatable
      */
     public function ordersQuery(): Builder
     {
-        $code     = $this->coupon_code;
+        return static::ordersQueryForCode($this->coupon_code);
+    }
+
+    /**
+     * Order query scoped to a coupon code, from BOTH sources. Shared by the
+     * influencer dashboard AND the admin list/analytics so every figure matches.
+     */
+    public static function ordersQueryForCode(?string $code): Builder
+    {
+        if (! $code) {
+            return Order::query()->whereRaw('1 = 0');
+        }
+
         $couponId = Coupon::where('code', $code)->value('id');
 
         return Order::query()->where(function ($q) use ($code, $couponId) {
