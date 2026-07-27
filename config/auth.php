@@ -60,6 +60,11 @@ return [
             'driver' => 'session',
             'provider' => 'super_admins',
         ],
+
+        'influencer' => [
+            'driver' => 'session',
+            'provider' => 'influencers',
+        ],
     ],
 
     /*
@@ -88,6 +93,11 @@ return [
         'super_admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\SuperAdmin::class,
+        ],
+
+        'influencers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Influencer::class,
         ],
     ],
 

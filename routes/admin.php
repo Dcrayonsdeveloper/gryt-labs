@@ -404,6 +404,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::post('/redemptions/{redemption}/fail', [App\Http\Controllers\Admin\AffiliateController::class, 'failRedemption'])->name('redemptions.fail');
             });
 
+            // Influencers
+            Route::prefix('influencers')->name('influencers.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Admin\InfluencerController::class, 'index'])->name('index');
+                Route::get('/create', [App\Http\Controllers\Admin\InfluencerController::class, 'create'])->name('create');
+                Route::post('/', [App\Http\Controllers\Admin\InfluencerController::class, 'store'])->name('store');
+                Route::get('/{influencer}/edit', [App\Http\Controllers\Admin\InfluencerController::class, 'edit'])->name('edit');
+                Route::put('/{influencer}', [App\Http\Controllers\Admin\InfluencerController::class, 'update'])->name('update');
+                Route::delete('/{influencer}', [App\Http\Controllers\Admin\InfluencerController::class, 'destroy'])->name('destroy');
+                Route::put('/{influencer}/toggle-status', [App\Http\Controllers\Admin\InfluencerController::class, 'toggleStatus'])->name('toggle-status');
+                Route::put('/{influencer}/reset-password', [App\Http\Controllers\Admin\InfluencerController::class, 'resetPassword'])->name('reset-password');
+                Route::get('/{influencer}/analytics', [App\Http\Controllers\Admin\InfluencerController::class, 'analytics'])->name('analytics');
+            });
+
             // Social Media Content Calendar
             Route::prefix('social-calendar')->name('social-calendar.')->group(function () {
                 Route::get('/', [App\Http\Controllers\Admin\SocialMediaPostController::class, 'index'])->name('index');
