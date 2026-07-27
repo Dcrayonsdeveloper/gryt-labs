@@ -235,6 +235,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::get('/{order}', [App\Http\Controllers\Admin\OrderController::class, 'show'])->name('show');
                 Route::put('/{order}/status', [App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('status');
                 Route::post('/{order}/ship', [App\Http\Controllers\Admin\OrderController::class, 'ship'])->name('ship');
+                Route::post('/{order}/revert', [App\Http\Controllers\Admin\OrderController::class, 'revertStatus'])->name('revert');
                 Route::post('/{order}/uncancel', [App\Http\Controllers\Admin\OrderController::class, 'uncancel'])->name('uncancel');
                 Route::post('/{order}/unfulfill', [App\Http\Controllers\Admin\OrderController::class, 'unfulfill'])->name('unfulfill');
                 Route::get('/{order}/invoice', [App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('invoice');

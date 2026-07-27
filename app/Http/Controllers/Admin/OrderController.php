@@ -464,6 +464,78 @@ class OrderController extends Controller
     }
 
     /**
+     * Revert an order one stage back along the fulfilment flow:
+     * delivered→out_for_delivery→shipped→packed→processing→confirmed, plus
+     * cancelled→confirmed and returned→delivered. Cleans up side effects —
+     * re-deducts stock when leaving cancelled/returned, strips tracking when
+     * un-shipping — clears the left stage's timestamp, and logs history.
+     * Admin override — bypasses the forward-only state machine.
+     */
+    public function revertStatus(Order $order): RedirectResponse
+    {
+        $prev = [
+            'processing'       => 'confirmed',
+            'packed'           => 'processing',
+            'shipped'          => 'packed',
+            'out_for_delivery' => 'shipped',
+            'delivered'        => 'out_for_delivery',
+            'cancelled'        => 'confirmed',
+            'returned'         => 'delivered',
+        ];
+
+        $current = $order->status;
+        if (!isset($prev[$current])) {
+            return back()->with('error', 'This order is already at the first step — nothing to revert.');
+        }
+        $target  = $prev[$current];
+        $updates = ['status' => $target];
+
+        // Clear the timestamp of the stage we're leaving so the tracker reflects it.
+        $tsCol = [
+            'packed'           => 'packed_at',
+            'shipped'          => 'shipped_at',
+            'out_for_delivery' => 'out_for_delivery_at',
+            'delivered'        => 'delivered_at',
+            'cancelled'        => 'cancelled_at',
+        ][$current] ?? null;
+        if ($tsCol) {
+            $updates[$tsCol] = null;
+        }
+
+        // Side effects for the stage being left.
+        if ($current === 'cancelled') {
+            $this->deductOrderStock($order); // cancel had restored stock
+            if ($order->payment_status === 'refunded') {
+                $updates['payment_status'] = 'paid';
+            }
+        } elseif ($current === 'returned') {
+            $this->deductOrderStock($order); // return had restored stock
+        } elseif ($current === 'shipped') {
+            // Crossing back out of the shipped zone — drop tracking/shipment.
+            $order->shipments()->delete();
+            $updates['carrier']         = null;
+            $updates['tracking_number'] = null;
+            $updates['tracking_url']    = null;
+        }
+
+        $order->update($updates);
+
+        $order->statusHistory()->create([
+            'status'     => $target,
+            'comment'    => 'Reverted from ' . str_replace('_', ' ', $current) . ' to ' . str_replace('_', ' ', $target) . ' by admin',
+            'created_by' => auth('admin')->id(),
+        ]);
+
+        try {
+            OrderStatusChanged::dispatch($order, $current, $target);
+        } catch (\Exception $e) {
+            Log::error('Order revert event dispatch failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Order reverted to ' . ucfirst(str_replace('_', ' ', $target)) . '.');
+    }
+
+    /**
      * Deduct stock for every item in an order (inverse of Order::restoreStock()).
      * Used when un-cancelling an order whose stock was released on cancellation.
      */
