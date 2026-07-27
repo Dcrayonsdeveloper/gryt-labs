@@ -69,6 +69,8 @@ class SyncShiprocketPricing extends Command
             $couponDisc = (float) ($r['coupon_discount'] ?? $r['total_discount'] ?? 0);
             $couponCodes = array_values(array_filter((array) ($r['coupon_codes'] ?? [])));
             $total     = (float) ($r['total_amount_payable'] ?? ($subtotal - $couponDisc + $shipping));
+            // Transactions (gateway/method/amount/status/date) — empty for COD.
+            $payments  = array_values(array_filter((array) ($r['payments'] ?? [])));
 
             $srPricing = [
                 'total_price'          => $subtotal,           // pre-discount item total (Subtotal row)
@@ -84,11 +86,12 @@ class SyncShiprocketPricing extends Command
                 'synced_at'            => now()->toIso8601String(),
             ];
 
-            // Nothing meaningful to record and columns already correct → skip.
-            $columnsMatch = abs((float) $order->total - $total) < 0.01
-                && abs((float) $order->discount - $couponDisc) < 0.01
-                && !empty($order->metadata['sr_pricing']);
-            if (!$couponCodes && $couponDisc <= 0 && $columnsMatch) {
+            // Nothing meaningful to record and everything already captured → skip.
+            $columnsMatch    = abs((float) $order->total - $total) < 0.01
+                && abs((float) $order->discount - $couponDisc) < 0.01;
+            $pricingCaptured = !empty($order->metadata['sr_pricing']);
+            $paymentsCaptured = !$payments || !empty($order->metadata['sr_payments']);
+            if (!$couponCodes && $couponDisc <= 0 && $columnsMatch && $pricingCaptured && $paymentsCaptured) {
                 $skipped++;
                 continue;
             }
@@ -105,6 +108,7 @@ class SyncShiprocketPricing extends Command
             if (!$dry) {
                 $meta = is_array($order->metadata) ? $order->metadata : [];
                 $meta['sr_pricing'] = $srPricing;
+                if ($payments) { $meta['sr_payments'] = $payments; }
                 $order->update([
                     'subtotal'      => $subtotal,
                     'discount'      => $couponDisc,
