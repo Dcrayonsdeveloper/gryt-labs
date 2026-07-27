@@ -182,7 +182,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 w-8">
                             <input type="checkbox" class="form-checkbox rounded" x-on:click="toggleAll()" :checked="allChecked">
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500">Order</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 whitespace-nowrap">Order</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500">Date</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500">Customer</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-neutral-500">Total</th>
@@ -200,7 +200,7 @@
                                 <input type="checkbox" class="form-checkbox rounded" value="{{ $order->id }}"
                                        x-on:click="toggle({{ $order->id }})" :checked="selected.includes({{ $order->id }})">
                             </td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-3 align-middle whitespace-nowrap">
                                 <span class="text-sm font-medium text-blue-700">{{ $order->order_number }}</span>
                             </td>
                             <td class="px-4 py-3">
