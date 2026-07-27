@@ -72,6 +72,24 @@ class SyncShiprocketPricing extends Command
             // Transactions (gateway/method/amount/status/date) — empty for COD.
             $payments  = array_values(array_filter((array) ($r['payments'] ?? [])));
 
+            // Payment state: sum successful online payments → mark paid / collected.
+            $onlineReceived = 0.0; $txnDate = null;
+            foreach ($payments as $pay) {
+                if (strtolower((string) ($pay['payment_status'] ?? '')) === 'success') {
+                    $onlineReceived += (float) ($pay['amount_received'] ?? $pay['amount'] ?? 0);
+                    $txnDate = $txnDate ?: ($pay['created_at'] ?? null);
+                }
+            }
+            $newPayStatus   = $order->payment_status;
+            $newPaidAmount  = (float) $order->paid_amount;
+            $newCollectedAt = $order->payment_collected_at;
+            $newCollected   = (bool) $order->payment_collected;
+            if ($onlineReceived > 0) {
+                $newPaidAmount = $onlineReceived;
+                if (!$newCollectedAt && $txnDate) { $newCollectedAt = \Illuminate\Support\Carbon::parse($txnDate); }
+                if ($onlineReceived + 0.01 >= $total) { $newPayStatus = 'paid'; $newCollected = true; }
+            }
+
             $srPricing = [
                 'total_price'          => $subtotal,           // pre-discount item total (Subtotal row)
                 'total_discount'       => (float) ($r['total_discount'] ?? $couponDisc),
@@ -91,17 +109,21 @@ class SyncShiprocketPricing extends Command
                 && abs((float) $order->discount - $couponDisc) < 0.01;
             $pricingCaptured = !empty($order->metadata['sr_pricing']);
             $paymentsCaptured = !$payments || !empty($order->metadata['sr_payments']);
-            if (!$couponCodes && $couponDisc <= 0 && $columnsMatch && $pricingCaptured && $paymentsCaptured) {
+            $paymentMatches   = $newPayStatus === $order->payment_status
+                && abs($newPaidAmount - (float) $order->paid_amount) < 0.01
+                && $newCollected === (bool) $order->payment_collected;
+            if (!$couponCodes && $couponDisc <= 0 && $columnsMatch && $pricingCaptured && $paymentsCaptured && $paymentMatches) {
                 $skipped++;
                 continue;
             }
 
             $codeStr = $couponCodes ? implode('+', array_map(fn ($c) => is_array($c) ? ($c['code'] ?? $c['name'] ?? '?') : $c, $couponCodes)) : '—';
             $this->line(sprintf(
-                '  %s: total %s→%s | discount %s→%s | codes=%s',
+                '  %s: total %s→%s | discount %s→%s | pay %s→%s | codes=%s',
                 $order->order_number,
                 number_format((float) $order->total, 2), number_format($total, 2),
                 number_format((float) $order->discount, 2), number_format($couponDisc, 2),
+                $order->payment_status, $newPayStatus,
                 $codeStr
             ));
 
@@ -110,11 +132,15 @@ class SyncShiprocketPricing extends Command
                 $meta['sr_pricing'] = $srPricing;
                 if ($payments) { $meta['sr_payments'] = $payments; }
                 $order->update([
-                    'subtotal'      => $subtotal,
-                    'discount'      => $couponDisc,
-                    'shipping_cost' => $shipping,
-                    'total'         => $total,
-                    'metadata'      => $meta,
+                    'subtotal'             => $subtotal,
+                    'discount'             => $couponDisc,
+                    'shipping_cost'        => $shipping,
+                    'total'                => $total,
+                    'payment_status'       => $newPayStatus,
+                    'paid_amount'          => $newPaidAmount,
+                    'payment_collected'    => $newCollected,
+                    'payment_collected_at' => $newCollectedAt,
+                    'metadata'             => $meta,
                 ]);
             }
             $updated++;
