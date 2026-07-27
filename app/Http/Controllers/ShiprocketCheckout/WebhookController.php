@@ -322,20 +322,31 @@ class WebhookController extends Controller
         if ($customer['email'] && empty($abandoned->email)) $updates['email'] = $customer['email'];
         if ($customer['phone'] && empty($abandoned->phone)) $updates['phone'] = $customer['phone'];
 
-        // Capture Shiprocket pricing (discount, shipping, tax) — always keep latest values
-        $totalDiscount = (float) ($payload['total_discount'] ?? $payload['payload']['total_discount'] ?? 0);
-        $shippingPrice = (float) ($payload['shipping_price'] ?? $payload['payload']['shipping_price'] ?? 0);
-        $taxAmount     = (float) ($payload['tax'] ?? $payload['payload']['tax'] ?? 0);
-        $srTotalPrice  = (float) ($payload['total_price'] ?? $payload['payload']['total_price'] ?? 0);
+        // Capture Shiprocket pricing (discount, shipping, tax, coupon, COD, prepaid) — always keep
+        // latest values. Fields may arrive top-level, under 'payload', or under 'result'.
+        $pget = fn (string $k, $default = 0) => $payload[$k] ?? $payload['payload'][$k] ?? $payload['result'][$k] ?? $default;
+        $totalDiscount   = (float) $pget('total_discount');
+        $shippingPrice   = (float) $pget('shipping_price');
+        $taxAmount       = (float) $pget('tax');
+        $srTotalPrice    = (float) $pget('total_price');
+        $couponDiscount  = (float) $pget('coupon_discount');
+        $couponCodes     = array_values(array_filter((array) $pget('coupon_codes', [])));
+        $prepaidDiscount = $pget('prepaid_discount', null);
+        $codCharges      = $pget('cod_charges', null);
 
-        if ($totalDiscount > 0 || $shippingPrice > 0 || $taxAmount > 0 || $srTotalPrice > 0) {
+        if ($totalDiscount > 0 || $shippingPrice > 0 || $taxAmount > 0 || $srTotalPrice > 0
+            || $couponDiscount > 0 || $couponCodes || $prepaidDiscount !== null || $codCharges !== null) {
             $meta['sr_pricing'] = [
-                'total_price'    => $srTotalPrice,
-                'total_discount' => $totalDiscount,
-                'shipping_price' => $shippingPrice,
-                'tax'            => $taxAmount,
-                'net_payable'    => max(0, $srTotalPrice - $totalDiscount + $shippingPrice + $taxAmount),
-                'updated_at'     => now()->toIso8601String(),
+                'total_price'      => $srTotalPrice,
+                'total_discount'   => $totalDiscount,
+                'shipping_price'   => $shippingPrice,
+                'tax'              => $taxAmount,
+                'coupon_discount'  => $couponDiscount,
+                'coupon_codes'     => $couponCodes,
+                'prepaid_discount' => $prepaidDiscount !== null ? (float) $prepaidDiscount : null,
+                'cod_charges'      => $codCharges !== null ? (float) $codCharges : null,
+                'net_payable'      => max(0, $srTotalPrice - $totalDiscount + $shippingPrice + $taxAmount),
+                'updated_at'       => now()->toIso8601String(),
             ];
         }
 
