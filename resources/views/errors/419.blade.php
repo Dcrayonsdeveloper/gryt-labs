@@ -110,12 +110,29 @@
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     Go Home
                 </a>
-                <a href="javascript:location.reload()" class="btn btn-outline">
+                <a href="#" onclick="window.location.replace(window.location.pathname + window.location.search); return false;" class="btn btn-outline">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     Refresh Page
                 </a>
             </div>
         </div>
     </div>
+
+    <script>
+        // A 419 on a form POST can't be fixed by re-POSTing (it just loops). Fetch a
+        // fresh CSRF token by navigating to the GET version of this URL — once. If it
+        // still 419s within a few seconds (a genuinely broken session cookie), stop and
+        // show this page so the user can go home / clear cookies instead of looping.
+        (function () {
+            try {
+                var now  = Date.now();
+                var last = parseInt(sessionStorage.getItem('csrf_retry_at') || '0', 10);
+                if (now - last > 8000) {
+                    sessionStorage.setItem('csrf_retry_at', String(now));
+                    window.location.replace(window.location.pathname + window.location.search);
+                }
+            } catch (e) {}
+        })();
+    </script>
 </body>
 </html>
