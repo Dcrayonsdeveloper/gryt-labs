@@ -31,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // using the tenant's shiprocket_checkout_api_secret.
             'api/shiprocket-checkout-token',
             'checkout/cashfree/webhook',
+            // Logout is idempotent + low-risk; exempt so a rotated/expired CSRF token
+            // (common when multiple guards share one session) never blocks sign-out.
+            'logout',
+            '*/logout',
         ]);
 
         $middleware->api(prepend: [
