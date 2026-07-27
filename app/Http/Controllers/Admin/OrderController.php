@@ -389,6 +389,39 @@ class OrderController extends Controller
     }
 
     /**
+     * Add a custom shipping carrier to the reusable list (persisted in settings)
+     * so it appears in the fulfilment carrier dropdown for all future orders.
+     */
+    public function storeCarrier(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:50'],
+        ]);
+        $name = trim($validated['name']);
+
+        $custom = json_decode(Setting::get('custom_shipping_carriers', '[]'), true) ?: [];
+        if ($name !== '' && !in_array($name, $custom, true) && !in_array($name, self::defaultCarriers(), true)) {
+            $custom[] = $name;
+            Setting::set('custom_shipping_carriers', json_encode(array_values($custom)), 'json', 'shipping');
+        }
+
+        return response()->json(['carriers' => self::allCarriers()]);
+    }
+
+    /** Built-in carriers offered in the fulfilment dropdown. */
+    public static function defaultCarriers(): array
+    {
+        return ['BlueDart', 'Delhivery', 'DTDC', 'Ecom Express', 'Ekart', 'India Post', 'Xpressbees', 'Shadowfax', 'FedEx', 'DHL'];
+    }
+
+    /** Default + admin-added carriers for the fulfilment dropdown. */
+    public static function allCarriers(): array
+    {
+        $custom = json_decode(Setting::get('custom_shipping_carriers', '[]'), true) ?: [];
+        return array_values(array_unique(array_merge(self::defaultCarriers(), $custom)));
+    }
+
+    /**
      * Revert a cancelled order back to Confirmed (un-cancel). Re-deducts the stock
      * that cancellation had restored and undoes a paid→refunded flip. Admin override.
      */
