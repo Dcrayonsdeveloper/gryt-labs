@@ -74,47 +74,48 @@
                         <!-- Order Items (Left Column) -->
                         <div class="lg:col-span-2 space-y-4">
                             <!-- Items Card -->
-                            <div class="bg-white rounded-xl border border-neutral-100">
-                                <div class="flex items-center gap-2.5 px-5 py-3.5 border-b border-neutral-100">
-                                    <svg class="w-4.5 h-4.5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                                    </svg>
-                                    <h2 class="text-sm font-semibold text-neutral-900">Order Items</h2>
-                                    <span class="text-[12px] text-neutral-600 ml-auto">{{ $order->items->count() }} {{ Str::plural('item', $order->items->count()) }}</span>
+                            <div class="bg-white rounded-[8px] p-4" style="border: 2px solid rgb(240, 240, 240);">
+                                <div class="flex items-center gap-2">
+                                    <span role="img" aria-label="code-sandbox" class="anticon anticon-code-sandbox text-md text-neutral-800 leading-none">
+                                        <svg viewBox="64 64 896 896" focusable="false" data-icon="code-sandbox" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M709.6 210l.4-.2h.2L512 96 313.9 209.8h-.2l.7.3L151.5 304v416L512 928l360.5-208V304l-162.9-94zM482.7 843.6L339.6 761V621.4L210 547.8V372.9l272.7 157.3v313.4zM238.2 321.5l134.7-77.8 138.9 79.7 139.1-79.9 135.2 78-273.9 158-274-158zM814 548.3l-128.8 73.1v139.1l-143.9 83V530.4L814 373.1v175.2z"></path></svg>
+                                    </span>
+                                    <h3 class="text-lg font-bold m-0 text-neutral-900">Item Details</h3>
+                                    <span class="text-[12px] text-[#38446D] ml-auto">{{ $order->items->count() }} {{ Str::plural('item', $order->items->count()) }}</span>
                                 </div>
 
-                                <div class="divide-y divide-neutral-50">
+                                <div class="flex flex-col gap-2 mt-4">
                                     @foreach($order->items as $item)
-                                        <div class="flex gap-3.5 p-4">
-                                            @if($item->product && $item->product->primary_image_url)
-                                                <img src="{{ $item->product->primary_image_url }}" alt="{{ $item->product_name }}"
-                                                     class="w-16 h-16 object-cover rounded-lg border border-neutral-100 shrink-0">
-                                            @else
-                                                <div class="w-16 h-16 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                                                    <svg class="w-6 h-6 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                                    </svg>
+                                        <div class="flex items-center justify-between px-4 py-2 rounded-lg" style="border: 2px solid rgb(240, 240, 240);">
+                                            <div class="flex items-center space-x-4 min-w-0">
+                                                <div class="w-12 h-12 bg-[#F0F0F0] rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+                                                    @if($item->product && $item->product->primary_image_url)
+                                                        <img src="{{ $item->product->primary_image_url }}" alt="{{ $item->product_name }}" class="rounded-lg w-full h-full object-contain">
+                                                    @else
+                                                        <svg class="w-6 h-6 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                        </svg>
+                                                    @endif
                                                 </div>
-                                            @endif
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-[13px] font-semibold text-neutral-900">{{ $item->product_name }}</p>
-                                                @if($item->variant_name)
-                                                    <p class="text-[12px] text-neutral-600 mt-0.5">{{ $item->variant_name }}</p>
-                                                @endif
-                                                @if($item->sku)
-                                                    <p class="text-[11px] text-neutral-600 mt-0.5">SKU: {{ $item->sku }}</p>
-                                                @endif
-                                                <div class="flex items-center justify-between mt-2">
-                                                    <span class="text-[12px] text-neutral-600">@price($item->price) &times; {{ $item->quantity }}</span>
-                                                    <span class="text-[13px] font-semibold text-neutral-900">@price($item->total)</span>
+                                                <div class="text-left flex flex-col min-w-0">
+                                                    <span class="text-sm text-[#0F172A] font-semibold">{{ $item->product_name }}</span>
+                                                    @if($item->variant_name)
+                                                        <span class="text-[12px] text-[#38446D]">{{ $item->variant_name }}</span>
+                                                    @endif
+                                                    @if($item->sku)
+                                                        <span class="text-[12px] text-[#38446D]">SKU: {{ $item->sku }}</span>
+                                                    @endif
                                                 </div>
+                                            </div>
+                                            <div class="text-right flex flex-col shrink-0 ml-3">
+                                                <span class="text-[12px] font-medium text-[#38446D]">Qty: {{ $item->quantity }}</span>
+                                                <span class="text-sm text-[#0F172A] font-semibold">@price($item->total)</span>
                                             </div>
                                         </div>
                                     @endforeach
                                 </div>
 
                                 <!-- Price Breakdown -->
-                                <div class="px-5 py-4 border-t border-neutral-100 space-y-2">
+                                <div class="mt-4 pt-4 border-t border-neutral-100 space-y-2">
                                     <div class="flex justify-between text-[13px]">
                                         <span class="text-neutral-600">Subtotal</span>
                                         <span class="text-neutral-700">@price($order->subtotal)</span>
