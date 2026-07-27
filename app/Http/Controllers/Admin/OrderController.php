@@ -388,6 +388,102 @@ class OrderController extends Controller
         return back()->with('success', 'Order fulfilled successfully!' . ($trackingNumber ? " Tracking: {$trackingNumber}" : ''));
     }
 
+    /**
+     * Revert a cancelled order back to Confirmed (un-cancel). Re-deducts the stock
+     * that cancellation had restored and undoes a paid→refunded flip. Admin override.
+     */
+    public function uncancel(Order $order): RedirectResponse
+    {
+        if ($order->status !== 'cancelled') {
+            return back()->with('error', 'Only a cancelled order can be reverted.');
+        }
+
+        $oldStatus = $order->status;
+
+        // Cancellation released stock via restoreStock(); re-deduct it now.
+        $this->deductOrderStock($order);
+
+        $updates = ['status' => 'confirmed', 'cancelled_at' => null];
+        if ($order->payment_status === 'refunded') {
+            $updates['payment_status'] = 'paid';
+        }
+        $order->update($updates);
+
+        $order->statusHistory()->create([
+            'status'     => 'confirmed',
+            'comment'    => 'Cancellation reverted (order un-cancelled) by admin',
+            'created_by' => auth('admin')->id(),
+        ]);
+
+        try {
+            OrderStatusChanged::dispatch($order, $oldStatus, 'confirmed');
+        } catch (\Exception $e) {
+            Log::error('Order un-cancel event dispatch failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Order reverted to Confirmed.');
+    }
+
+    /**
+     * Undo a fulfillment: remove tracking/shipment records and set the order back
+     * to Packed so it can be re-fulfilled. Works for any carrier. Admin override.
+     */
+    public function unfulfill(Order $order): RedirectResponse
+    {
+        if (!in_array($order->status, ['shipped', 'out_for_delivery'], true)) {
+            return back()->with('error', 'Only a shipped or out-for-delivery order can be unfulfilled.');
+        }
+
+        $oldStatus = $order->status;
+
+        $order->shipments()->delete();
+
+        $order->update([
+            'status'              => 'packed',
+            'carrier'             => null,
+            'tracking_number'     => null,
+            'tracking_url'        => null,
+            'shipped_at'          => null,
+            'out_for_delivery_at' => null,
+            'packed_at'           => $order->packed_at ?? now(),
+        ]);
+
+        $order->statusHistory()->create([
+            'status'     => 'packed',
+            'comment'    => 'Fulfillment reverted (order unfulfilled) by admin',
+            'created_by' => auth('admin')->id(),
+        ]);
+
+        try {
+            OrderStatusChanged::dispatch($order, $oldStatus, 'packed');
+        } catch (\Exception $e) {
+            Log::error('Order unfulfill event dispatch failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Order unfulfilled — tracking removed, status set back to Packed.');
+    }
+
+    /**
+     * Deduct stock for every item in an order (inverse of Order::restoreStock()).
+     * Used when un-cancelling an order whose stock was released on cancellation.
+     */
+    private function deductOrderStock(Order $order): void
+    {
+        $order->loadMissing('items');
+
+        foreach ($order->items as $item) {
+            if ($item->variant_id) {
+                DB::table('product_variants')
+                    ->where('id', $item->variant_id)
+                    ->decrement('stock_quantity', $item->quantity);
+            } elseif ($item->product_id) {
+                DB::table('products')
+                    ->where('id', $item->product_id)
+                    ->decrement('stock_quantity', $item->quantity);
+            }
+        }
+    }
+
     public function invoice(Order $order): View
     {
         $order->load(['user', 'items.product']);
