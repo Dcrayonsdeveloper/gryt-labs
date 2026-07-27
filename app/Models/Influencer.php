@@ -59,17 +59,22 @@ class Influencer extends Authenticatable
     }
 
     /**
-     * Eloquent query of every order placed using this influencer's coupon.
-     * Returns an always-empty query if no matching coupon exists yet.
+     * Eloquent query of every order placed using this influencer's coupon,
+     * from BOTH sources:
+     *   - platform coupons applied on our checkout  → orders.coupon_id → coupons.code
+     *   - Shiprocket-checkout coupons               → orders.metadata.sr_pricing.coupon_codes[]
+     * (the latter is the same field the order Payment Summary reads.)
      */
     public function ordersQuery(): Builder
     {
-        $couponId = Coupon::where('code', $this->coupon_code)->value('id');
+        $code     = $this->coupon_code;
+        $couponId = Coupon::where('code', $code)->value('id');
 
-        return Order::query()->when(
-            $couponId,
-            fn ($q) => $q->where('coupon_id', $couponId),
-            fn ($q) => $q->whereRaw('1 = 0')
-        );
+        return Order::query()->where(function ($q) use ($code, $couponId) {
+            if ($couponId) {
+                $q->orWhere('coupon_id', $couponId);
+            }
+            $q->orWhereJsonContains('metadata->sr_pricing->coupon_codes', $code);
+        });
     }
 }
