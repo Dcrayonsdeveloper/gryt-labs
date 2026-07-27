@@ -184,7 +184,8 @@ class InfluencerController extends Controller
             'password'              => [$influencer ? 'nullable' : 'required', 'string', 'min:6', 'max:100'],
             'email'                 => ['nullable', 'email', 'max:150'],
             'mobile'                => ['nullable', 'string', 'max:20'],
-            'coupon_code'           => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('influencers', 'coupon_code')->ignore($id)],
+            // Real coupon codes can contain spaces / % (e.g. "SAVE 15%"), so no alpha_dash here.
+            'coupon_code'           => ['required', 'string', 'max:50', Rule::unique('influencers', 'coupon_code')->ignore($id)],
             'coupon_discount'       => ['required', 'numeric', 'min:0', 'max:100'],
             'instagram'             => ['nullable', 'string', 'max:150'],
             'youtube'               => ['nullable', 'string', 'max:200'],
