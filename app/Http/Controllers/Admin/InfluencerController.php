@@ -129,7 +129,8 @@ class InfluencerController extends Controller
         Coupon::where('code', $influencer->coupon_code)->update(['is_active' => false]);
         $influencer->delete();
 
-        return back()->with('success', 'Influencer deleted.');
+        // Redirect to the list, not back() — deleting from the edit page would 404 on back().
+        return redirect()->route('admin.influencers.index')->with('success', 'Influencer deleted.');
     }
 
     public function toggleStatus(Influencer $influencer): RedirectResponse
