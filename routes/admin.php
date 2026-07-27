@@ -232,6 +232,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::prefix('orders')->name('orders.')->group(function () {
                 Route::get('/', [App\Http\Controllers\Admin\OrderController::class, 'index'])->name('index');
                 Route::post('/bulk-action', [App\Http\Controllers\Admin\OrderController::class, 'bulkAction'])->name('bulk-action');
+                Route::post('/carriers', [App\Http\Controllers\Admin\OrderController::class, 'storeCarrier'])->name('carriers.store');
                 Route::get('/{order}', [App\Http\Controllers\Admin\OrderController::class, 'show'])->name('show');
                 Route::put('/{order}/status', [App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('status');
                 Route::post('/{order}/ship', [App\Http\Controllers\Admin\OrderController::class, 'ship'])->name('ship');

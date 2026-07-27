@@ -330,27 +330,61 @@
                     <div class="p-5">
                         {{-- STATE 1: Unfulfilled — show fulfillment form --}}
                         @if(!$order->tracking_number && !$latestShipment?->tracking_number && in_array($order->status, ['confirmed', 'processing', 'packed']))
-                            <div x-data="{ carrier: '', notifyCustomer: true }">
+                            <div x-data="{
+                                carrier: '', notifyCustomer: true, showAdd: false, newCarrier: '', adding: false,
+                                carriers: {{ \Illuminate\Support\Js::from(\App\Http\Controllers\Admin\OrderController::allCarriers()) }},
+                                async addCarrier() {
+                                    const name = this.newCarrier.trim();
+                                    if (!name) return;
+                                    this.adding = true;
+                                    try {
+                                        const res = await fetch('{{ route('admin.orders.carriers.store') }}', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                            body: JSON.stringify({ name })
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok && data.carriers) {
+                                            this.carriers = data.carriers;
+                                            this.carrier = name;
+                                            this.newCarrier = '';
+                                            this.showAdd = false;
+                                        } else {
+                                            alert(data.message || 'Could not add carrier.');
+                                        }
+                                    } catch (e) { alert('Could not add carrier.'); }
+                                    finally { this.adding = false; }
+                                }
+                            }">
                                 {{-- Manual Fulfillment Form --}}
                                 <form action="{{ route('admin.orders.ship', $order) }}" method="POST" onsubmit="return confirm('Fulfill this order and mark as shipped?')">
                                     @csrf
                                     <div class="space-y-3">
                                         <div>
-                                            <label class="form-label">Shipping Carrier</label>
+                                            <label class="form-label flex items-center justify-between">
+                                                <span>Shipping Carrier</span>
+                                                <button type="button" @click="showAdd = !showAdd" title="Add a new carrier"
+                                                        class="text-primary-600 hover:text-primary-700 p-0.5 -my-1 rounded">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                                    </svg>
+                                                </button>
+                                            </label>
                                             <select name="carrier" x-model="carrier" class="form-select w-full text-sm" required>
                                                 <option value="">Select a carrier...</option>
-                                                <option value="BlueDart">BlueDart</option>
-                                                <option value="Delhivery">Delhivery</option>
-                                                <option value="DTDC">DTDC</option>
-                                                <option value="Ecom Express">Ecom Express</option>
-                                                <option value="Ekart">Ekart (Flipkart)</option>
-                                                <option value="India Post">India Post</option>
-                                                <option value="Xpressbees">Xpressbees</option>
-                                                <option value="Shadowfax">Shadowfax</option>
-                                                <option value="FedEx">FedEx</option>
-                                                <option value="DHL">DHL</option>
+                                                <template x-for="c in carriers" :key="c">
+                                                    <option :value="c" x-text="c"></option>
+                                                </template>
                                                 <option value="other">Other...</option>
                                             </select>
+
+                                            {{-- Add a new carrier (saved for future orders) --}}
+                                            <div x-show="showAdd" x-transition x-cloak class="mt-2 flex gap-2">
+                                                <input type="text" x-model="newCarrier" placeholder="New carrier name"
+                                                       class="form-input w-full text-sm" @keydown.enter.prevent="addCarrier()">
+                                                <button type="button" @click="addCarrier()" :disabled="adding || !newCarrier.trim()"
+                                                        class="btn btn-secondary text-sm whitespace-nowrap" x-text="adding ? 'Adding…' : 'Add'"></button>
+                                            </div>
                                         </div>
 
                                         {{-- Custom carrier name when "Other" selected --}}
