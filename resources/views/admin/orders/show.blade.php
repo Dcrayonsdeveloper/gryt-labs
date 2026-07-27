@@ -150,30 +150,6 @@
                         </div>
                     @endforeach
                 </div>
-                <div class="mt-4 pt-4 border-t border-neutral-200 space-y-2">
-                    <div class="flex justify-between text-sm text-neutral-600">
-                        <span>Subtotal</span>
-                        <span>{{ $order->currency }} {{ number_format($order->subtotal, 2) }}</span>
-                    </div>
-                    @if($order->discount > 0)
-                        <div class="flex justify-between text-sm text-success-600">
-                            <span>Discount</span>
-                            <span>-{{ $order->currency }} {{ number_format($order->discount, 2) }}</span>
-                        </div>
-                    @endif
-                    <div class="flex justify-between text-sm text-neutral-600">
-                        <span>Shipping</span>
-                        <span>{{ $order->currency }} {{ number_format($order->shipping_cost, 2) }}</span>
-                    </div>
-                    <div class="flex justify-between text-sm text-neutral-600">
-                        <span>Tax</span>
-                        <span>{{ $order->currency }} {{ number_format($order->tax, 2) }}</span>
-                    </div>
-                    <div class="flex justify-between text-base font-bold text-neutral-900 pt-2 border-t border-neutral-200">
-                        <span>Total</span>
-                        <span>{{ $order->currency }} {{ number_format($order->total, 2) }}</span>
-                    </div>
-                </div>
             </div>
 
             <!-- Shipping Address -->

@@ -113,45 +113,6 @@
                                         </div>
                                     @endforeach
                                 </div>
-
-                                <!-- Price Breakdown -->
-                                <div class="mt-4 pt-4 border-t border-neutral-100 space-y-2">
-                                    <div class="flex justify-between text-[13px]">
-                                        <span class="text-neutral-600">Subtotal</span>
-                                        <span class="text-neutral-700">@price($order->subtotal)</span>
-                                    </div>
-                                    @if($order->discount > 0)
-                                        <div class="flex justify-between text-[13px]">
-                                            <span class="text-emerald-600 flex items-center gap-1">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                                </svg>
-                                                Discount{{ $order->coupon ? ' ('.$order->coupon->code.')' : '' }}
-                                            </span>
-                                            <span class="text-emerald-600 font-medium">-@price($order->discount)</span>
-                                        </div>
-                                    @endif
-                                    @if($order->tax > 0)
-                                        <div class="flex justify-between text-[13px]">
-                                            <span class="text-neutral-600">Tax</span>
-                                            <span class="text-neutral-700">@price($order->tax)</span>
-                                        </div>
-                                    @endif
-                                    <div class="flex justify-between text-[13px]">
-                                        <span class="text-neutral-600">Shipping</span>
-                                        <span class="text-neutral-700">
-                                            @if($order->shipping_cost > 0)
-                                                @price($order->shipping_cost)
-                                            @else
-                                                <span class="text-emerald-600">Free</span>
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="flex justify-between pt-2.5 mt-1 border-t border-dashed border-neutral-200">
-                                        <span class="text-sm font-bold text-neutral-900">Total</span>
-                                        <span class="text-sm font-bold text-neutral-900">@price($order->total)</span>
-                                    </div>
-                                </div>
                             </div>
 
                             <!-- Shipping & Billing -->
