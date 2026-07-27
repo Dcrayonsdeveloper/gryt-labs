@@ -236,9 +236,23 @@
                             default => 'badge-neutral',
                         };
                     @endphp
-                    <span class="badge {{ $currentClass }}">
-                        {{ ucfirst(str_replace('_', ' ', $order->status)) }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="badge {{ $currentClass }}">
+                            {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                        </span>
+                        @if($order->status === 'cancelled')
+                            <form action="{{ route('admin.orders.uncancel', $order) }}" method="POST"
+                                  onsubmit="return confirm('Revert this cancelled order back to Confirmed? Stock will be deducted again.')">
+                                @csrf
+                                <button type="submit" title="Revert cancellation"
+                                        class="p-1 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-neutral-100 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 010 10h-1M3 10l5-5M3 10l5 5"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
                 <div class="p-5">
                     <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="space-y-4">
@@ -459,6 +473,21 @@
                                             <button type="submit" class="text-xs text-red-500 hover:text-red-700 hover:underline w-full text-center mt-1">Cancel Shipment</button>
                                         </form>
                                     @endif
+                                @endif
+
+                                {{-- Unfulfill — undo shipment, set back to Packed (any carrier) --}}
+                                @if(in_array($order->status, ['shipped', 'out_for_delivery']))
+                                    <form action="{{ route('admin.orders.unfulfill', $order) }}" method="POST"
+                                          onsubmit="return confirm('Unfulfill this order? This removes the tracking/shipment and sets it back to Packed so you can re-fulfill it.')"
+                                          class="pt-1">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline w-full border-red-200 text-red-600 hover:bg-red-50 text-sm">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 010 10h-1M3 10l5-5M3 10l5 5"/>
+                                            </svg>
+                                            Unfulfill Order
+                                        </button>
+                                    </form>
                                 @endif
                             </div>
 
