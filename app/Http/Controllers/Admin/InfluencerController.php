@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\Influencer;
 use App\Models\Order;
 use App\Services\InfluencerAnalyticsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,27 @@ class InfluencerController extends Controller
         return view('admin.influencers.create', [
             'influencer' => new Influencer(['status' => 'active', 'coupon_discount' => 10]),
         ]);
+    }
+
+    /**
+     * Distinct coupon codes already used on real orders — read from
+     * orders.metadata->sr_pricing->coupon_codes, the SAME source the order
+     * Payment Summary "Discount Codes Applied" card reads. Unique, non-empty,
+     * uppercased, sorted. No separate or hardcoded list.
+     */
+    public function couponSuggestions(): JsonResponse
+    {
+        $codes = Order::query()
+            ->whereJsonLength('metadata->sr_pricing->coupon_codes', '>', 0)
+            ->get(['metadata'])
+            ->flatMap(fn ($o) => (array) data_get($o->metadata, 'sr_pricing.coupon_codes', []))
+            ->map(fn ($c) => strtoupper(trim((string) $c)))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        return response()->json($codes);
     }
 
     public function store(Request $request): RedirectResponse
