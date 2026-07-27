@@ -43,7 +43,10 @@ class LoginController extends Controller
     {
         Auth::guard('admin')->logout();
 
-        $request->session()->invalidate();
+        // Regenerate the session id but keep the remaining session data, so other
+        // guards (e.g. influencer) stay logged in. invalidate() would flush the whole
+        // shared session and log every guard out.
+        $request->session()->regenerate();
         $request->session()->regenerateToken();
 
         return redirect()->route('admin.login');
