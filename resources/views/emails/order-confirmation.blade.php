@@ -103,7 +103,9 @@
         {{-- Product Image --}}
         <td style="vertical-align:top;width:64px;padding-right:14px;">
             @if($item->product && $item->product->primary_image_url)
-                <img src="{{ $item->product->primary_image_url }}" alt="{{ $item->product_name }}"
+                {{-- Emails need an absolute URL; the accessor returns a root-relative /storage/... path --}}
+                @php($imgSrc = \Illuminate\Support\Str::startsWith($item->product->primary_image_url, 'http') ? $item->product->primary_image_url : url($item->product->primary_image_url))
+                <img src="{{ $imgSrc }}" alt="{{ $item->product_name }}"
                      style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #f3f4f6;display:block;">
             @else
                 <div style="width:64px;height:64px;background:#f3f4f6;border-radius:8px;text-align:center;line-height:64px;font-size:24px;color:#d1d5db;">&#128722;</div>
