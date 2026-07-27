@@ -213,6 +213,55 @@
                 </div>
             </div>
 
+            <!-- Payment Summary -->
+            <div class="bg-white rounded-[8px] p-4 mt-4" style="border: 2px solid rgb(240, 240, 240);">
+                <div class="flex items-center gap-2">
+                    <span role="img" aria-label="wallet" class="anticon anticon-wallet text-md text-neutral-800 leading-none">
+                        <svg viewBox="64 64 896 896" focusable="false" data-icon="wallet" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M880 112H144c-17.7 0-32 14.3-32 32v736c0 17.7 14.3 32 32 32h736c17.7 0 32-14.3 32-32V144c0-17.7-14.3-32-32-32zm-40 464H528V448h312v128zm0 264H184V184h656v200H496c-17.7 0-32 14.3-32 32v192c0 17.7 14.3 32 32 32h344v200zM580 512a40 40 0 1080 0 40 40 0 10-80 0z"></path></svg>
+                    </span>
+                    <h3 class="text-lg font-bold m-0 text-neutral-900">Payment Summary</h3>
+                </div>
+                <div class="mt-4 text-sm text-neutral-700">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span>Subtotal</span>
+                        <span style="font-weight:600;">{{ format_price($order->subtotal) }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span>Tax</span>
+                        <span style="font-weight:600;">{{ format_price($order->tax) }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span>Shipping Charges</span>
+                        <span style="font-weight:600;">{{ format_price($order->shipping_cost) }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span>COD Charges</span>
+                        <span style="font-weight:600;">&mdash;</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span>Prepaid Discount</span>
+                        <span style="font-weight:600;">&mdash;</span>
+                    </div>
+                    @if($order->coupon || $order->discount > 0)
+                        <div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="font-weight:600;font-size:12px;color:rgb(3,153,63);">Discount Codes Applied</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                            <span style="font-size:11px;font-weight:500;color:rgb(3,153,63);">
+                                <span style="height:8px;width:8px;background-color:rgb(2,197,80);border-radius:50%;display:inline-block;margin-right:4px;"></span>{{ $order->coupon->code ?? 'Discount' }}
+                            </span>
+                            <span style="font-weight:600;color:rgb(3,153,63);">-{{ format_price($order->discount) }}</span>
+                        </div>
+                    @endif
+                    <div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <span style="font-weight:600;font-size:14px;">Total Amount</span>
+                        <span style="font-weight:700;font-size:14px;color:rgb(29,78,216);">{{ format_price($order->total) }}</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Order Notes -->
             @if($order->notes)
                 <div class="card overflow-hidden">
