@@ -244,7 +244,18 @@
                             <form action="{{ route('admin.orders.uncancel', $order) }}" method="POST"
                                   onsubmit="return confirm('Revert this cancelled order back to Confirmed? Stock will be deducted again.')">
                                 @csrf
-                                <button type="submit" title="Revert cancellation"
+                                <button type="submit" title="Revert cancellation → Confirmed"
+                                        class="p-1 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-neutral-100 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 010 10h-1M3 10l5-5M3 10l5 5"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        @elseif(in_array($order->status, ['shipped', 'out_for_delivery']))
+                            <form action="{{ route('admin.orders.unfulfill', $order) }}" method="POST"
+                                  onsubmit="return confirm('Revert fulfillment? This removes the tracking/shipment and sets the order back to Packed.')">
+                                @csrf
+                                <button type="submit" title="Revert fulfillment → Packed"
                                         class="p-1 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-neutral-100 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 010 10h-1M3 10l5-5M3 10l5 5"/>
