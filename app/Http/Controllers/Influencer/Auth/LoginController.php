@@ -48,7 +48,9 @@ class LoginController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         Auth::guard('influencer')->logout();
-        $request->session()->invalidate();
+        // Regenerate the session id but keep other guards' logins (e.g. admin).
+        // invalidate() would flush the whole shared session and log everyone out.
+        $request->session()->regenerate();
         $request->session()->regenerateToken();
 
         return redirect()->route('influencer.login');
