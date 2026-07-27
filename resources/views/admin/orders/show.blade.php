@@ -152,39 +152,64 @@
                 </div>
             </div>
 
-            <!-- Shipping Address -->
-            <div class="card overflow-hidden">
-                <div class="px-5 py-4 border-b border-neutral-200">
-                    <h2 class="font-semibold text-neutral-900">Shipping Address</h2>
+            <!-- Customer Details -->
+            @php
+                $shipping = $order->shipping_address_snapshot ?? [];
+                $custName = $shipping['name'] ?? trim(($shipping['first_name'] ?? '').' '.($shipping['last_name'] ?? ''));
+                if (!$custName) { $custName = optional($order->user)->full_name ?? $order->guest_name ?? 'Customer'; }
+                $custEmail = optional($order->user)->email ?? $order->guest_email ?? ($shipping['email'] ?? null);
+                $custPhone = ($shipping['phone'] ?? null) ?: ($order->guest_phone ?? optional($order->user)->phone ?? null);
+                $streetLine = $shipping['address'] ?? $shipping['address_line_1'] ?? null;
+                if (!empty($shipping['address_line_2'])) { $streetLine = trim(($streetLine ?? '').', '.$shipping['address_line_2'], ', '); }
+                $cityLine = trim(($shipping['city'] ?? '').(!empty($shipping['state']) ? ', '.$shipping['state'] : '').' '.($shipping['postal_code'] ?? $shipping['zip'] ?? ''));
+                $countryLine = $shipping['country'] ?? 'India';
+            @endphp
+            <div class="bg-white rounded-[8px] p-4" style="border: 2px solid rgb(240, 240, 240);">
+                <div class="flex items-center gap-2">
+                    <span role="img" aria-label="user" class="anticon anticon-user text-md text-neutral-800 leading-none">
+                        <svg viewBox="64 64 896 896" focusable="false" data-icon="user" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M858.5 763.6a374 374 0 00-80.6-119.5 375.63 375.63 0 00-119.5-80.6c-.4-.2-.8-.3-1.2-.5C719.5 518 760 444.7 760 362c0-137-111-248-248-248S264 225 264 362c0 82.7 40.5 156 102.8 201.1-.4.2-.8.3-1.2.5-44.8 18.9-85 46-119.5 80.6a375.63 375.63 0 00-80.6 119.5A371.7 371.7 0 00136 901.8a8 8 0 008 8.2h60c4.4 0 7.9-3.5 8-7.8 2-77.2 33-149.5 87.8-204.3 56.7-56.7 132-87.9 212.2-87.9s155.5 31.2 212.2 87.9C779 752.7 810 825 812 902.2c.1 4.4 3.6 7.8 8 7.8h60a8 8 0 008-8.2c-1-47.8-10.9-94.3-29.5-138.2zM512 534c-45.9 0-89.1-17.9-121.6-50.4S340 407.9 340 362c0-45.9 17.9-89.1 50.4-121.6S466.1 190 512 190s89.1 17.9 121.6 50.4S684 316.1 684 362c0 45.9-17.9 89.1-50.4 121.6S557.9 534 512 534z"></path></svg>
+                    </span>
+                    <h3 class="text-lg font-bold m-0 text-neutral-900">Customer Details</h3>
                 </div>
-                <div class="p-5">
-                    @php $shipping = $order->shipping_address_snapshot; @endphp
-                    @if($shipping)
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0 mt-0.5">
-                                <svg class="w-4.5 h-4.5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </div>
-                            <div class="text-sm text-neutral-600 space-y-0.5">
-                                <p class="font-semibold text-neutral-900">{{ $shipping['name'] ?? ($shipping['first_name'] ?? '') . ' ' . ($shipping['last_name'] ?? '') }}</p>
-                                @if(!empty($shipping['phone'])) <p>{{ $shipping['phone'] }}</p> @endif
-                                @if(!empty($shipping['address'])) <p>{{ $shipping['address'] }}</p> @endif
-                                @if(!empty($shipping['address_line_1'])) <p>{{ $shipping['address_line_1'] }}</p> @endif
-                                <p>{{ $shipping['city'] ?? '' }}{{ !empty($shipping['state']) ? ', ' . $shipping['state'] : '' }} {{ $shipping['postal_code'] ?? $shipping['zip'] ?? '' }}</p>
-                            </div>
+                <div class="mt-4 p-2">
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <span class="text-[#0F172A] font-semibold">{{ $custName }}</span>
                         </div>
-                    @elseif($order->user)
-                        <p class="text-sm text-neutral-600">{{ $order->user->full_name }}</p>
-                        <p class="text-sm text-neutral-600">{{ $order->user->email }}</p>
-                    @elseif($order->guest_name || $order->guest_phone)
-                        <div class="text-sm text-neutral-600 space-y-0.5">
-                            @if($order->guest_name) <p class="font-semibold text-neutral-900">{{ $order->guest_name }}</p> @endif
-                            @if($order->guest_phone) <p>{{ $order->guest_phone }}</p> @endif
-                            @if($order->guest_email) <p>{{ $order->guest_email }}</p> @endif
+                        <div class="flex flex-wrap gap-6">
+                            @if($custEmail)
+                                <div class="flex flex-row gap-4">
+                                    <span role="img" aria-label="mail" class="anticon anticon-mail" style="font-size: 14px; color: rgb(56, 68, 109);"><svg viewBox="64 64 896 896" focusable="false" data-icon="mail" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M928 160H96c-17.7 0-32 14.3-32 32v640c0 17.7 14.3 32 32 32h832c17.7 0 32-14.3 32-32V192c0-17.7-14.3-32-32-32zm-40 110.8V792H136V270.8l-27.6-21.5 39.3-50.5 42.8 33.3h643.1l42.8-33.3 39.3 50.5-27.7 21.5zM833.6 232L512 482 190.4 232l-42.8-33.3-39.3 50.5 27.6 21.5 341.6 265.6a55.99 55.99 0 0068.7 0L888 270.8l27.6-21.5-39.3-50.5-42.7 33.2z"></path></svg></span>
+                                    <div class="flex flex-col">
+                                        <span class="text-[12px] font-medium text-[#38446D] leading-none">Email</span>
+                                        <span class="text-sm text-[#0F172A] font-semibold">{{ $custEmail }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($custPhone)
+                                <div class="flex flex-row gap-3">
+                                    <span role="img" aria-label="phone" class="anticon anticon-phone" style="font-size: 14px; color: rgb(56, 68, 109);"><svg viewBox="64 64 896 896" focusable="false" data-icon="phone" width="1em" height="1em" fill="currentColor" aria-hidden="true" style="transform: rotate(90deg);"><path d="M877.1 238.7L770.6 132.3c-13-13-30.4-20.3-48.8-20.3s-35.8 7.2-48.8 20.3L558.3 246.8c-13 13-20.3 30.5-20.3 48.9 0 18.5 7.2 35.8 20.3 48.9l89.6 89.7a405.46 405.46 0 01-86.4 127.3c-36.7 36.9-79.6 66-127.2 86.6l-89.6-89.7c-13-13-30.4-20.3-48.8-20.3a68.2 68.2 0 00-48.8 20.3L132.3 673c-13 13-20.3 30.5-20.3 48.9 0 18.5 7.2 35.8 20.3 48.9l106.4 106.4c22.2 22.2 52.8 34.9 84.2 34.9 6.5 0 12.8-.5 19.2-1.6 132.4-21.8 263.8-92.3 369.9-198.3C818 606 888.4 474.6 910.4 342.1c6.3-37.6-6.3-76.3-33.3-103.4zm-37.6 91.5c-19.5 117.9-82.9 235.5-178.4 331s-213 158.9-330.9 178.4c-14.8 2.5-30-2.5-40.8-13.2L184.9 721.9 295.7 611l119.8 120 .9.9 21.6-8a481.29 481.29 0 00285.7-285.8l8-21.6-120.8-120.7 110.8-110.9 104.5 104.5c10.8 10.8 15.8 26 13.3 40.8z"></path></svg></span>
+                                    <div class="flex flex-col">
+                                        <span class="text-[12px] font-medium text-[#38446D] leading-none">Phone</span>
+                                        <span class="text-sm text-[#0F172A] font-semibold">{{ $custPhone }}</span>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
-                    @endif
+                        @if($streetLine || $cityLine)
+                            <div>
+                                <h4 class="text-sm font-semibold text-[#0F172A] mb-2 flex items-center">
+                                    <span role="img" aria-label="aim" class="anticon anticon-aim" style="font-size: 14px; color: rgb(56, 68, 109); margin-right: 5px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="aim" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M952 474H829.8C812.5 327.6 696.4 211.5 550 194.2V72c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v122.2C327.6 211.5 211.5 327.6 194.2 474H72c-4.4 0-8 3.6-8 8v60c0 4.4 3.6 8 8 8h122.2C211.5 696.4 327.6 812.5 474 829.8V952c0 4.4 3.6 8 8 8h60c4.4 0 8-3.6 8-8V829.8C696.4 812.5 812.5 696.4 829.8 550H952c4.4 0 8-3.6 8-8v-60c0-4.4-3.6-8-8-8zM512 756c-134.8 0-244-109.2-244-244s109.2-244 244-244 244 109.2 244 244-109.2 244-244 244z"></path><path d="M512 392c-32.1 0-62.1 12.4-84.8 35.2-22.7 22.7-35.2 52.7-35.2 84.8s12.5 62.1 35.2 84.8C449.9 619.4 480 632 512 632s62.1-12.5 84.8-35.2C619.4 574.1 632 544 632 512s-12.5-62.1-35.2-84.8A118.57 118.57 0 00512 392z"></path></svg></span>
+                                    Shipping Address
+                                </h4>
+                                <div class="text-sm flex flex-col rounded-lg p-3" style="background-color:#F9FAFF;">
+                                    @if($streetLine)<span class="text-[12px] text-[#0F172A] font-semibold">{{ $streetLine }}</span>@endif
+                                    @if($cityLine)<span class="text-[12px]">{{ $cityLine }}</span>@endif
+                                    <span class="text-[12px]">{{ $countryLine }}</span>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 
