@@ -408,6 +408,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::prefix('influencers')->name('influencers.')->group(function () {
                 Route::get('/', [App\Http\Controllers\Admin\InfluencerController::class, 'index'])->name('index');
                 Route::get('/create', [App\Http\Controllers\Admin\InfluencerController::class, 'create'])->name('create');
+                Route::get('/coupon-suggestions', [App\Http\Controllers\Admin\InfluencerController::class, 'couponSuggestions'])->name('coupon-suggestions');
                 Route::post('/', [App\Http\Controllers\Admin\InfluencerController::class, 'store'])->name('store');
                 Route::get('/{influencer}/edit', [App\Http\Controllers\Admin\InfluencerController::class, 'edit'])->name('edit');
                 Route::put('/{influencer}', [App\Http\Controllers\Admin\InfluencerController::class, 'update'])->name('update');

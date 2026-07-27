@@ -33,10 +33,50 @@
 
     <div>
         <label class="form-label">Coupon Code <span class="text-error-500">*</span></label>
-        <input type="text" name="coupon_code" value="{{ old('coupon_code', $influencer->coupon_code) }}" class="form-input w-full uppercase" required style="text-transform:uppercase">
-        <p class="text-xs text-neutral-400 mt-1">A % discount coupon with this code is auto-created &amp; kept in sync.</p>
+        <div class="relative" x-data="influencerCouponPicker('{{ old('coupon_code', $influencer->coupon_code) }}', '{{ route('admin.influencers.coupon-suggestions') }}')" @click.outside="open = false">
+            <input type="text" name="coupon_code" x-model="value" @focus="load(); open = true" @input="open = true"
+                   autocomplete="off" class="form-input w-full" style="text-transform:uppercase" required>
+            <div x-show="open" x-cloak
+                 class="absolute z-30 mt-1 w-full bg-white ring-1 ring-neutral-200 rounded-lg shadow-lg max-h-56 overflow-auto">
+                <template x-for="c in filtered" :key="c">
+                    <button type="button" @click="pick(c)" class="block w-full text-left px-3 py-2 text-sm font-mono hover:bg-neutral-50" x-text="c"></button>
+                </template>
+                <div x-show="loaded && !filtered.length" class="px-3 py-2 text-xs text-neutral-400">No matching coupon — type to add a new one.</div>
+                <div x-show="!loaded" class="px-3 py-2 text-xs text-neutral-400">Loading…</div>
+            </div>
+        </div>
+        <p class="text-xs text-neutral-400 mt-1">Pick a coupon used on real orders, or type a new one. A % coupon with this code is auto-created &amp; kept in sync.</p>
         @error('coupon_code')<p class="text-xs text-error-600 mt-1">{{ $message }}</p>@enderror
     </div>
+
+    @once
+        @push('styles')<style>[x-cloak]{display:none!important}</style>@endpush
+        @push('scripts')
+        <script>
+            window.influencerCouponPicker = function (initial, url) {
+                return {
+                    value: initial || '',
+                    open: false,
+                    all: [],
+                    loaded: false,
+                    get filtered() {
+                        const q = (this.value || '').toUpperCase().trim();
+                        const list = q ? this.all.filter(c => c.includes(q)) : this.all;
+                        return list.slice(0, 50);
+                    },
+                    load() {
+                        if (this.loaded) return; // cached for the page session
+                        fetch(url, { headers: { 'Accept': 'application/json' } })
+                            .then(r => r.json())
+                            .then(d => { this.all = Array.isArray(d) ? d : []; this.loaded = true; })
+                            .catch(() => {});
+                    },
+                    pick(c) { this.value = c; this.open = false; },
+                };
+            };
+        </script>
+        @endpush
+    @endonce
 
     <div>
         <label class="form-label">Coupon Discount % <span class="text-error-500">*</span></label>
