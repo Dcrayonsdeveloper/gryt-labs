@@ -532,6 +532,7 @@ require __DIR__.'/pos.php';
 
 // Load Affiliate Routes
 require __DIR__.'/affiliate.php';
+require __DIR__.'/influencer.php';
 
 // ============================================================
 // FALLBACK: Catch unknown URLs → redirect to matching product

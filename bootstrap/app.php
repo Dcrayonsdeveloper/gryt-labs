@@ -44,6 +44,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('affiliate/*') || $request->is('affiliate')) {
                 return route('affiliate.login');
             }
+            if ($request->is('influencer/*') || $request->is('influencer')) {
+                return route('influencer.login');
+            }
             if ($request->is('admin/*') || $request->is('admin')) {
                 return route('admin.login');
             }

@@ -35,6 +35,7 @@ Route::middleware([
     require base_path('routes/delivery.php');
     require base_path('routes/pos.php');
     require base_path('routes/affiliate.php');
+    require base_path('routes/influencer.php');
 });
 
 // API routes in tenant context
