@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Coupon;
 use App\Models\Category;
+use App\Models\Coupon;
+use App\Models\Influencer;
+use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +74,55 @@ class CouponController extends Controller
             'auto_apply' => Coupon::where('auto_apply', true)->where('is_active', true)->count(),
         ];
 
-        return view('admin.coupons.index', compact('coupons', 'stats', 'couponAnalytics'));
+        // ── Shiprocket Checkout coupons (read-only) ──────────────────────────
+        // Discounts configured in Shiprocket's dashboard don't exist in our coupons
+        // table — Shiprocket only tells us the code once a customer uses it, stored in
+        // orders.metadata->sr_pricing->coupon_codes. So we surface the real codes seen
+        // on live orders (with orders/sales attribution) as a read-only reference.
+        // Stats use the SAME dual-source query as the influencer module, so figures match.
+        $shiprocketCoupons = $this->shiprocketCoupons();
+
+        return view('admin.coupons.index', compact('coupons', 'stats', 'couponAnalytics', 'shiprocketCoupons'));
+    }
+
+    /**
+     * Distinct Shiprocket-checkout coupon codes seen on real orders, each with its
+     * orders/sales/discount totals. Read-only — Shiprocket exposes no API to list the
+     * discounts themselves, so this is derived from order metadata.
+     *
+     * @return array<int, array{code:string,orders:int,sales:float,discount:float,managed:bool}>
+     */
+    private function shiprocketCoupons(): array
+    {
+        $codes = Order::query()
+            ->whereJsonLength('metadata->sr_pricing->coupon_codes', '>', 0)
+            ->get(['metadata'])
+            ->flatMap(fn ($o) => (array) data_get($o->metadata, 'sr_pricing.coupon_codes', []))
+            ->map(fn ($c) => strtoupper(trim((string) $c)))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($codes->isEmpty()) {
+            return [];
+        }
+
+        // Which of these codes also exist as managed coupons in our own table.
+        $managed = Coupon::whereIn('code', $codes)->pluck('code')->map(fn ($c) => strtoupper($c))->all();
+
+        return $codes->map(function ($code) use ($managed) {
+            $row = Influencer::ordersQueryForCode($code)
+                ->selectRaw('COUNT(*) as orders, COALESCE(SUM(total),0) as sales, COALESCE(SUM(discount),0) as discount')
+                ->first();
+
+            return [
+                'code'     => $code,
+                'orders'   => (int) ($row->orders ?? 0),
+                'sales'    => (float) ($row->sales ?? 0),
+                'discount' => (float) ($row->discount ?? 0),
+                'managed'  => in_array($code, $managed, true),
+            ];
+        })->sortByDesc('orders')->values()->all();
     }
 
     public function create(): View
