@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Models\Tenant;
 use App\Services\ShiprocketCheckout\ShiprocketCheckoutService;
 use Illuminate\Console\Command;
 
@@ -27,16 +28,54 @@ use Illuminate\Console\Command;
 class SyncShiprocketPricing extends Command
 {
     protected $signature = 'shiprocket:sync-pricing
+        {--tenant= : Only this tenant id (default: all tenants — used by the scheduler)}
         {--order= : Only this order_number}
-        {--limit=100 : Max orders to process}
+        {--limit=100 : Max orders to process per tenant}
         {--dry-run : Preview changes without writing}';
 
     protected $description = 'Pull real Shiprocket pricing (coupon/discount/COD) onto orders from the order-details API';
 
+    /**
+     * Loop tenants (like shiprocket:reconcile-orders) so this can be scheduled
+     * centrally. Each tenant is initialized, synced, then torn down.
+     */
     public function handle(ShiprocketCheckoutService $sr): int
     {
         $dry = (bool) $this->option('dry-run');
 
+        $tenants = $this->option('tenant')
+            ? Tenant::where('id', $this->option('tenant'))->get()
+            : Tenant::all();
+
+        if ($tenants->isEmpty()) {
+            $this->error('No matching tenant.');
+            return self::FAILURE;
+        }
+
+        $updated = 0; $skipped = 0; $failed = 0;
+
+        foreach ($tenants as $tenant) {
+            tenancy()->initialize($tenant);
+            try {
+                [$u, $s, $f] = $this->syncTenant($sr, $dry);
+                $updated += $u; $skipped += $s; $failed += $f;
+            } catch (\Throwable $e) {
+                $this->error("[{$tenant->id}] sync-pricing failed: {$e->getMessage()}");
+            } finally {
+                tenancy()->end();
+            }
+        }
+
+        $this->newLine();
+        $this->info(($dry ? '[DRY RUN] would update' : 'Updated') . ": {$updated} | skipped: {$skipped} | failed: {$failed}");
+        return self::SUCCESS;
+    }
+
+    /**
+     * Sync one (already-initialized) tenant. Returns [updated, skipped, failed].
+     */
+    private function syncTenant(ShiprocketCheckoutService $sr, bool $dry): array
+    {
         $query = Order::query()->whereNotNull('shiprocket_order_id');
         if ($orderNo = $this->option('order')) {
             $query->where('order_number', $orderNo);
@@ -47,11 +86,10 @@ class SyncShiprocketPricing extends Command
 
         $orders = $query->get();
         if ($orders->isEmpty()) {
-            $this->warn('No matching orders with a shiprocket_order_id.');
-            return self::SUCCESS;
+            return [0, 0, 0];
         }
 
-        $this->info(($dry ? '[DRY RUN] ' : '') . "Processing {$orders->count()} order(s)…");
+        $this->info(($dry ? '[DRY RUN] ' : '') . tenant('id') . ": processing {$orders->count()} order(s)…");
         $updated = 0; $skipped = 0; $failed = 0;
 
         foreach ($orders as $order) {
@@ -146,8 +184,6 @@ class SyncShiprocketPricing extends Command
             $updated++;
         }
 
-        $this->newLine();
-        $this->info(($dry ? '[DRY RUN] would update' : 'Updated') . ": {$updated} | skipped: {$skipped} | failed: {$failed}");
-        return self::SUCCESS;
+        return [$updated, $skipped, $failed];
     }
 }

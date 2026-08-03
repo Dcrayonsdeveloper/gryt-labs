@@ -37,6 +37,13 @@ Schedule::command('shipping:sync-tracking')->everyThirtyMinutes();
 // gap between payment and the order appearing small.
 Schedule::command('shiprocket:reconcile-orders --create --alert')->everyFifteenMinutes();
 
+// Backfill real Shiprocket pricing (coupon/discount/COD) onto recent orders so the
+// stored total and "Discount Codes Applied" match what the customer actually paid.
+// Shiprocket does not push pricing on this account, so orders arrive at the full
+// pre-discount total until this pulls the authoritative numbers from the order API.
+// --limit=25 bounds it to the most recent orders (new ones are always recent).
+Schedule::command('shiprocket:sync-pricing --limit=25')->everyFifteenMinutes();
+
 // Refresh Instagram reels cache every 2 hours
 Schedule::command('instagram:refresh-reels')->everyTwoHours();
 
