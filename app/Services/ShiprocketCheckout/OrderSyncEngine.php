@@ -318,6 +318,27 @@ class OrderSyncEngine
                     $this->createItem($order, $item);
                 }
 
+                // Backdate to the REAL order time. A recovered order must show
+                // when the customer actually placed it, not when the engine
+                // found it. The checkout token is issued the moment checkout
+                // starts, so its created_at matches the Shiprocket panel time
+                // to the minute. (The Checkout API's order_created_date is NOT
+                // usable — it returns an internal update stamp, not placement.)
+                $placedAt = DB::table('shiprocket_checkout_ids')
+                    ->where('shiprocket_id', $m['shiprocket_id'])
+                    ->value('created_at');
+                if ($placedAt) {
+                    try {
+                        $ts = Carbon::parse($placedAt);
+                        if ($ts->isPast()) {
+                            $order->created_at = $ts;
+                            $order->confirmed_at = $ts;
+                            $order->save();
+                        }
+                    } catch (\Throwable) {
+                    }
+                }
+
                 return $order;
             });
 
