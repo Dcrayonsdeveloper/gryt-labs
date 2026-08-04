@@ -28,13 +28,26 @@ Schedule::command('cart:abandoned-summary')->dailyAt('08:30');
 // Sync all carrier tracking statuses every 30 minutes (Delhivery, BlueDart, etc.)
 Schedule::command('shipping:sync-tracking')->everyThirtyMinutes();
 
+// Background verification loop (webhooks stay primary; this is the safety net).
+// Every 5 min: recover Shiprocket Checkout orders missing locally (missed
+// callback + missed webhook — the norm on this account, where Shiprocket has
+// never delivered a webhook), then verify & repair orders needing attention:
+// pricing/coupons, payment + transactions ledger, customer, address, items,
+// fulfillment (AWB/courier/shipment record), status + lifecycle timestamps and
+// the AWB tracking timeline. Idempotent; --limit=10 bounds API usage per run.
+Schedule::command('shiprocket:verify-orders --days=2 --limit=10')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10);
+
 // Recover Shiprocket Checkout orders that never synced into the local DB
 // (customer paid but the success redirect was missed AND the webhook was missed —
 // the norm on this account, where webhooks are not delivered). --create rebuilds
 // the missing Order + dispatches OrderPlaced so it shows in admin and the customer
 // gets their confirmation; --alert still WhatsApps the admin. Idempotent (advisory
 // lock + existence check), so re-running never duplicates. Every 15 min keeps the
-// gap between payment and the order appearing small.
+// gap between payment and the order appearing small. Overlaps with verify-orders
+// are safe (same engine, same idempotency keys); this run adds the webhook-event +
+// Shipping-API report sources and the WhatsApp alert.
 Schedule::command('shiprocket:reconcile-orders --create --alert')->everyFifteenMinutes();
 
 // Backfill real Shiprocket pricing (coupon/discount/COD) onto recent orders so the
