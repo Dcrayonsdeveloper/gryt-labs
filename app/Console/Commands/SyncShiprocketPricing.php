@@ -93,94 +93,26 @@ class SyncShiprocketPricing extends Command
         $updated = 0; $skipped = 0; $failed = 0;
 
         foreach ($orders as $order) {
-            $r = $sr->getOrder((string) $order->shiprocket_order_id);
-            if (!is_array($r)) {
+            $s = $sr->syncOrderPricing($order, $dry); // shared with OrderObserver + job
+            if ($s === null) {
                 $this->line("  {$order->order_number}: API returned no data — skipped");
                 $failed++;
                 continue;
             }
-
-            $subtotal  = (float) ($r['subtotal_price'] ?? $order->subtotal);
-            $shipping  = (float) ($r['shipping_charges'] ?? $r['shipping_price'] ?? $order->shipping_cost);
-            $codCharge = array_key_exists('cod_charges', $r) ? (float) $r['cod_charges'] : null;
-            $prepaid   = isset($r['prepaid_discount']) ? (float) $r['prepaid_discount'] : null;
-            $couponDisc = (float) ($r['coupon_discount'] ?? $r['total_discount'] ?? 0);
-            $couponCodes = array_values(array_filter((array) ($r['coupon_codes'] ?? [])));
-            $total     = (float) ($r['total_amount_payable'] ?? ($subtotal - $couponDisc + $shipping));
-            // Transactions (gateway/method/amount/status/date) — empty for COD.
-            $payments  = array_values(array_filter((array) ($r['payments'] ?? [])));
-
-            // Payment state: sum successful online payments → mark paid / collected.
-            $onlineReceived = 0.0; $txnDate = null;
-            foreach ($payments as $pay) {
-                if (strtolower((string) ($pay['payment_status'] ?? '')) === 'success') {
-                    $onlineReceived += (float) ($pay['amount_received'] ?? $pay['amount'] ?? 0);
-                    $txnDate = $txnDate ?: ($pay['created_at'] ?? null);
-                }
-            }
-            $newPayStatus   = $order->payment_status;
-            $newPaidAmount  = (float) $order->paid_amount;
-            $newCollectedAt = $order->payment_collected_at;
-            $newCollected   = (bool) $order->payment_collected;
-            if ($onlineReceived > 0) {
-                $newPaidAmount = $onlineReceived;
-                if (!$newCollectedAt && $txnDate) { $newCollectedAt = \Illuminate\Support\Carbon::parse($txnDate); }
-                if ($onlineReceived + 0.01 >= $total) { $newPayStatus = 'paid'; $newCollected = true; }
-            }
-
-            $srPricing = [
-                'total_price'          => $subtotal,           // pre-discount item total (Subtotal row)
-                'total_discount'       => (float) ($r['total_discount'] ?? $couponDisc),
-                'coupon_discount'      => $couponDisc,
-                'coupon_codes'         => $couponCodes,
-                'prepaid_discount'     => $prepaid,
-                'cod_charges'          => $codCharge,
-                'shipping_price'       => $shipping,
-                'tax'                  => 0.0,
-                'total_amount_payable' => $total,
-                'net_payable'          => $total,
-                'synced_at'            => now()->toIso8601String(),
-            ];
-
-            // Nothing meaningful to record and everything already captured → skip.
-            $columnsMatch    = abs((float) $order->total - $total) < 0.01
-                && abs((float) $order->discount - $couponDisc) < 0.01;
-            $pricingCaptured = !empty($order->metadata['sr_pricing']);
-            $paymentsCaptured = !$payments || !empty($order->metadata['sr_payments']);
-            $paymentMatches   = $newPayStatus === $order->payment_status
-                && abs($newPaidAmount - (float) $order->paid_amount) < 0.01
-                && $newCollected === (bool) $order->payment_collected;
-            if (!$couponCodes && $couponDisc <= 0 && $columnsMatch && $pricingCaptured && $paymentsCaptured && $paymentMatches) {
+            if (!$s['changed']) {
                 $skipped++;
                 continue;
             }
 
-            $codeStr = $couponCodes ? implode('+', array_map(fn ($c) => is_array($c) ? ($c['code'] ?? $c['name'] ?? '?') : $c, $couponCodes)) : '—';
+            $codeStr = $s['codes'] ? implode('+', array_map(fn ($c) => is_array($c) ? ($c['code'] ?? $c['name'] ?? '?') : $c, $s['codes'])) : '—';
             $this->line(sprintf(
                 '  %s: total %s→%s | discount %s→%s | pay %s→%s | codes=%s',
-                $order->order_number,
-                number_format((float) $order->total, 2), number_format($total, 2),
-                number_format((float) $order->discount, 2), number_format($couponDisc, 2),
-                $order->payment_status, $newPayStatus,
+                $s['order'],
+                number_format($s['old_total'], 2), number_format($s['new_total'], 2),
+                number_format($s['old_discount'], 2), number_format($s['new_discount'], 2),
+                $s['old_pay'], $s['new_pay'],
                 $codeStr
             ));
-
-            if (!$dry) {
-                $meta = is_array($order->metadata) ? $order->metadata : [];
-                $meta['sr_pricing'] = $srPricing;
-                if ($payments) { $meta['sr_payments'] = $payments; }
-                $order->update([
-                    'subtotal'             => $subtotal,
-                    'discount'             => $couponDisc,
-                    'shipping_cost'        => $shipping,
-                    'total'                => $total,
-                    'payment_status'       => $newPayStatus,
-                    'paid_amount'          => $newPaidAmount,
-                    'payment_collected'    => $newCollected,
-                    'payment_collected_at' => $newCollectedAt,
-                    'metadata'             => $meta,
-                ]);
-            }
             $updated++;
         }
 

@@ -55,6 +55,11 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Product::observe(\App\Observers\ProductObserver::class);
         Category::observe(\App\Observers\CategoryObserver::class);
 
+        // Pull Shiprocket Checkout pricing (coupon/discount/COD) onto an order the
+        // moment it's created, so the discounted total shows immediately instead of
+        // after the 15-min sync-pricing sweep.
+        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
+
         Blade::directive('price', function (string $expression) {
             return "<?php echo format_price({$expression}); ?>";
         });

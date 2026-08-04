@@ -3,6 +3,7 @@
 namespace App\Services\ShiprocketCheckout;
 
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -185,6 +186,113 @@ class ShiprocketCheckoutService
         }
 
         return null;
+    }
+
+    /**
+     * Pull real pricing for ONE order from the order-details API and write it onto
+     * the order: coupon/discount/COD → money columns (subtotal/discount/shipping/
+     * total) + metadata['sr_pricing'] (what the Payment Summary reads) + payment
+     * state. Shiprocket does not push pricing on this account, so this is how the
+     * discount/coupon gets captured — shared by the OrderObserver (instant, at
+     * creation), the per-order job, and the scheduled shiprocket:sync-pricing
+     * command so every path produces identical figures.
+     *
+     * @return array|null  Summary (order/old_total/new_total/old_discount/new_discount/
+     *                     old_pay/new_pay/codes/changed), or null if the API had no data.
+     */
+    public function syncOrderPricing(Order $order, bool $dry = false): ?array
+    {
+        if (empty($order->shiprocket_order_id)) {
+            return null;
+        }
+
+        $r = $this->getOrder((string) $order->shiprocket_order_id);
+        if (!is_array($r)) {
+            return null;
+        }
+
+        $subtotal    = (float) ($r['subtotal_price'] ?? $order->subtotal);
+        $shipping    = (float) ($r['shipping_charges'] ?? $r['shipping_price'] ?? $order->shipping_cost);
+        $codCharge   = array_key_exists('cod_charges', $r) ? (float) $r['cod_charges'] : null;
+        $prepaid     = isset($r['prepaid_discount']) ? (float) $r['prepaid_discount'] : null;
+        $couponDisc  = (float) ($r['coupon_discount'] ?? $r['total_discount'] ?? 0);
+        $couponCodes = array_values(array_filter((array) ($r['coupon_codes'] ?? [])));
+        $total       = (float) ($r['total_amount_payable'] ?? ($subtotal - $couponDisc + $shipping));
+        $payments    = array_values(array_filter((array) ($r['payments'] ?? [])));
+
+        // Payment state: sum successful online payments → mark paid / collected.
+        $onlineReceived = 0.0; $txnDate = null;
+        foreach ($payments as $pay) {
+            if (strtolower((string) ($pay['payment_status'] ?? '')) === 'success') {
+                $onlineReceived += (float) ($pay['amount_received'] ?? $pay['amount'] ?? 0);
+                $txnDate = $txnDate ?: ($pay['created_at'] ?? null);
+            }
+        }
+        $newPayStatus   = $order->payment_status;
+        $newPaidAmount  = (float) $order->paid_amount;
+        $newCollectedAt = $order->payment_collected_at;
+        $newCollected   = (bool) $order->payment_collected;
+        if ($onlineReceived > 0) {
+            $newPaidAmount = $onlineReceived;
+            if (!$newCollectedAt && $txnDate) { $newCollectedAt = \Illuminate\Support\Carbon::parse($txnDate); }
+            if ($onlineReceived + 0.01 >= $total) { $newPayStatus = 'paid'; $newCollected = true; }
+        }
+
+        $srPricing = [
+            'total_price'          => $subtotal,
+            'total_discount'       => (float) ($r['total_discount'] ?? $couponDisc),
+            'coupon_discount'      => $couponDisc,
+            'coupon_codes'         => $couponCodes,
+            'prepaid_discount'     => $prepaid,
+            'cod_charges'          => $codCharge,
+            'shipping_price'       => $shipping,
+            'tax'                  => 0.0,
+            'total_amount_payable' => $total,
+            'net_payable'          => $total,
+            'synced_at'            => now()->toIso8601String(),
+        ];
+
+        $summary = [
+            'order'        => $order->order_number,
+            'old_total'    => (float) $order->total,   'new_total'    => $total,
+            'old_discount' => (float) $order->discount, 'new_discount' => $couponDisc,
+            'old_pay'      => $order->payment_status,   'new_pay'      => $newPayStatus,
+            'codes'        => $couponCodes,
+            'changed'      => false,
+        ];
+
+        // Nothing meaningful to record and everything already captured → no-op.
+        $columnsMatch     = abs((float) $order->total - $total) < 0.01
+            && abs((float) $order->discount - $couponDisc) < 0.01;
+        $pricingCaptured  = !empty($order->metadata['sr_pricing']);
+        $paymentsCaptured = !$payments || !empty($order->metadata['sr_payments']);
+        $paymentMatches   = $newPayStatus === $order->payment_status
+            && abs($newPaidAmount - (float) $order->paid_amount) < 0.01
+            && $newCollected === (bool) $order->payment_collected;
+        if (!$couponCodes && $couponDisc <= 0 && $columnsMatch && $pricingCaptured && $paymentsCaptured && $paymentMatches) {
+            return $summary; // changed = false
+        }
+
+        $summary['changed'] = true;
+
+        if (!$dry) {
+            $meta = is_array($order->metadata) ? $order->metadata : [];
+            $meta['sr_pricing'] = $srPricing;
+            if ($payments) { $meta['sr_payments'] = $payments; }
+            $order->update([
+                'subtotal'             => $subtotal,
+                'discount'             => $couponDisc,
+                'shipping_cost'        => $shipping,
+                'total'                => $total,
+                'payment_status'       => $newPayStatus,
+                'paid_amount'          => $newPaidAmount,
+                'payment_collected'    => $newCollected,
+                'payment_collected_at' => $newCollectedAt,
+                'metadata'             => $meta,
+            ]);
+        }
+
+        return $summary;
     }
 
     /**
