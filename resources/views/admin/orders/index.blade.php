@@ -106,7 +106,7 @@
         </div>
 
         {{-- Search + Filter Row --}}
-        <div class="px-4 py-3 border-b border-gray-200">
+        <div class="px-4 py-3 border-b border-gray-200" x-data="orderSync()">
             <form action="{{ route('admin.orders.index') }}" method="GET" class="flex items-center gap-2" style="flex-wrap:nowrap">
                 @if($attentionActive)
                     <input type="hidden" name="tab" value="needs_attention">
@@ -128,10 +128,79 @@
                     <option value="refunded" {{ $currentPayment === 'refunded' ? 'selected' : '' }}>Refunded</option>
                 </select>
                 <button type="submit" class="btn btn-primary text-sm h-9 px-4 shrink-0">Filter</button>
+                <button type="button" x-on:click="start()" :disabled="running"
+                        class="btn btn-secondary text-sm h-9 px-3 shrink-0 inline-flex items-center gap-1.5"
+                        title="Fetch &amp; fill missing pricing / discount / payment on incomplete Shiprocket orders (safe: only fills blanks)">
+                    <svg x-show="running" x-cloak class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"></circle><path fill="currentColor" style="opacity:.75" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"></path></svg>
+                    <span x-show="!running">&#128260; Sync Orders</span>
+                    <span x-show="running" x-cloak>Syncing…</span>
+                </button>
                 @if(request()->hasAny(['search', 'payment_status', 'date_from', 'date_to']))
                     <a href="{{ route('admin.orders.index', $attentionActive ? ['tab' => 'needs_attention'] : ($currentStatus ? ['status' => $currentStatus] : [])) }}" class="text-xs text-neutral-500 hover:text-neutral-700 shrink-0">Clear</a>
                 @endif
             </form>
+
+            {{-- Sync progress --}}
+            <div x-show="running || done" x-cloak class="mt-3 max-w-md">
+                <div class="flex items-center justify-between text-xs text-neutral-600 mb-1">
+                    <span x-text="running ? ('Processing… ' + processed + ' / ' + total + ' orders') : ('Sync complete — ' + processed + ' order(s) checked')"></span>
+                    <span x-text="pct + '%'"></span>
+                </div>
+                <div class="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-primary-600" :style="'width:' + pct + '%;transition:width .2s'"></div>
+                </div>
+                <div x-show="done" x-cloak class="mt-2 text-xs">
+                    <span class="font-medium text-emerald-600" x-text="'✓ Updated: ' + updated"></span>
+                    <span class="text-neutral-300">·</span>
+                    <span class="text-neutral-600" x-text="'Skipped: ' + skipped"></span>
+                    <span class="text-neutral-300">·</span>
+                    <span class="text-red-600" x-text="'Failed: ' + failed"></span>
+                    <template x-if="failedIds.length"><span class="text-neutral-400 ml-1" x-text="'(' + failedIds.slice(0,20).join(', ') + ')'"></span></template>
+                </div>
+            </div>
+
+            <script>
+                function orderSync() {
+                    return {
+                        running: false, done: false, total: 0, processed: 0,
+                        updated: 0, skipped: 0, failed: 0, failedIds: [], lastId: 0,
+                        get pct() { return this.total > 0 ? Math.min(100, Math.round(this.processed / this.total * 100)) : (this.done ? 100 : 0); },
+                        async start() {
+                            if (this.running) return;
+                            this.running = true; this.done = false;
+                            this.total = 0; this.processed = 0; this.updated = 0; this.skipped = 0; this.failed = 0; this.failedIds = []; this.lastId = 0;
+                            const url = '{{ route('admin.orders.sync-orders') }}';
+                            const token = '{{ csrf_token() }}';
+                            try {
+                                let finished = false, guard = 0;
+                                while (!finished && guard++ < 10000) {
+                                    const body = new URLSearchParams();
+                                    if (this.lastId > 0) body.set('before_id', this.lastId);
+                                    const res = await fetch(url, {
+                                        method: 'POST',
+                                        headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                                        body,
+                                    });
+                                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                                    const d = await res.json();
+                                    if (typeof d.total === 'number' && this.total === 0) this.total = d.total;
+                                    this.processed += (d.processed || 0);
+                                    this.updated   += (d.updated   || 0);
+                                    this.skipped   += (d.skipped   || 0);
+                                    this.failed    += (d.failed    || 0);
+                                    if (Array.isArray(d.failed_ids)) this.failedIds.push(...d.failed_ids);
+                                    this.lastId = d.last_id || this.lastId;
+                                    finished = !!d.done;
+                                }
+                            } catch (e) {
+                                alert('Sync failed: ' + e.message + ' — check logs.');
+                            } finally {
+                                this.running = false; this.done = true;
+                            }
+                        }
+                    };
+                }
+            </script>
         </div>
 
         {{-- Orders Table --}}
