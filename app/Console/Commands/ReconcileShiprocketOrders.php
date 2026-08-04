@@ -121,6 +121,16 @@ class ReconcileShiprocketOrders extends Command
                 $this->warn("  {$m['shiprocket_id']} — skipped: no line items in any source, create manually.");
                 continue;
             }
+            // Shipping-API discoveries are REPORT-ONLY, never auto-created. That list
+            // mixes manual/test orders from the Shiprocket panel with duplicates of
+            // Checkout orders keyed under a different numeric channel_order_id (its
+            // totals are pre-discount, so they don't dedupe by amount either), and its
+            // items carry no product ids. Real website sales are Checkout orders and
+            // are recovered via Source C above. Anything left here needs human eyes.
+            if ($m['source'] === 'shipping API') {
+                $this->line("  {$m['shiprocket_id']} — shipping-API only: listed for review, not auto-created.");
+                continue;
+            }
             $order = $this->persistOrder($m);
             if ($order) {
                 $this->info("  {$m['shiprocket_id']} — created {$order->order_number} (OrderPlaced dispatched).");
@@ -444,6 +454,19 @@ class ReconcileShiprocketOrders extends Command
      */
     private function persistOrder(array $m): ?Order
     {
+        // Resolve every line to a real product BEFORE opening the transaction.
+        // order_items.product_id is NOT NULL on prod MySQL — an unresolvable line
+        // used to throw mid-transaction and roll the whole order back (erroring the
+        // scheduled run every 15 minutes). Skip cleanly instead.
+        foreach ($m['items'] as $idx => $item) {
+            $product = $this->resolveProduct($item);
+            if (! $product) {
+                $this->warn("  {$m['shiprocket_id']} — skipped: product not found for '" . ($item['name'] ?? $item['sku'] ?? '?') . "', create manually.");
+                return null;
+            }
+            $m['items'][$idx]['product_id'] = $product->id;
+        }
+
         try {
             return DB::transaction(function () use ($m) {
                 // Advisory lock guards against a late callback/webhook racing us (Postgres only).
@@ -547,13 +570,24 @@ class ReconcileShiprocketOrders extends Command
         }
     }
 
-    /** Create one OrderItem and decrement stock when the product resolves. */
-    private function createItem(Order $order, array $item): void
+    /** Resolve an item line to a Product by id → SKU → exact name. */
+    private function resolveProduct(array $item): ?Product
     {
-        $product = $item['product_id'] ? Product::find($item['product_id']) : null;
+        $product = ! empty($item['product_id']) ? Product::find($item['product_id']) : null;
         if (! $product && ! empty($item['sku'])) {
             $product = Product::where('sku', $item['sku'])->first();
         }
+        if (! $product && ! empty($item['name'])) {
+            $product = Product::where('name', $item['name'])->first();
+        }
+
+        return $product;
+    }
+
+    /** Create one OrderItem and decrement stock when the product resolves. */
+    private function createItem(Order $order, array $item): void
+    {
+        $product = $this->resolveProduct($item);
 
         $qty = max(1, (int) $item['quantity']);
         $price = (float) $item['price'];
