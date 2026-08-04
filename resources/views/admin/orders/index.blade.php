@@ -160,6 +160,7 @@
                         <span :class="failed > 0 ? 'text-red-600 font-medium' : 'text-neutral-600'" x-text="'Failed: ' + failed"></span>
                         <span class="text-neutral-300">·</span>
                         <span class="text-neutral-400" x-text="apiCalls + ' API calls · ' + elapsed + 's'"></span>
+                        <span x-show="reloading" x-cloak class="text-primary-600 font-medium">— refreshing list…</span>
                     </div>
                     <template x-if="created.length">
                         <div class="text-emerald-700">
@@ -192,9 +193,20 @@
             <script>
                 function orderSync() {
                     return {
-                        running: false, done: false, stage: 'discover',
+                        running: false, done: false, stage: 'discover', reloading: false,
                         total: 0, processed: 0, clean: 0, failed: 0, apiCalls: 0, elapsed: 0,
                         created: [], repaired: [], discrepancies: [], failedIds: [], lastId: 0,
+                        init() {
+                            // Re-show the report after the post-sync page refresh.
+                            try {
+                                const saved = sessionStorage.getItem('orderSyncReport');
+                                if (saved) {
+                                    Object.assign(this, JSON.parse(saved));
+                                    this.done = true; this.running = false; this.reloading = false;
+                                    sessionStorage.removeItem('orderSyncReport');
+                                }
+                            } catch (e) {}
+                        },
                         get pct() {
                             if (this.done) return 100;
                             if (this.stage === 'discover') return 5;
@@ -252,6 +264,22 @@
                             } finally {
                                 this.elapsed = Math.round((Date.now() - t0) / 1000);
                                 this.running = false; this.done = true;
+                                // Anything recovered or repaired isn't visible in the
+                                // server-rendered table yet — refresh the page so the
+                                // list (and its ordering) reflects the sync, carrying
+                                // the report across the reload.
+                                if (this.created.length || this.repaired.length) {
+                                    this.reloading = true;
+                                    try {
+                                        sessionStorage.setItem('orderSyncReport', JSON.stringify({
+                                            total: this.total, processed: this.processed, clean: this.clean,
+                                            failed: this.failed, apiCalls: this.apiCalls, elapsed: this.elapsed,
+                                            created: this.created, repaired: this.repaired,
+                                            discrepancies: this.discrepancies, failedIds: this.failedIds,
+                                        }));
+                                    } catch (e) {}
+                                    setTimeout(() => location.reload(), 1500);
+                                }
                             }
                         }
                     };

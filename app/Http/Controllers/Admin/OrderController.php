@@ -172,12 +172,11 @@ class OrderController extends Controller
                 'Tracking Number', 'Courier',
             ]);
 
-            // MySQL sorts NULLs last on DESC already, and its REGEXP_REPLACE is global by default.
-            $orderByNumber = DbCompat::isPostgres()
-                ? "CAST(NULLIF(REGEXP_REPLACE(order_number, '[^0-9]', '', 'g'), '') AS BIGINT) DESC NULLS LAST"
-                : "CAST(NULLIF(REGEXP_REPLACE(order_number, '[^0-9]', ''), '') AS UNSIGNED) DESC";
-
-            $query->with('user')->orderByRaw($orderByNumber)->chunk(500, function ($orders) use ($handle) {
+            // Chronological, newest first. Do NOT sort by order_number: recovered
+            // orders carry the number of the day they were recovered (an order
+            // placed 30 July can be ORD-20260804-…), so a number sort scrambles
+            // the true time sequence. created_at holds the real placement time.
+            $query->with('user')->orderByDesc('created_at')->orderByDesc('id')->chunk(500, function ($orders) use ($handle) {
                 foreach ($orders as $order) {
                     $items = $order->items->map(fn($i) => ($i->product_name ?? 'Product') . ' x' . $i->quantity)->implode(', ');
                     $address = $order->shipping_address_snapshot ?? [];
