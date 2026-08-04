@@ -177,6 +177,67 @@ class ReconcileShiprocketOrders extends Command
             $found[$hex] = $this->buildFromShippingOrder($srOrder);
         }
 
+        // Source C — Shiprocket CHECKOUT order-details API, seeded by the checkout tokens
+        // we issued (shiprocket_checkout_ids). The Shipping API (Source B) does NOT yet
+        // contain freshly-placed Checkout orders, and the success callback/webhook can be
+        // missed entirely — so a paid order can exist in Shiprocket with no trace in either
+        // source above. Every checkout token we generate is tracked; ask the Checkout API
+        // about the recent ones that have no local order and recover the ones that actually
+        // completed (status SUCCESS). This is the path that catches the "order is in
+        // Shiprocket but never reached the website" case automatically.
+        $checkoutService = app(\App\Services\ShiprocketCheckout\ShiprocketCheckoutService::class);
+
+        $candidateIds = $singleId
+            ? [$singleId]
+            : DB::table('shiprocket_checkout_ids')
+                ->where('id_type', 'token')
+                ->where('created_at', '>=', now()->subDays($this->days))
+                ->orderByDesc('id')
+                ->pluck('shiprocket_id')
+                ->map(fn ($v) => (string) $v)
+                ->unique()
+                ->all();
+
+        foreach ($candidateIds as $cid) {
+            $cid = (string) $cid;
+            if ($cid === '' || isset($found[$cid]) || $this->findLocalOrder($cid)) {
+                continue;
+            }
+
+            try {
+                $sr = $checkoutService->getOrder($cid);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            // Only recover COMPLETED orders — skip abandoned/failed/pending checkouts.
+            if (! is_array($sr)
+                || strtoupper((string) ($sr['status'] ?? '')) !== 'SUCCESS'
+                || empty($sr['cart_data']['items'])) {
+                continue;
+            }
+
+            // De-dupe across every id form Shiprocket may key this order under, so we never
+            // create a second copy of an order that Source A/B already queued or that
+            // already exists locally under a different id.
+            $altIds = array_filter(array_map('strval', [
+                $cid,
+                $sr['cart_id'] ?? '',
+                $sr['platform_order_id'] ?? '',
+                $sr['fastrr_order_id'] ?? '',
+            ]));
+            if (array_intersect($altIds, array_keys($found))) {
+                continue;
+            }
+            foreach ($altIds as $aid) {
+                if ($this->findLocalOrder($aid)) {
+                    continue 2;
+                }
+            }
+
+            $found[$cid] = $this->buildFromCheckoutApi($cid, $sr);
+        }
+
         return array_values($found);
     }
 
@@ -306,6 +367,73 @@ class ReconcileShiprocketOrders extends Command
                 'tax' => 0.0,
                 'total' => $total,
                 'paid' => $isCod ? 0.0 : $total,
+            ],
+        ];
+    }
+
+    /**
+     * Normalise a Shiprocket CHECKOUT order-details payload (getOrder → result) into the
+     * recoverable-order shape. This is the authoritative source for a placed Checkout
+     * order: it carries the real cart, the coupon/discount pricing and the shipping
+     * address even when no webhook or callback ever reached us.
+     *
+     * Confirmed live field shape: cart_data.items[].{variant_id, quantity, price} ·
+     * subtotal_price · total_discount · coupon_discount · shipping_charges ·
+     * total_amount_payable · payment_type (PREPAID|CASH_ON_DELIVERY) · payment_status ·
+     * shipping_address.{first_name,last_name,phone,email,line1,line2,city,state,pincode}.
+     */
+    private function buildFromCheckoutApi(string $checkoutId, array $sr): array
+    {
+        $addr = $sr['shipping_address'] ?? $sr['billing_address'] ?? [];
+
+        $items = [];
+        foreach (($sr['cart_data']['items'] ?? []) as $i) {
+            $items[] = [
+                'product_id' => $i['variant_id'] ?? $i['product_id'] ?? null,
+                'name' => $i['name'] ?? $i['title'] ?? 'Product',
+                'sku' => $i['sku'] ?? '',
+                'quantity' => (int) ($i['quantity'] ?? 1),
+                'price' => (float) ($i['price'] ?? 0),
+            ];
+        }
+
+        $subtotal = array_sum(array_map(fn ($i) => $i['price'] * $i['quantity'], $items));
+        if ($subtotal <= 0) {
+            $subtotal = (float) ($sr['subtotal_price'] ?? 0);
+        }
+
+        $discount = (float) ($sr['total_discount'] ?? $sr['coupon_discount'] ?? 0);
+        $shipping = (float) ($sr['shipping_charges'] ?? 0);
+        $total = (float) ($sr['total_amount_payable'] ?? max(0, $subtotal - $discount + $shipping));
+
+        $isPrepaid = strtoupper((string) ($sr['payment_type'] ?? '')) === 'PREPAID';
+        $paidOk = strtolower((string) ($sr['payment_status'] ?? '')) === 'success';
+
+        $name = trim(($addr['first_name'] ?? '') . ' ' . ($addr['last_name'] ?? ''));
+
+        return [
+            'shiprocket_id' => $checkoutId,
+            'source' => 'checkout API',
+            'customer' => [
+                'name' => $name ?: null,
+                'email' => $addr['email'] ?? $sr['email'] ?? null,
+                'phone' => $addr['phone'] ?? $sr['phone'] ?? null,
+                'address' => $addr['line1'] ?? '',
+                'address_2' => $addr['line2'] ?? '',
+                'city' => $addr['city'] ?? '',
+                'state' => $addr['state'] ?? '',
+                'pincode' => $addr['pincode'] ?? '',
+                'country' => $addr['country'] ?? 'India',
+            ],
+            'items' => $items,
+            'payment_mode' => $isPrepaid ? 'prepaid' : 'cod',
+            'amounts' => [
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'shipping' => $shipping,
+                'tax' => 0.0,
+                'total' => $total,
+                'paid' => ($isPrepaid && $paidOk) ? $total : 0.0,
             ],
         ];
     }
