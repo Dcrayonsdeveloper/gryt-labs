@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\ShiprocketCheckoutEvent;
 use App\Services\ShiprocketService;
+use App\Services\ShiprocketCheckout\ShiprocketCheckoutService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -681,6 +682,78 @@ class OrderController extends Controller
      * First tries the Checkout API list endpoint (one call, all orders).
      * Falls back to per-order API calls for any still-missing after the list pass.
      */
+    /**
+     * Batched "Sync Orders" for the toolbar button. Fills missing pricing / discount /
+     * payment on orders that have a Shiprocket id but no captured pricing yet.
+     *
+     * Idempotent + safe: reuses the shared ShiprocketCheckoutService::syncOrderPricing()
+     * (missing-only updates, never overwrites manual edits, no duplicate rows, and the
+     * order-details API call already handles timeout/retry). The button calls this
+     * repeatedly with an `id` cursor (before_id) so every order is walked exactly once —
+     * failures included — which keeps it safe over large datasets and avoids re-loops.
+     */
+    public function syncOrders(Request $request, ShiprocketCheckoutService $sr): JsonResponse
+    {
+        $beforeId = (int) $request->input('before_id', 0);
+
+        // Candidate = has a Shiprocket order id but no pricing breakdown captured yet.
+        $base = Order::query()
+            ->whereNotNull('shiprocket_order_id')
+            ->whereNull('metadata->sr_pricing');
+
+        // Total is computed only on the first call (before the cursor starts moving).
+        $total = $beforeId <= 0 ? (clone $base)->count() : null;
+
+        $batch = (clone $base)
+            ->when($beforeId > 0, fn ($q) => $q->where('id', '<', $beforeId))
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
+
+        $updated = 0; $skipped = 0; $failed = 0; $failedIds = []; $lastId = $beforeId;
+
+        foreach ($batch as $order) {
+            $lastId = $order->id;
+            try {
+                $r = $sr->syncOrderPricing($order); // safe, missing-only; null = no API data
+                if ($r === null) {
+                    $failed++; $failedIds[] = $order->order_number;
+                } elseif (! empty($r['changed'])) {
+                    $updated++;
+                } else {
+                    $skipped++;
+                }
+            } catch (\Throwable $e) {
+                $failed++; $failedIds[] = $order->order_number;
+                Log::warning('admin.sync-orders: order failed', ['order' => $order->order_number, 'error' => $e->getMessage()]);
+            }
+        }
+
+        $done = $batch->count() < 50;
+
+        Log::info('admin.sync-orders batch', [
+            'admin'     => auth('admin')->id(),
+            'before_id' => $beforeId,
+            'processed' => $batch->count(),
+            'updated'   => $updated,
+            'skipped'   => $skipped,
+            'failed'    => $failed,
+            'done'      => $done,
+        ]);
+
+        return response()->json([
+            'ok'         => true,
+            'total'      => $total,
+            'processed'  => $batch->count(),
+            'updated'    => $updated,
+            'skipped'    => $skipped,
+            'failed'     => $failed,
+            'failed_ids' => $failedIds,
+            'last_id'    => $lastId,
+            'done'       => $done,
+        ]);
+    }
+
     public function syncShiprocketCustomers(Request $request, ShiprocketService $shiprocket): JsonResponse
     {
         $synced  = 0;

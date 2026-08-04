@@ -246,6 +246,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::post('/{order}/push-shiprocket', [App\Http\Controllers\Admin\OrderController::class, 'pushToShiprocket'])->name('push-shiprocket');
                 Route::post('/sync-shiprocket-customers', [App\Http\Controllers\Admin\OrderController::class, 'syncShiprocketCustomers'])->name('sync-shiprocket-customers');
                 Route::post('/sync-shiprocket-addresses', [App\Http\Controllers\Admin\OrderController::class, 'syncShiprocketAddresses'])->name('sync-shiprocket-addresses');
+                Route::post('/sync-orders', [App\Http\Controllers\Admin\OrderController::class, 'syncOrders'])->name('sync-orders');
                 Route::get('/{order}/edit', [App\Http\Controllers\Admin\OrderController::class, 'editOrder'])->name('edit');
                 Route::put('/{order}/update', [App\Http\Controllers\Admin\OrderController::class, 'updateOrder'])->name('update-order');
                 Route::post('/{order}/add-item', [App\Http\Controllers\Admin\OrderController::class, 'addItem'])->name('add-item');
