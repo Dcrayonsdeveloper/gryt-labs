@@ -264,14 +264,17 @@ class ShiprocketCheckoutService
         ];
 
         // Nothing meaningful to record and everything already captured → no-op.
+        // Coupon presence alone is NOT a change: compare the stored codes too,
+        // otherwise every couponed order re-reports "repaired" on each verify pass.
         $columnsMatch     = abs((float) $order->total - $total) < 0.01
             && abs((float) $order->discount - $couponDisc) < 0.01;
         $pricingCaptured  = !empty($order->metadata['sr_pricing']);
+        $codesMatch       = $couponCodes == array_values((array) ($order->metadata['sr_pricing']['coupon_codes'] ?? []));
         $paymentsCaptured = !$payments || !empty($order->metadata['sr_payments']);
         $paymentMatches   = $newPayStatus === $order->payment_status
             && abs($newPaidAmount - (float) $order->paid_amount) < 0.01
             && $newCollected === (bool) $order->payment_collected;
-        if (!$couponCodes && $couponDisc <= 0 && $columnsMatch && $pricingCaptured && $paymentsCaptured && $paymentMatches) {
+        if ($columnsMatch && $pricingCaptured && $codesMatch && $paymentsCaptured && $paymentMatches) {
             return $summary; // changed = false
         }
 
