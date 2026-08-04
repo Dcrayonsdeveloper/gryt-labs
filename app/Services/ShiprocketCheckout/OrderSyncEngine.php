@@ -511,6 +511,19 @@ class OrderSyncEngine
             }
         }
 
+        // D. Sequence repair — recovery-created orders must carry the REAL
+        // placement time, not the time the engine found them. Only orders the
+        // recovery paths created are re-anchored: callback-created orders keep
+        // their payment-completion time (their checkout token can legitimately
+        // be much older — a customer may start checkout one day and pay the next).
+        try {
+            if ($this->repairPlacementTime($order)) {
+                $repairs[] = 'order time → real placement time';
+            }
+        } catch (\Throwable $e) {
+            $errors[] = 'placement time: ' . $e->getMessage();
+        }
+
         // Stamp verification checkpoint (drives the background job's round-robin).
         try {
             $meta = is_array($order->fresh()->metadata) ? $order->fresh()->metadata : [];
@@ -528,6 +541,37 @@ class OrderSyncEngine
             'api_calls' => $this->apiCalls - $apiBefore,
             'changed' => ! empty($repairs),
         ];
+    }
+
+    /**
+     * Re-anchor a recovery-created order to its real placement time (the
+     * checkout token's created_at, which matches the Shiprocket panel to the
+     * minute). Applies ONLY to orders created by the recovery paths — never to
+     * callback-created orders, whose created_at is the payment time.
+     */
+    private function repairPlacementTime(Order $order): bool
+    {
+        $createdFrom = $order->metadata['created_from'] ?? '';
+        if (! in_array($createdFrom, ['sync_engine', 'reconcile_command'], true)) {
+            return false;
+        }
+
+        $tok = DB::table('shiprocket_checkout_ids')
+            ->where('shiprocket_id', (string) $order->shiprocket_order_id)
+            ->value('created_at');
+        if (! $tok) {
+            return false;
+        }
+
+        $ts = Carbon::parse($tok);
+        if (! $ts->isPast() || abs($ts->diffInMinutes($order->created_at)) <= 5) {
+            return false;
+        }
+
+        $order->created_at = $ts;
+        $order->confirmed_at = $ts;
+        $order->save();
+        return true;
     }
 
     /** Fill missing guest identity from the Checkout payload. Fill-if-blank only. */
