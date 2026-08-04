@@ -56,9 +56,9 @@
     <x-slot name="statsBar">
         @include('admin.partials.stats-bar', ['stats' => [
             ['label' => 'Orders', 'value' => number_format($stats['total'] ?? 0), 'sparkline' => '2,15 10,12 18,8 26,14 34,6 42,11 50,4 58,9', 'color' => '#5c6ac4'],
-            ['label' => 'Items ordered', 'value' => number_format(($stats['total'] ?? 0) * 2), 'sparkline' => '2,14 10,10 18,12 26,6 34,9 42,4 50,8 58,3', 'color' => '#47c1bf'],
-            ['label' => 'Returns', 'value' => '₹' . number_format($stats['cancelled'] ?? 0), 'sparkline' => '2,10 10,10 18,10 26,10 34,10 42,10 50,10 58,10', 'color' => '#9c6ade'],
-            ['label' => 'Orders fulfilled', 'value' => number_format($stats['completed'] ?? 0), 'sparkline' => '2,16 10,14 18,12 26,10 34,8 42,6 50,4 58,2', 'color' => '#5c6ac4'],
+            ['label' => 'Items ordered', 'value' => number_format($stats['items'] ?? 0), 'sparkline' => '2,14 10,10 18,12 26,6 34,9 42,4 50,8 58,3', 'color' => '#47c1bf'],
+            ['label' => 'Returns', 'value' => number_format($stats['returned'] ?? 0), 'sparkline' => '2,10 10,10 18,10 26,10 34,10 42,10 50,10 58,10', 'color' => '#9c6ade'],
+            ['label' => 'Orders fulfilled', 'value' => number_format($stats['fulfilled'] ?? 0), 'sparkline' => '2,16 10,14 18,12 26,10 34,8 42,6 50,4 58,2', 'color' => '#5c6ac4'],
         ]])
     </x-slot>
 

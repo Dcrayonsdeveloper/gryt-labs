@@ -138,11 +138,16 @@ class OrderController extends Controller
 
         $stats = [
             'total' => (int) $counts->sum(),
+            'items' => (int) OrderItem::sum('quantity'),
             'confirmed' => (int) ($counts['confirmed'] ?? 0),
             'processing' => (int) (($counts['processing'] ?? 0) + ($counts['packed'] ?? 0)),
             'shipped' => (int) (($counts['shipped'] ?? 0) + ($counts['out_for_delivery'] ?? 0)),
             'completed' => (int) ($counts['delivered'] ?? 0),
+            // "Fulfilled" = dispatched or beyond (shipped / out for delivery / delivered),
+            // NOT delivered-only — an order in transit has still been fulfilled.
+            'fulfilled' => (int) (($counts['shipped'] ?? 0) + ($counts['out_for_delivery'] ?? 0) + ($counts['delivered'] ?? 0)),
             'cancelled' => (int) ($counts['cancelled'] ?? 0),
+            'returned' => (int) ($counts['returned'] ?? 0),
             'needs_attention' => $attentionCount,
             'shiprocket_missing' => $shiprocketMissing,
             'address_missing' => $addressMissing,
