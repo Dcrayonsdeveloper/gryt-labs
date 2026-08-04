@@ -2,14 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Events\OrderPlaced;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
 use App\Models\Setting;
 use App\Models\ShiprocketCheckoutEvent;
 use App\Models\Tenant;
-use App\Models\User;
+use App\Services\ShiprocketCheckout\OrderSyncEngine;
 use App\Services\ShiprocketService;
 use App\Services\WhatsAppService;
 use Illuminate\Console\Command;
@@ -49,6 +45,7 @@ class ReconcileShiprocketOrders extends Command
 
     private bool $create = false;
     private int $days = 7;
+    private OrderSyncEngine $engine;
 
     public function handle(): int
     {
@@ -71,6 +68,9 @@ class ReconcileShiprocketOrders extends Command
         foreach ($tenants as $tenant) {
             tenancy()->initialize($tenant);
             try {
+                // Resolved per tenant: the engine's ShiprocketService caches its
+                // auth token from tenant settings at construction time.
+                $this->engine = app(OrderSyncEngine::class);
                 $this->reconcileTenant((string) $tenant->id);
             } catch (\Throwable $e) {
                 $this->error("[{$tenant->id}] reconcile failed: {$e->getMessage()}");
@@ -131,9 +131,14 @@ class ReconcileShiprocketOrders extends Command
                 $this->line("  {$m['shiprocket_id']} — shipping-API only: listed for review, not auto-created.");
                 continue;
             }
-            $order = $this->persistOrder($m);
-            if ($order) {
-                $this->info("  {$m['shiprocket_id']} — created {$order->order_number} (OrderPlaced dispatched).");
+            $res = $this->engine->createFromShape($m);
+            match ($res['status']) {
+                'created' => $this->info("  {$m['shiprocket_id']} — {$res['message']} (OrderPlaced dispatched)."),
+                'exists' => $this->line("  {$m['shiprocket_id']} — {$res['message']}, skipped."),
+                'skipped_product' => $this->warn("  {$m['shiprocket_id']} — skipped: {$res['message']}."),
+                default => $this->error("  {$m['shiprocket_id']} — creation failed: {$res['message']}"),
+            };
+            if ($res['status'] === 'created') {
                 $recovered++;
             }
         }
@@ -166,7 +171,7 @@ class ReconcileShiprocketOrders extends Command
             if ($events->contains(fn ($e) => $e->order_id !== null)) {
                 continue;
             }
-            if ($this->findLocalOrder((string) $cartId)) {
+            if ($this->engine->findLocalOrder((string) $cartId)) {
                 continue;
             }
             $found[(string) $cartId] = $this->buildFromEvents((string) $cartId, $events);
@@ -181,7 +186,7 @@ class ReconcileShiprocketOrders extends Command
             if ($singleId && $hex !== $singleId) {
                 continue;
             }
-            if ($this->findLocalOrder($hex)) {
+            if ($this->engine->findLocalOrder($hex)) {
                 continue;
             }
             $found[$hex] = $this->buildFromShippingOrder($srOrder);
@@ -210,7 +215,7 @@ class ReconcileShiprocketOrders extends Command
 
         foreach ($candidateIds as $cid) {
             $cid = (string) $cid;
-            if ($cid === '' || isset($found[$cid]) || $this->findLocalOrder($cid)) {
+            if ($cid === '' || isset($found[$cid]) || $this->engine->findLocalOrder($cid)) {
                 continue;
             }
 
@@ -240,25 +245,15 @@ class ReconcileShiprocketOrders extends Command
                 continue;
             }
             foreach ($altIds as $aid) {
-                if ($this->findLocalOrder($aid)) {
+                if ($this->engine->findLocalOrder($aid)) {
                     continue 2;
                 }
             }
 
-            $found[$cid] = $this->buildFromCheckoutApi($cid, $sr);
+            $found[$cid] = $this->engine->buildFromCheckoutApi($cid, $sr);
         }
 
         return array_values($found);
-    }
-
-    /** Locate a local Order by any of the ids Shiprocket Checkout can key it under. */
-    private function findLocalOrder(string $ref): ?Order
-    {
-        return Order::where('shiprocket_order_id', $ref)
-            ->orWhere('order_number', $ref)
-            ->orWhereJsonContains('metadata->shiprocket_checkout_id', $ref)
-            ->orWhereJsonContains('metadata->shiprocket_cart_id', $ref)
-            ->first();
     }
 
     /** Pull the Shipping API order list for the scan window (paged, capped). */
@@ -379,245 +374,6 @@ class ReconcileShiprocketOrders extends Command
                 'paid' => $isCod ? 0.0 : $total,
             ],
         ];
-    }
-
-    /**
-     * Normalise a Shiprocket CHECKOUT order-details payload (getOrder → result) into the
-     * recoverable-order shape. This is the authoritative source for a placed Checkout
-     * order: it carries the real cart, the coupon/discount pricing and the shipping
-     * address even when no webhook or callback ever reached us.
-     *
-     * Confirmed live field shape: cart_data.items[].{variant_id, quantity, price} ·
-     * subtotal_price · total_discount · coupon_discount · shipping_charges ·
-     * total_amount_payable · payment_type (PREPAID|CASH_ON_DELIVERY) · payment_status ·
-     * shipping_address.{first_name,last_name,phone,email,line1,line2,city,state,pincode}.
-     */
-    private function buildFromCheckoutApi(string $checkoutId, array $sr): array
-    {
-        $addr = $sr['shipping_address'] ?? $sr['billing_address'] ?? [];
-
-        $items = [];
-        foreach (($sr['cart_data']['items'] ?? []) as $i) {
-            $items[] = [
-                'product_id' => $i['variant_id'] ?? $i['product_id'] ?? null,
-                'name' => $i['name'] ?? $i['title'] ?? 'Product',
-                'sku' => $i['sku'] ?? '',
-                'quantity' => (int) ($i['quantity'] ?? 1),
-                'price' => (float) ($i['price'] ?? 0),
-            ];
-        }
-
-        $subtotal = array_sum(array_map(fn ($i) => $i['price'] * $i['quantity'], $items));
-        if ($subtotal <= 0) {
-            $subtotal = (float) ($sr['subtotal_price'] ?? 0);
-        }
-
-        $discount = (float) ($sr['total_discount'] ?? $sr['coupon_discount'] ?? 0);
-        $shipping = (float) ($sr['shipping_charges'] ?? 0);
-        $total = (float) ($sr['total_amount_payable'] ?? max(0, $subtotal - $discount + $shipping));
-
-        $isPrepaid = strtoupper((string) ($sr['payment_type'] ?? '')) === 'PREPAID';
-        $paidOk = strtolower((string) ($sr['payment_status'] ?? '')) === 'success';
-
-        $name = trim(($addr['first_name'] ?? '') . ' ' . ($addr['last_name'] ?? ''));
-
-        return [
-            'shiprocket_id' => $checkoutId,
-            'source' => 'checkout API',
-            'customer' => [
-                'name' => $name ?: null,
-                'email' => $addr['email'] ?? $sr['email'] ?? null,
-                'phone' => $addr['phone'] ?? $sr['phone'] ?? null,
-                'address' => $addr['line1'] ?? '',
-                'address_2' => $addr['line2'] ?? '',
-                'city' => $addr['city'] ?? '',
-                'state' => $addr['state'] ?? '',
-                'pincode' => $addr['pincode'] ?? '',
-                'country' => $addr['country'] ?? 'India',
-            ],
-            'items' => $items,
-            'payment_mode' => $isPrepaid ? 'prepaid' : 'cod',
-            'amounts' => [
-                'subtotal' => $subtotal,
-                'discount' => $discount,
-                'shipping' => $shipping,
-                'tax' => 0.0,
-                'total' => $total,
-                'paid' => ($isPrepaid && $paidOk) ? $total : 0.0,
-            ],
-        ];
-    }
-
-    /**
-     * Create the missing Order + items and dispatch OrderPlaced.
-     * Idempotent: re-checks for an existing order inside the transaction.
-     */
-    private function persistOrder(array $m): ?Order
-    {
-        // Resolve every line to a real product BEFORE opening the transaction.
-        // order_items.product_id is NOT NULL on prod MySQL — an unresolvable line
-        // used to throw mid-transaction and roll the whole order back (erroring the
-        // scheduled run every 15 minutes). Skip cleanly instead.
-        foreach ($m['items'] as $idx => $item) {
-            $product = $this->resolveProduct($item);
-            if (! $product) {
-                $this->warn("  {$m['shiprocket_id']} — skipped: product not found for '" . ($item['name'] ?? $item['sku'] ?? '?') . "', create manually.");
-                return null;
-            }
-            $m['items'][$idx]['product_id'] = $product->id;
-        }
-
-        try {
-            return DB::transaction(function () use ($m) {
-                // Advisory lock guards against a late callback/webhook racing us (Postgres only).
-                if (DB::connection()->getDriverName() === 'pgsql') {
-                    DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', [$m['shiprocket_id']]);
-                }
-
-                if ($existing = $this->findLocalOrder($m['shiprocket_id'])) {
-                    $this->line("  {$m['shiprocket_id']} — already exists as {$existing->order_number}, skipped.");
-                    return null;
-                }
-
-                $cust = $m['customer'];
-                $a = $m['amounts'];
-
-                if ($m['payment_mode'] === 'cod') {
-                    $paymentStatus = 'pending';
-                    $paid = 0.0;
-                } elseif ($a['paid'] > 0 && $a['paid'] < $a['total']) {
-                    $paymentStatus = 'partial';
-                    $paid = $a['paid'];
-                } else {
-                    $paymentStatus = 'paid';
-                    $paid = $a['total'];
-                }
-
-                // Link to an existing account if one matches — never create a placeholder user.
-                $cleanPhone = $cust['phone'] ? preg_replace('/\D/', '', $cust['phone']) : null;
-                $userId = ($cust['email'] || $cleanPhone)
-                    ? User::query()
-                        ->when($cust['email'], fn ($q) => $q->orWhere('email', $cust['email']))
-                        ->when($cleanPhone, fn ($q) => $q->orWhere('phone', $cleanPhone))
-                        ->value('id')
-                    : null;
-
-                $order = Order::create([
-                    'user_id' => $userId,
-                    'guest_name' => $cust['name'] ?: null,
-                    'guest_email' => $cust['email'] ?: null,
-                    'guest_phone' => $cust['phone'] ?: null,
-                    'status' => 'confirmed',
-                    'payment_status' => $paymentStatus,
-                    'subtotal' => $a['subtotal'],
-                    'discount' => $a['discount'],
-                    'shipping_cost' => $a['shipping'],
-                    'tax' => $a['tax'],
-                    'total' => $a['total'],
-                    'paid_amount' => $paid,
-                    'source' => 'api',
-                    'shiprocket_order_id' => $m['shiprocket_id'],
-                    'shipping_address_snapshot' => array_filter([
-                        'name' => $cust['name'] ?? '',
-                        'phone' => $cust['phone'] ?? '',
-                        'address_line_1' => $cust['address'] ?? '',
-                        'address_line_2' => $cust['address_2'] ?? '',
-                        'city' => $cust['city'] ?? '',
-                        'state' => $cust['state'] ?? '',
-                        'postal_code' => $cust['pincode'] ?? '',
-                        'country' => $cust['country'] ?? 'India',
-                    ]),
-                    'metadata' => array_filter([
-                        'payment_method' => $m['payment_mode'],
-                        'payment_gateway' => 'shiprocket',
-                        'shiprocket_checkout_id' => $m['shiprocket_id'],
-                        'created_from' => 'reconcile_command',
-                        'reconcile_source' => $m['source'],
-                        'reconciled_at' => now()->toIso8601String(),
-                    ]),
-                ]);
-
-                foreach ($m['items'] as $item) {
-                    $this->createItem($order, $item);
-                }
-
-                $order->load('items.product', 'user');
-                try {
-                    OrderPlaced::dispatch($order, 'shiprocket_checkout');
-                } catch (\Throwable $e) {
-                    Log::error('shiprocket:reconcile-orders OrderPlaced dispatch failed', [
-                        'order_id' => $order->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
-                Log::info('shiprocket:reconcile-orders recovered order', [
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'shiprocket_order_id' => $m['shiprocket_id'],
-                    'source' => $m['source'],
-                ]);
-
-                return $order;
-            });
-        } catch (\Throwable $e) {
-            $this->error("  {$m['shiprocket_id']} — creation failed: {$e->getMessage()}");
-            Log::error('shiprocket:reconcile-orders creation failed', [
-                'shiprocket_order_id' => $m['shiprocket_id'],
-                'error' => $e->getMessage(),
-            ]);
-            return null;
-        }
-    }
-
-    /** Resolve an item line to a Product by id → SKU → exact name. */
-    private function resolveProduct(array $item): ?Product
-    {
-        $product = ! empty($item['product_id']) ? Product::find($item['product_id']) : null;
-        if (! $product && ! empty($item['sku'])) {
-            $product = Product::where('sku', $item['sku'])->first();
-        }
-        if (! $product && ! empty($item['name'])) {
-            $product = Product::where('name', $item['name'])->first();
-        }
-
-        return $product;
-    }
-
-    /** Create one OrderItem and decrement stock when the product resolves. */
-    private function createItem(Order $order, array $item): void
-    {
-        $product = $this->resolveProduct($item);
-
-        $qty = max(1, (int) $item['quantity']);
-        $price = (float) $item['price'];
-
-        OrderItem::create([
-            'order_id' => $order->id,
-            'product_id' => $product?->id,
-            'product_name' => $product?->name ?? $item['name'] ?? 'Product',
-            'sku' => $product?->sku ?? $item['sku'] ?? '',
-            'quantity' => $qty,
-            'mrp' => $product?->mrp ?? $price,
-            'price' => $price,
-            'tax' => 0,
-            'discount' => 0,
-            'total' => $price * $qty,
-        ]);
-
-        if (! $product) {
-            return;
-        }
-        $locked = Product::where('id', $product->id)->lockForUpdate()->first();
-        if ($locked && $locked->stock_quantity >= $qty) {
-            $locked->decrement('stock_quantity', $qty);
-            $locked->increment('sales_count', $qty);
-            if ($locked->fresh()->stock_quantity <= 0) {
-                $locked->update(['stock_status' => 'out_of_stock']);
-            }
-        } else {
-            $product->increment('sales_count', $qty);
-        }
     }
 
     /** WhatsApp the admin so missing orders never go unnoticed (scheduled runs). */

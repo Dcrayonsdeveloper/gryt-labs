@@ -130,71 +130,127 @@
                 <button type="submit" class="btn btn-primary text-sm h-9 px-4 shrink-0">Filter</button>
                 <button type="button" x-on:click="start()" :disabled="running"
                         class="btn btn-secondary text-sm h-9 px-3 shrink-0 inline-flex items-center gap-1.5"
-                        title="Fetch &amp; fill missing pricing / discount / payment on incomplete Shiprocket orders (safe: only fills blanks)">
+                        title="Verify every Shiprocket order against the source platform: recover missing orders, then repair pricing, coupons, payment, customer, address, items, fulfillment, AWB &amp; tracking. Safe: idempotent, fill-if-blank, forward-only.">
                     <svg x-show="running" x-cloak class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"></circle><path fill="currentColor" style="opacity:.75" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"></path></svg>
                     <span x-show="!running">&#128260; Sync Orders</span>
-                    <span x-show="running" x-cloak>Syncing…</span>
+                    <span x-show="running" x-cloak x-text="stage === 'discover' ? 'Recovering…' : 'Verifying…'"></span>
                 </button>
                 @if(request()->hasAny(['search', 'payment_status', 'date_from', 'date_to']))
                     <a href="{{ route('admin.orders.index', $attentionActive ? ['tab' => 'needs_attention'] : ($currentStatus ? ['status' => $currentStatus] : [])) }}" class="text-xs text-neutral-500 hover:text-neutral-700 shrink-0">Clear</a>
                 @endif
             </form>
 
-            {{-- Sync progress --}}
-            <div x-show="running || done" x-cloak class="mt-3 max-w-md">
+            {{-- Sync progress + report --}}
+            <div x-show="running || done" x-cloak class="mt-3 max-w-xl">
                 <div class="flex items-center justify-between text-xs text-neutral-600 mb-1">
-                    <span x-text="running ? ('Processing… ' + processed + ' / ' + total + ' orders') : ('Sync complete — ' + processed + ' order(s) checked')"></span>
+                    <span x-text="statusLine"></span>
                     <span x-text="pct + '%'"></span>
                 </div>
                 <div class="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
                     <div class="h-full bg-primary-600" :style="'width:' + pct + '%;transition:width .2s'"></div>
                 </div>
-                <div x-show="done" x-cloak class="mt-2 text-xs">
-                    <span class="font-medium text-emerald-600" x-text="'✓ Updated: ' + updated"></span>
-                    <span class="text-neutral-300">·</span>
-                    <span class="text-neutral-600" x-text="'Skipped: ' + skipped"></span>
-                    <span class="text-neutral-300">·</span>
-                    <span class="text-red-600" x-text="'Failed: ' + failed"></span>
-                    <template x-if="failedIds.length"><span class="text-neutral-400 ml-1" x-text="'(' + failedIds.slice(0,20).join(', ') + ')'"></span></template>
+                <div x-show="done" x-cloak class="mt-2 text-xs space-y-1.5">
+                    <div>
+                        <span class="font-medium text-emerald-600" x-text="'✓ Recovered: ' + created.length"></span>
+                        <span class="text-neutral-300">·</span>
+                        <span class="font-medium text-blue-600" x-text="'Repaired: ' + repaired.length"></span>
+                        <span class="text-neutral-300">·</span>
+                        <span class="text-neutral-600" x-text="'Verified clean: ' + clean"></span>
+                        <span class="text-neutral-300">·</span>
+                        <span :class="failed > 0 ? 'text-red-600 font-medium' : 'text-neutral-600'" x-text="'Failed: ' + failed"></span>
+                        <span class="text-neutral-300">·</span>
+                        <span class="text-neutral-400" x-text="apiCalls + ' API calls · ' + elapsed + 's'"></span>
+                    </div>
+                    <template x-if="created.length">
+                        <div class="text-emerald-700">
+                            <span class="font-medium">New orders recovered:</span>
+                            <template x-for="c in created" :key="c.order_number">
+                                <span class="inline-block bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 mr-1 mt-1" x-text="c.order_number + ' (₹' + c.total + ')'"></span>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="repaired.length">
+                        <div class="text-blue-700">
+                            <span class="font-medium">Repaired:</span>
+                            <template x-for="r in repaired" :key="r.order_number">
+                                <div class="ml-2 mt-0.5"><span class="font-medium" x-text="r.order_number"></span> <span class="text-neutral-500" x-text="'— ' + r.repairs.join(', ')"></span></div>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="discrepancies.length">
+                        <div class="text-amber-700">
+                            <span class="font-medium">Needs review:</span>
+                            <template x-for="(d, i) in discrepancies" :key="i">
+                                <div class="ml-2 mt-0.5"><span class="font-medium" x-text="d.order_number"></span> <span x-text="'— ' + d.issue"></span></div>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="failedIds.length"><div class="text-red-600" x-text="'Failed: ' + failedIds.slice(0,20).join(', ')"></div></template>
                 </div>
             </div>
 
             <script>
                 function orderSync() {
                     return {
-                        running: false, done: false, total: 0, processed: 0,
-                        updated: 0, skipped: 0, failed: 0, failedIds: [], lastId: 0,
-                        get pct() { return this.total > 0 ? Math.min(100, Math.round(this.processed / this.total * 100)) : (this.done ? 100 : 0); },
+                        running: false, done: false, stage: 'discover',
+                        total: 0, processed: 0, clean: 0, failed: 0, apiCalls: 0, elapsed: 0,
+                        created: [], repaired: [], discrepancies: [], failedIds: [], lastId: 0,
+                        get pct() {
+                            if (this.done) return 100;
+                            if (this.stage === 'discover') return 5;
+                            return this.total > 0 ? Math.min(99, 5 + Math.round(this.processed / this.total * 94)) : 5;
+                        },
+                        get statusLine() {
+                            if (this.running && this.stage === 'discover') return 'Step 1/2 — checking Shiprocket for missing orders…';
+                            if (this.running) return 'Step 2/2 — verifying & repairing… ' + this.processed + ' / ' + this.total + ' orders';
+                            return 'Sync complete — ' + this.processed + ' order(s) verified against Shiprocket';
+                        },
+                        async post(params) {
+                            const body = new URLSearchParams(params);
+                            const res = await fetch('{{ route('admin.orders.sync-orders') }}', {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body,
+                            });
+                            if (!res.ok) throw new Error('HTTP ' + res.status);
+                            return res.json();
+                        },
                         async start() {
                             if (this.running) return;
-                            this.running = true; this.done = false;
-                            this.total = 0; this.processed = 0; this.updated = 0; this.skipped = 0; this.failed = 0; this.failedIds = []; this.lastId = 0;
-                            const url = '{{ route('admin.orders.sync-orders') }}';
-                            const token = '{{ csrf_token() }}';
+                            this.running = true; this.done = false; this.stage = 'discover';
+                            this.total = 0; this.processed = 0; this.clean = 0; this.failed = 0; this.apiCalls = 0;
+                            this.created = []; this.repaired = []; this.discrepancies = []; this.failedIds = []; this.lastId = 0;
+                            const t0 = Date.now();
                             try {
+                                // Phase 1 — recover orders missing from the local DB.
+                                const disc = await this.post({ phase: 'discover' });
+                                if (Array.isArray(disc.created)) this.created.push(...disc.created);
+                                this.failed += (disc.failed || 0);
+                                if (Array.isArray(disc.failed_ids)) this.failedIds.push(...disc.failed_ids);
+                                this.apiCalls += (disc.api_calls || 0);
+
+                                // Phase 2 — verify & repair every Shiprocket order.
+                                this.stage = 'repair';
                                 let finished = false, guard = 0;
                                 while (!finished && guard++ < 10000) {
-                                    const body = new URLSearchParams();
-                                    if (this.lastId > 0) body.set('before_id', this.lastId);
-                                    const res = await fetch(url, {
-                                        method: 'POST',
-                                        headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-                                        body,
-                                    });
-                                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                                    const d = await res.json();
+                                    const params = { phase: 'repair' };
+                                    if (this.lastId > 0) params.before_id = this.lastId;
+                                    const d = await this.post(params);
                                     if (typeof d.total === 'number' && this.total === 0) this.total = d.total;
                                     this.processed += (d.processed || 0);
-                                    this.updated   += (d.updated   || 0);
-                                    this.skipped   += (d.skipped   || 0);
-                                    this.failed    += (d.failed    || 0);
+                                    this.clean += (d.clean || 0);
+                                    this.failed += (d.failed || 0);
+                                    if (Array.isArray(d.repaired)) this.repaired.push(...d.repaired);
+                                    if (Array.isArray(d.discrepancies)) this.discrepancies.push(...d.discrepancies);
                                     if (Array.isArray(d.failed_ids)) this.failedIds.push(...d.failed_ids);
+                                    this.apiCalls += (d.api_calls || 0);
                                     this.lastId = d.last_id || this.lastId;
                                     finished = !!d.done;
                                 }
                             } catch (e) {
                                 alert('Sync failed: ' + e.message + ' — check logs.');
                             } finally {
+                                this.elapsed = Math.round((Date.now() - t0) / 1000);
                                 this.running = false; this.done = true;
                             }
                         }

@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\ShiprocketCheckoutEvent;
 use App\Services\ShiprocketService;
+use App\Services\ShiprocketCheckout\OrderSyncEngine;
 use App\Services\ShiprocketCheckout\ShiprocketCheckoutService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -688,45 +689,79 @@ class OrderController extends Controller
      * Falls back to per-order API calls for any still-missing after the list pass.
      */
     /**
-     * Batched "Sync Orders" for the toolbar button. Fills missing pricing / discount /
-     * payment on orders that have a Shiprocket id but no captured pricing yet.
+     * "Sync Orders" — the verification & recovery engine behind the toolbar button.
      *
-     * Idempotent + safe: reuses the shared ShiprocketCheckoutService::syncOrderPricing()
-     * (missing-only updates, never overwrites manual edits, no duplicate rows, and the
-     * order-details API call already handles timeout/retry). The button calls this
-     * repeatedly with an `id` cursor (before_id) so every order is walked exactly once —
-     * failures included — which keeps it safe over large datasets and avoids re-loops.
+     * Webhooks stay the primary real-time sync; this is the guarantee of parity
+     * with Shiprocket when they are missed. Two phases, driven by the button:
+     *
+     *   phase=discover  — one call. Finds completed Shiprocket Checkout orders
+     *                     with no local Order (missed callback + missed webhook,
+     *                     or locally deleted) and creates them via the shared
+     *                     OrderSyncEngine creation path. Returns what was created.
+     *   phase=repair    — cursor-batched. Verifies every Shiprocket order against
+     *                     the source APIs and repairs pricing/coupons, payment
+     *                     state, the transactions ledger, customer identity,
+     *                     address, line items, fulfillment (AWB/courier/shipment
+     *                     record), order status + real lifecycle timestamps and
+     *                     the AWB tracking timeline.
+     *
+     * Everything is idempotent (keyed on the Shiprocket order id / AWB / txn id),
+     * fill-if-blank or forward-only, and one failed order never stops the batch.
      */
-    public function syncOrders(Request $request, ShiprocketCheckoutService $sr): JsonResponse
+    public function syncOrders(Request $request, OrderSyncEngine $engine): JsonResponse
     {
-        $beforeId = (int) $request->input('before_id', 0);
+        $phase = (string) $request->input('phase', 'repair');
 
-        // Candidate = has a Shiprocket order id but no pricing breakdown captured yet.
-        $base = Order::query()
-            ->whereNotNull('shiprocket_order_id')
-            ->whereNull('metadata->sr_pricing');
+        if ($phase === 'discover') {
+            $report = $engine->discoverAndCreate(days: 7);
+
+            Log::info('admin.sync-orders discover', ['admin' => auth('admin')->id()] + collect($report)->except('created')->all());
+
+            return response()->json([
+                'ok' => true,
+                'phase' => 'discover',
+                'scanned' => $report['scanned'],
+                'created' => $report['created'],
+                'existing' => $report['existing'],
+                'incomplete' => $report['incomplete'],
+                'failed' => count($report['failed']),
+                'failed_ids' => array_column($report['failed'], 'id'),
+                'api_calls' => $report['api_calls'],
+            ]);
+        }
+
+        // phase=repair — walk every order that has a Shiprocket id, newest first.
+        $beforeId = (int) $request->input('before_id', 0);
+        $base = Order::query()->whereNotNull('shiprocket_order_id');
 
         // Total is computed only on the first call (before the cursor starts moving).
         $total = $beforeId <= 0 ? (clone $base)->count() : null;
 
+        // Small batches: a full verify costs up to 3 API calls per order.
         $batch = (clone $base)
             ->when($beforeId > 0, fn ($q) => $q->where('id', '<', $beforeId))
             ->orderByDesc('id')
-            ->limit(50)
+            ->limit(8)
             ->get();
 
-        $updated = 0; $skipped = 0; $failed = 0; $failedIds = []; $lastId = $beforeId;
+        $repaired = [];
+        $discrepancies = [];
+        $clean = 0; $failed = 0; $failedIds = []; $lastId = $beforeId;
 
         foreach ($batch as $order) {
             $lastId = $order->id;
             try {
-                $r = $sr->syncOrderPricing($order); // safe, missing-only; null = no API data
-                if ($r === null) {
-                    $failed++; $failedIds[] = $order->order_number;
-                } elseif (! empty($r['changed'])) {
-                    $updated++;
+                $r = $engine->verifyAndRepair($order);
+                if ($r['changed']) {
+                    $repaired[] = ['order_number' => $r['order_number'], 'repairs' => $r['repairs']];
                 } else {
-                    $skipped++;
+                    $clean++;
+                }
+                foreach ($r['discrepancies'] as $d) {
+                    $discrepancies[] = ['order_number' => $r['order_number'], 'issue' => $d];
+                }
+                if (! empty($r['errors'])) {
+                    Log::warning('admin.sync-orders: partial errors', ['order' => $r['order_number'], 'errors' => $r['errors']]);
                 }
             } catch (\Throwable $e) {
                 $failed++; $failedIds[] = $order->order_number;
@@ -734,28 +769,32 @@ class OrderController extends Controller
             }
         }
 
-        $done = $batch->count() < 50;
+        $done = $batch->count() < 8;
 
-        Log::info('admin.sync-orders batch', [
-            'admin'     => auth('admin')->id(),
+        Log::info('admin.sync-orders repair batch', [
+            'admin' => auth('admin')->id(),
             'before_id' => $beforeId,
             'processed' => $batch->count(),
-            'updated'   => $updated,
-            'skipped'   => $skipped,
-            'failed'    => $failed,
-            'done'      => $done,
+            'repaired' => count($repaired),
+            'clean' => $clean,
+            'failed' => $failed,
+            'api_calls' => $engine->apiCalls,
+            'done' => $done,
         ]);
 
         return response()->json([
-            'ok'         => true,
-            'total'      => $total,
-            'processed'  => $batch->count(),
-            'updated'    => $updated,
-            'skipped'    => $skipped,
-            'failed'     => $failed,
+            'ok' => true,
+            'phase' => 'repair',
+            'total' => $total,
+            'processed' => $batch->count(),
+            'repaired' => $repaired,
+            'discrepancies' => $discrepancies,
+            'clean' => $clean,
+            'failed' => $failed,
             'failed_ids' => $failedIds,
-            'last_id'    => $lastId,
-            'done'       => $done,
+            'api_calls' => $engine->apiCalls,
+            'last_id' => $lastId,
+            'done' => $done,
         ]);
     }
 

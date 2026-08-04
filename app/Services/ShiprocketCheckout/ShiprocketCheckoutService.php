@@ -200,13 +200,15 @@ class ShiprocketCheckoutService
      * @return array|null  Summary (order/old_total/new_total/old_discount/new_discount/
      *                     old_pay/new_pay/codes/changed), or null if the API had no data.
      */
-    public function syncOrderPricing(Order $order, bool $dry = false): ?array
+    public function syncOrderPricing(Order $order, bool $dry = false, ?array $prefetched = null): ?array
     {
         if (empty($order->shiprocket_order_id)) {
             return null;
         }
 
-        $r = $this->getOrder((string) $order->shiprocket_order_id);
+        // The sync engine passes the already-fetched order-details payload so a
+        // combined verify pass costs one API call, not two.
+        $r = $prefetched ?? $this->getOrder((string) $order->shiprocket_order_id);
         if (!is_array($r)) {
             return null;
         }
