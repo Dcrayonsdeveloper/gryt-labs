@@ -219,6 +219,31 @@ class ShiprocketCheckoutService
         $prepaid     = isset($r['prepaid_discount']) ? (float) $r['prepaid_discount'] : null;
         $couponDisc  = (float) ($r['coupon_discount'] ?? $r['total_discount'] ?? 0);
         $couponCodes = array_values(array_filter((array) ($r['coupon_codes'] ?? [])));
+
+        // The top-level coupon_codes often lists only the PRIMARY code. The full
+        // per-coupon breakdown (incl. automatic discounts like a FREE freebie) lives
+        // in discount_detail.discount_data[] — capture it so no code is dropped and
+        // the Payment Summary can show each code's own amount.
+        $couponBreakdown = [];
+        foreach ((array) data_get($r, 'discount_detail.discount_data', []) as $d) {
+            $code = trim((string) ($d['discount_code'] ?? ''));
+            if ($code === '') {
+                continue;
+            }
+            $couponBreakdown[] = [
+                'code'   => $code,
+                'amount' => (float) ($d['discount_amount'] ?? 0),
+                'type'   => $d['discount_type'] ?? null,   // 'discount' | 'automatic' (freebie)
+                'mode'   => $d['discount_mode'] ?? null,   // 'percent' | 'flat'
+            ];
+        }
+        if ($couponBreakdown) {
+            // coupon_codes stays a plain string list (attribution + autocomplete rely
+            // on that shape) — merged so every code from the breakdown is present.
+            $fromBreakdown = array_column($couponBreakdown, 'code');
+            $plain = array_map(fn ($c) => is_array($c) ? ($c['code'] ?? '') : (string) $c, $couponCodes);
+            $couponCodes = array_values(array_unique(array_filter(array_merge($plain, $fromBreakdown))));
+        }
         $total       = (float) ($r['total_amount_payable'] ?? ($subtotal - $couponDisc + $shipping));
         $payments    = array_values(array_filter((array) ($r['payments'] ?? [])));
 
@@ -245,6 +270,7 @@ class ShiprocketCheckoutService
             'total_discount'       => (float) ($r['total_discount'] ?? $couponDisc),
             'coupon_discount'      => $couponDisc,
             'coupon_codes'         => $couponCodes,
+            'coupon_breakdown'     => $couponBreakdown ?: null,
             'prepaid_discount'     => $prepaid,
             'cod_charges'          => $codCharge,
             'shipping_price'       => $shipping,

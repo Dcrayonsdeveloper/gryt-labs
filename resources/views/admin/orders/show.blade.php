@@ -260,12 +260,27 @@
                         <div style="display:flex;justify-content:space-between;">
                             <span style="font-weight:600;font-size:12px;color:rgb(3,153,63);">Discount Codes Applied</span>
                         </div>
+                        @php
+                            // Per-code amounts when the API breakdown was captured
+                            // (sr_pricing.coupon_breakdown); else lump the total on row 1.
+                            $psBreakdown = collect((array) ($srp['coupon_breakdown'] ?? []))
+                                ->filter(fn ($b) => is_array($b) && !empty($b['code']))
+                                ->keyBy(fn ($b) => strtoupper((string) $b['code']));
+                        @endphp
                         @forelse($psCouponCodes as $i => $code)
+                            @php
+                                $codeName = is_array($code) ? ($code['code'] ?? $code['name'] ?? 'Discount') : $code;
+                                $rowAmt = $psBreakdown->get(strtoupper((string) $codeName))['amount'] ?? null;
+                            @endphp
                             <div style="display:flex;justify-content:space-between;margin-top:4px;">
                                 <span style="font-size:11px;font-weight:500;color:rgb(3,153,63);">
-                                    <span style="height:8px;width:8px;background-color:rgb(2,197,80);border-radius:50%;display:inline-block;margin-right:4px;"></span>{{ is_array($code) ? ($code['code'] ?? $code['name'] ?? 'Discount') : $code }}
+                                    <span style="height:8px;width:8px;background-color:rgb(2,197,80);border-radius:50%;display:inline-block;margin-right:4px;"></span>{{ $codeName }}
                                 </span>
-                                @if($i === 0)<span style="font-weight:600;color:rgb(3,153,63);">-{{ format_price($psCouponDiscount) }}</span>@endif
+                                @if($rowAmt !== null)
+                                    <span style="font-weight:600;color:rgb(3,153,63);">-{{ format_price($rowAmt) }}</span>
+                                @elseif($i === 0 && $psBreakdown->isEmpty())
+                                    <span style="font-weight:600;color:rgb(3,153,63);">-{{ format_price($psCouponDiscount) }}</span>
+                                @endif
                             </div>
                         @empty
                             <div style="display:flex;justify-content:space-between;margin-top:4px;">
