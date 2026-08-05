@@ -388,6 +388,28 @@ class Product extends Model
         return $this->packBundle() !== null;
     }
 
+    /**
+     * How $units of a bundle product decompose into "Pack of 2" combos + singles,
+     * respecting the bundle mode:
+     *  - pairs (default): greedy — floor(n/2) combos + (n%2) singles
+     *  - even: only even quantities get the pair deal — odd n = n singles at full price
+     * Used by Cart::normalizeBundles() and the Shiprocket token so the composition
+     * always reprices to exactly getPackTotalPrice($units).
+     *
+     * @return array{combos:int, singles:int}
+     */
+    public function packComposition(int $units): array
+    {
+        $units = max(1, $units);
+        $mode  = $this->packBundle()['mode'] ?? 'pairs';
+
+        if ($mode === 'even' && $units % 2 === 1) {
+            return ['combos' => 0, 'singles' => $units];
+        }
+
+        return ['combos' => intdiv($units, 2), 'singles' => $units % 2];
+    }
+
     /** Total price for buying $quantity units (bundle formula, or straight price). */
     public function getPackTotalPrice(int $quantity): float
     {

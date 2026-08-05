@@ -137,6 +137,36 @@ class TokenController extends Controller
             return [[], 0, 0, [], 0];
         }
 
+        // Bundle product with a linked combo: send the linear composition
+        // (floor(qty/2) × Pack-of-2 combo + remainder single) so Shiprocket —
+        // which prices unit × qty and lets the customer edit qty in its popup —
+        // always charges the exact bundle total. See bundles:sync-combos.
+        $comboId = $product->pack_config['bundle']['combo_product_id'] ?? null;
+        $combo   = ($product->packBundle() && $comboId) ? Product::find($comboId) : null;
+
+        if ($combo && $combo->is_active) {
+            $comp    = $product->packComposition($qty); // mode-aware (pairs vs even-only)
+            $pairs   = $comp['combos'];
+            $singles = $comp['singles'];
+            $singlePrice = $product->getPackTotalPrice(1);
+
+            $items = [];
+            $meta  = [];
+            if ($pairs > 0) {
+                $items[] = $this->checkout->buildCartItem($combo, $pairs, (float) $combo->price);
+                $meta[]  = ['id' => $combo->id, 'name' => $combo->name, 'qty' => $pairs];
+            }
+            if ($singles > 0) {
+                $items[] = $this->checkout->buildCartItem($product, $singles, $singlePrice);
+                $meta[]  = ['id' => $product->id, 'name' => $product->name, 'qty' => $singles];
+            }
+
+            $packTotal    = $pairs * (float) $combo->price + $singles * $singlePrice;
+            $baseTotal    = (float) $product->price * $qty;
+
+            return [$items, $packTotal, $qty, $meta, max(0, $baseTotal - $packTotal)];
+        }
+
         $unitPrice    = $product->getPackUnitPrice($qty);
         $baseTotal    = (float) $product->price * $qty;
         $packTotal    = $unitPrice * $qty;

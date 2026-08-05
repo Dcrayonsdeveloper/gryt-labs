@@ -201,11 +201,12 @@ class ShiprocketCatalogFormatter
     {
         $base = (float) $product->price;
 
-        // Per-product bundle: the cheapest per-unit price is the pair price / 2.
-        // Shiprocket charges from the catalog price, so it must be <= any unit price
-        // the token sends, or Shiprocket overrides upward and overcharges.
-        if ($bundle = $product->packBundle()) {
-            return min($base, round($bundle['pair'] / 2, 2));
+        // Per-product bundle: catalog carries the REAL single price. The pair deal
+        // lives on the linked "Pack of 2" combo product (bundles:sync-combos), so
+        // every line Shiprocket sees is linearly priced — no floor tricks. (A floor
+        // of pair/2 here previously made single units undercharge at SR checkout.)
+        if ($product->packBundle()) {
+            return $base;
         }
 
         if (!Setting::get('product_packs_enabled', false) || $product->mrp <= 0) {
