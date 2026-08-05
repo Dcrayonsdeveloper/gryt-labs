@@ -368,6 +368,42 @@
                     </div>
                 </div>
 
+                {{-- Quantity bundle offer (Amazon-style pack selector) — drives $store.pdpPack --}}
+                @php
+                    $hasBundle = $product->hasPackOffer();
+                    $bundlePacks = $hasBundle ? collect($product->packTiers(4))->map(fn ($t) => [
+                        'qty' => $t['qty'], 'price' => $t['total'], 'mrp' => $t['mrp'],
+                        'savings' => $t['savings'], 'savingsPct' => $t['savingsPct'],
+                        'badge' => [2 => 'BEST VALUE'][$t['qty']] ?? null,
+                    ])->values()->all() : [];
+                @endphp
+                @if($hasBundle)
+                <div x-data x-init="$store.pdpPack.init({{ \Illuminate\Support\Js::from($bundlePacks) }}, 1)" class="mt-4 border border-[#D5D9D9] rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <h3 class="text-sm font-bold text-[#0F1111]">Choose your pack &amp; save more</h3>
+                        <span class="text-xs font-semibold text-[#067D62]" x-show="$store.pdpPack.currentSavings > 0" x-text="'You save ' + $store.pdpPack.formatPrice($store.pdpPack.currentSavings)"></span>
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+                        <template x-for="p in $store.pdpPack.packs" :key="p.qty">
+                            <button type="button" @click="$store.pdpPack.select(p.qty)"
+                                    class="relative shrink-0 w-[116px] text-left rounded-lg border-2 p-2.5 pt-3.5 transition-colors bg-white"
+                                    :class="$store.pdpPack.selected === p.qty ? 'border-[#E77600] bg-[#FFF7ED]' : 'border-[#D5D9D9] hover:border-neutral-400'">
+                                <template x-if="p.badge">
+                                    <span class="absolute -top-2 left-2 text-[9px] font-bold text-white bg-[#067D62] px-1.5 py-0.5 rounded" x-text="p.badge"></span>
+                                </template>
+                                <img src="{{ $product->primary_image_url }}" alt="" class="w-full h-12 object-contain mb-1.5">
+                                <div class="text-[11px] font-semibold text-[#565959]" x-text="p.qty === 1 ? 'Buy 1' : 'Buy ' + p.qty"></div>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-sm font-bold text-[#0F1111]" x-text="$store.pdpPack.formatPrice(p.price)"></span>
+                                    <span class="text-[10px] text-neutral-400 line-through" x-show="p.mrp > p.price" x-text="$store.pdpPack.formatPrice(p.mrp)"></span>
+                                </div>
+                                <div class="text-[10px] font-bold text-[#067D62]" x-show="p.savingsPct > 0" x-text="p.savingsPct + '% off'"></div>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                @endif
+
                 <!-- Stock Urgency -->
                 @php $__lowStockThreshold = (int) ($pdpData['lowStockThreshold'] ?? 5); @endphp
                 @if($product->stock_quantity > 0 && $product->stock_quantity <= $__lowStockThreshold)
@@ -531,42 +567,16 @@
                 <div x-data="quantitySelector()" class="border border-[#D5D9D9] rounded-lg bg-white xl:sticky xl:top-20">
 
                     <div class="p-4 space-y-3">
-                        @php
-                            $hasBundle = $product->hasPackOffer();
-                            $bundleTiers = $hasBundle ? collect($product->packTiers(4))->map(function ($t) {
-                                $t['badge'] = [2 => 'BEST VALUE'][$t['qty']] ?? null;
-                                return $t;
-                            })->values()->all() : [];
-                        @endphp
-
                         @if($hasBundle)
-                        {{-- Bundle offer: Amazon-style pack selector that drives `quantity` --}}
-                        <div x-data="{ tiers: {{ \Illuminate\Support\Js::from($bundleTiers) }}, cur() { return this.tiers.find(t => t.qty == quantity) || null; } }" x-init="quantity = 1" class="space-y-2">
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl font-bold text-[#0F1111]" x-text="'₹' + (cur()?.total ?? ({{ (int) $product->price }} * quantity)).toLocaleString('en-IN')"></span>
-                                <template x-if="cur() && cur().mrp > cur().total">
-                                    <span class="text-sm text-neutral-400 line-through" x-text="'₹' + cur().mrp.toLocaleString('en-IN')"></span>
-                                </template>
-                                <template x-if="cur() && cur().savingsPct > 0">
-                                    <span class="text-xs font-bold text-[#B12704]" x-text="'-' + cur().savingsPct + '%'"></span>
-                                </template>
-                            </div>
-                            <p class="text-[13px] font-bold text-[#0F1111]">Choose your pack &amp; save more</p>
-                            <div class="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
-                                <template x-for="t in tiers" :key="t.qty">
-                                    <button type="button" @click="quantity = t.qty"
-                                            class="relative shrink-0 w-[100px] text-left rounded-lg border-2 p-2 pt-3 transition-colors"
-                                            :class="quantity == t.qty ? 'border-[#E77600] bg-[#FFF7ED]' : 'border-[#D5D9D9] hover:border-neutral-400'">
-                                        <template x-if="t.badge">
-                                            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-bold text-white bg-[#067D62] px-1.5 py-0.5 rounded whitespace-nowrap" x-text="t.badge"></span>
-                                        </template>
-                                        <img src="{{ $product->primary_image_url }}" alt="" class="w-full h-11 object-contain mb-1">
-                                        <div class="text-[11px] font-semibold text-[#565959]" x-text="t.qty === 1 ? 'Buy 1' : 'Buy ' + t.qty"></div>
-                                        <div class="text-[13px] font-bold text-[#0F1111]" x-text="'₹' + t.total.toLocaleString('en-IN')"></div>
-                                        <div class="text-[10px] text-neutral-400 line-through leading-tight" x-show="t.mrp > t.total" x-text="'₹' + t.mrp.toLocaleString('en-IN')"></div>
-                                    </button>
-                                </template>
-                            </div>
+                        {{-- Price reflects the pack chosen in the offer selector above --}}
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-bold text-[#0F1111]" x-text="$store.pdpPack.enabled ? $store.pdpPack.formatPrice($store.pdpPack.currentPrice) : '{{ '₹'.number_format($product->price) }}'"></span>
+                            <template x-if="$store.pdpPack.currentMrp > $store.pdpPack.currentPrice">
+                                <span class="text-sm text-neutral-400 line-through" x-text="$store.pdpPack.formatPrice($store.pdpPack.currentMrp)"></span>
+                            </template>
+                            <template x-if="$store.pdpPack.currentQty > 1">
+                                <span class="text-xs text-[#565959] font-medium" x-text="'· ' + $store.pdpPack.currentQty + ' items'"></span>
+                            </template>
                         </div>
                         @else
                         {{-- Price --}}
@@ -596,13 +606,13 @@
 
                         <div class="flex flex-col gap-2" data-sticky-trigger>
                             <button x-data="{ adding: false, added: false }"
-                                    @click="if(adding) return; adding = true; const _qty = quantity; await $store.cart.add({{ $product->id }}, _qty); adding = false; added = true; setTimeout(() => added = false, 2000)"
+                                    @click="if(adding) return; adding = true; const _qty = {{ $hasBundle ? '$store.pdpPack.currentQty' : 'quantity' }}; await $store.cart.add({{ $product->id }}, _qty); adding = false; added = true; setTimeout(() => added = false, 2000)"
                                     :disabled="adding"
                                     class="w-full flex items-center justify-center gap-2 bg-black hover:bg-neutral-800 text-white font-semibold py-2.5 rounded-full text-sm transition-colors disabled:opacity-70">
                                 <span x-text="adding ? 'Adding...' : (added ? '✓ Added!' : 'Add to Cart')"></span>
                             </button>
                             <button x-data="{ buying: false }"
-                                    @click="if (typeof window.__srBuyNow === 'function') { __srBuyNow($event, $el, {{ $product->id }}, quantity); return; } if(buying) return; buying = true; const _qty = quantity; axios.post('/cart/add', { product_id: {{ $product->id }}, quantity: _qty }).then(() => { window.location.href = '{{ route('checkout.index') }}'; }).catch(e => { $store.toast.error(e.response?.data?.error || 'Failed'); buying = false; })"
+                                    @click="if (typeof window.__srBuyNow === 'function') { __srBuyNow($event, $el, {{ $product->id }}, {{ $hasBundle ? '$store.pdpPack.currentQty' : 'quantity' }}); return; } if(buying) return; buying = true; const _qty = {{ $hasBundle ? '$store.pdpPack.currentQty' : 'quantity' }}; axios.post('/cart/add', { product_id: {{ $product->id }}, quantity: _qty }).then(() => { window.location.href = '{{ route('checkout.index') }}'; }).catch(e => { $store.toast.error(e.response?.data?.error || 'Failed'); buying = false; })"
                                     :disabled="buying"
                                     class="w-full flex items-center justify-center gap-2 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] font-semibold py-2.5 rounded-full text-sm transition-colors disabled:opacity-70">
                                 <span x-text="buying ? 'Please wait...' : 'Buy Now'"></span>
@@ -1247,10 +1257,11 @@
             if (!isMobile) return;
 
             var maxQty = {{ min($product->stock_quantity, 10) }};
-            var usePack = false;
+            var usePack = {{ $hasBundle ? 'true' : 'false' }};
 
-            // Get current quantity from the main page selector
+            // Get current quantity — the pack selector when a bundle is active, else the Qty dropdown.
             function getQty() {
+                if (usePack && window.Alpine && Alpine.store('pdpPack')) return Alpine.store('pdpPack').currentQty || 1;
                 var sel = document.querySelector('select[x-model="quantity"]');
                 return sel ? parseInt(sel.value) || 1 : 1;
             }
