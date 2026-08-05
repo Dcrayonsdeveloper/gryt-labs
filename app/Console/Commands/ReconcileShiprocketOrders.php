@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\ShiprocketCheckoutEvent;
 use App\Models\Tenant;
 use App\Services\ShiprocketCheckout\OrderSyncEngine;
+use App\Services\ShiprocketCheckout\ReconcileIgnoreList;
 use App\Services\ShiprocketService;
 use App\Services\WhatsAppService;
 use Illuminate\Console\Command;
@@ -167,6 +168,10 @@ class ReconcileShiprocketOrders extends Command
         }
 
         foreach ($eventQuery->orderBy('received_at')->get()->groupBy('cart_id') as $cartId => $events) {
+            // Never recreate an order that was intentionally deleted (orders:delete).
+            if (ReconcileIgnoreList::has((string) $cartId)) {
+                continue;
+            }
             // Skip if any event already carries an order_id, or an order exists by any id.
             if ($events->contains(fn ($e) => $e->order_id !== null)) {
                 continue;
@@ -180,7 +185,7 @@ class ReconcileShiprocketOrders extends Command
         // Source B — Shiprocket Shipping API order list.
         foreach ($this->fetchShippingOrders() as $srOrder) {
             $hex = (string) ($srOrder['channel_order_id'] ?? '');
-            if ($hex === '' || isset($found[$hex])) {
+            if ($hex === '' || isset($found[$hex]) || ReconcileIgnoreList::has($hex)) {
                 continue;
             }
             if ($singleId && $hex !== $singleId) {
@@ -215,7 +220,7 @@ class ReconcileShiprocketOrders extends Command
 
         foreach ($candidateIds as $cid) {
             $cid = (string) $cid;
-            if ($cid === '' || isset($found[$cid]) || $this->engine->findLocalOrder($cid)) {
+            if ($cid === '' || isset($found[$cid]) || ReconcileIgnoreList::has($cid) || $this->engine->findLocalOrder($cid)) {
                 continue;
             }
 
@@ -242,6 +247,10 @@ class ReconcileShiprocketOrders extends Command
                 $sr['fastrr_order_id'] ?? '',
             ]));
             if (array_intersect($altIds, array_keys($found))) {
+                continue;
+            }
+            // Any id form on the ignore-list → intentionally deleted, never recreate.
+            if (array_intersect($altIds, ReconcileIgnoreList::all())) {
                 continue;
             }
             foreach ($altIds as $aid) {
