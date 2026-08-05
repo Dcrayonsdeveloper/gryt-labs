@@ -207,8 +207,11 @@ class ProductController extends Controller
         $productSchema = $schemaService->getProductSchema($product);
         $faqSchema = $schemaService->getFaqSchema($product);
 
-        // Available coupons — show all valid public offers on product page
+        // Available coupons — show all valid public offers on product page.
+        // show_on_product_page=false hides a coupon here ONLY; it still applies
+        // normally when the customer enters the code at cart/checkout.
         $availableCoupons = Coupon::where('is_active', true)
+            ->where('show_on_product_page', true)
             ->where(function ($q) {
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
             })
