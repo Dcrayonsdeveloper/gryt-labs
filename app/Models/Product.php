@@ -371,12 +371,16 @@ class Product extends Model
         $single = isset($b['single']) ? (float) $b['single'] : null;
         $pair   = isset($b['pair']) ? (float) $b['pair'] : null;
 
+        // Formula mode: 'pairs' (greedy — leftover single is discounted too) or
+        // 'even' (only even quantities get the pair price; odd = full price).
+        $mode = in_array(($b['mode'] ?? 'pairs'), ['pairs', 'even'], true) ? ($b['mode'] ?? 'pairs') : 'pairs';
+
         // Need either explicit tiers, or a single+pair formula.
         if (empty($tiers) && (! $single || ! $pair)) {
             return null;
         }
 
-        return ['tiers' => $tiers, 'single' => $single, 'pair' => $pair];
+        return ['tiers' => $tiers, 'single' => $single, 'pair' => $pair, 'mode' => $mode];
     }
 
     public function hasPackOffer(): bool
@@ -398,8 +402,15 @@ class Product extends Model
             return (float) $bundle['tiers'][$quantity];
         }
 
-        // 2) Pairs + singles formula (e.g. pre-workout), if configured.
+        // 2) single + pair formula, if configured.
         if ($bundle['single'] && $bundle['pair']) {
+            // 'even': discount only on even quantities; odd pays full price.
+            if (($bundle['mode'] ?? 'pairs') === 'even') {
+                return $quantity % 2 === 0
+                    ? intdiv($quantity, 2) * $bundle['pair']
+                    : $quantity * $bundle['single'];
+            }
+            // 'pairs' (default): as many discounted pairs as possible + a leftover single.
             return intdiv($quantity, 2) * $bundle['pair'] + ($quantity % 2) * $bundle['single'];
         }
 
