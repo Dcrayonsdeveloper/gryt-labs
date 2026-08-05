@@ -22,6 +22,17 @@
 
     // Placeholder image
     $placeholderImage = asset('images/placeholder-product.svg');
+
+    // Per-product bundle offer → open the pack-picker popup instead of adding a single unit.
+    $hasPack = $product->hasPackOffer();
+    $cartClick = $hasPack
+        ? "\$dispatch('open-pack-picker', " . \Illuminate\Support\Js::from([
+              'productId' => $product->id,
+              'name'      => $product->name,
+              'image'     => $product->primary_image_url ?: $placeholderImage,
+              'tiers'     => $product->packTiers(4),
+          ]) . ")"
+        : "\$store.cart.add({$product->id})";
 @endphp
 
 @if($compact)
@@ -89,7 +100,7 @@
         @if($showAddToCart)
             <div>
                 @unless($outOfStock)
-                    <button @click="$store.cart.add({{ $product->id }})"
+                    <button @click="{!! $cartClick !!}"
                             class="w-full py-1.5 text-[11px] font-semibold text-white bg-black hover:bg-neutral-800 rounded-md transition-colors shadow-sm">
                         Add to Cart
                     </button>
@@ -225,7 +236,7 @@
             @if($showAddToCart)
                 <div class="mt-auto pt-2">
                     @unless($outOfStock)
-                        <button @click="$store.cart.add({{ $product->id }})"
+                        <button @click="{!! $cartClick !!}"
                                 class="w-full py-1.5 text-[11px] font-semibold text-white bg-black hover:bg-neutral-800 rounded-md transition-colors shadow-sm">
                             Add to Cart
                         </button>

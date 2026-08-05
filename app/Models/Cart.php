@@ -70,7 +70,12 @@ class Cart extends Model
             if (! $item->product) {
                 continue;
             }
-            $live = $item->variant?->price ?? $item->product->price;
+            // Bundle products re-price by quantity (getPackUnitPrice); variants use
+            // the variant price; everything else uses the product's live price.
+            $live = $item->variant?->price
+                ?? ($item->product->hasPackOffer()
+                    ? $item->product->getPackUnitPrice((int) $item->quantity)
+                    : $item->product->price);
             if ($live === null) {
                 continue;
             }

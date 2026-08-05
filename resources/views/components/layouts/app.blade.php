@@ -415,6 +415,9 @@
     <!-- Mobile Bottom Navigation -->
     @include('partials.mobile-bottom-nav')
 
+    <!-- Pack-picker popup (buy-more-save bundles) -->
+    @include('partials.pack-picker-modal')
+
     <!-- Quick View Modal -->
     <div x-data="quickViewModal()"
          x-show="open" x-cloak
