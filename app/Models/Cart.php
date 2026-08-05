@@ -63,8 +63,11 @@ class Cart extends Model
      */
     public function syncItemPrices(): bool
     {
+        // First fold bundle lines into their linear form (combo packs + a single),
+        // so every line's price is a plain unit price Shiprocket can also charge.
+        $changed = $this->normalizeBundles();
+
         $this->loadMissing(['items.product', 'items.variant']);
-        $changed = false;
 
         foreach ($this->items as $item) {
             if (! $item->product) {
@@ -84,6 +87,115 @@ class Cart extends Model
                 $item->save();
                 $changed = true;
             }
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Fold bundle-product lines into their linear composition:
+     * N units → floor(N/2) × "Pack of 2" combo product + (N%2) × single.
+     *
+     * WHY: Shiprocket prices linearly (unit × qty, qty editable in its popup), so
+     * "2 for ₹499" must live on a real combo product (see bundles:sync-combos).
+     * Normalizing here means the cart, checkout token and Shiprocket all see the
+     * same plainly-priced lines — a customer adding 2 singles automatically gets
+     * the ₹499 pack. Returns true when any line changed.
+     */
+    public function normalizeBundles(): bool
+    {
+        $this->load(['items.product']);
+
+        // Group lines by bundle family: [baseId => ['base' => [...], 'combo' => [...], 'comboId' => int]]
+        $families = [];
+        foreach ($this->items as $item) {
+            $p = $item->product;
+            if (! $p || $item->variant_id) {
+                continue;
+            }
+            if ($baseId = ($p->pack_config['combo_of'] ?? null)) {
+                $families[$baseId]['combo'][] = $item;
+            } elseif ($p->packBundle() && ($cid = $p->pack_config['bundle']['combo_product_id'] ?? null)) {
+                $families[$p->id]['base'][] = $item;
+                $families[$p->id]['comboId'] = $cid;
+            }
+        }
+
+        $changed = false;
+
+        foreach ($families as $baseId => $fam) {
+            $baseItems  = $fam['base'] ?? [];
+            $comboItems = $fam['combo'] ?? [];
+            $comboId    = $fam['comboId'] ?? ($comboItems ? $comboItems[0]->product_id : null);
+
+            $base  = Product::find($baseId);
+            $combo = $comboId ? Product::find($comboId) : null;
+            if (! $base || ! $combo || ! $combo->is_active) {
+                continue; // combo missing — leave lines untouched
+            }
+
+            $units = collect($baseItems)->sum('quantity') + 2 * collect($comboItems)->sum('quantity');
+            if ($units < 1) {
+                continue;
+            }
+            // Mode-aware: 'even' bundles give odd unit-counts NO pair deal (all singles).
+            $comp = $base->packComposition($units);
+            $comboTarget  = $comp['combos'];
+            $singleTarget = $comp['singles'];
+
+            $currentCombo  = collect($comboItems)->sum('quantity');
+            $currentSingle = collect($baseItems)->sum('quantity');
+            $singlePrice   = $base->getPackTotalPrice(1);
+
+            $alreadyNormal = $currentCombo === $comboTarget
+                && $currentSingle === $singleTarget
+                && count($baseItems) <= 1 && count($comboItems) <= 1
+                && (! $baseItems || abs((float) $baseItems[0]->price - $singlePrice) < 0.001)
+                && (! $comboItems || abs((float) $comboItems[0]->price - (float) $combo->price) < 0.001);
+            if ($alreadyNormal) {
+                continue;
+            }
+
+            // Rewrite: one combo line + at most one single line.
+            foreach (array_slice($comboItems, 1) as $extra) { $extra->delete(); }
+            foreach (array_slice($baseItems, 1) as $extra) { $extra->delete(); }
+
+            $comboLine = $comboItems[0] ?? null;
+            $baseLine  = $baseItems[0] ?? null;
+
+            if ($comboTarget > 0) {
+                if ($comboLine) {
+                    $comboLine->fill(['quantity' => $comboTarget, 'price' => (float) $combo->price])->save();
+                } else {
+                    $this->items()->create([
+                        'product_id' => $combo->id,
+                        'quantity'   => $comboTarget,
+                        'price'      => (float) $combo->price,
+                    ]);
+                }
+            } elseif ($comboLine) {
+                $comboLine->delete();
+            }
+
+            if ($singleTarget > 0) {
+                if ($baseLine) {
+                    $baseLine->fill(['quantity' => $singleTarget, 'price' => $singlePrice])->save();
+                } else {
+                    $this->items()->create([
+                        'product_id' => $base->id,
+                        'quantity'   => $singleTarget,
+                        'price'      => $singlePrice,
+                    ]);
+                }
+            } elseif ($baseLine) {
+                $baseLine->delete();
+            }
+
+            $changed = true;
+        }
+
+        if ($changed) {
+            $this->load(['items.product']);
         }
 
         return $changed;
