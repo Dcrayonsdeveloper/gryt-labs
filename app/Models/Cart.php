@@ -51,6 +51,39 @@ class Cart extends Model
         return $this->hasMany(CartItem::class);
     }
 
+    /**
+     * Re-price every line item to the CURRENT product/variant price.
+     *
+     * cart_items.price is a snapshot taken when the item was added, so an admin
+     * price change would otherwise never reach an existing cart — its display,
+     * subtotal, or the Shiprocket checkout token (which reads $item->price).
+     * Call this whenever the cart is loaded for display or checkout. Saving each
+     * changed item recomputes its total (saving hook) and the cart totals (saved
+     * hook), so no extra recalculate() is needed. Returns true if anything moved.
+     */
+    public function syncItemPrices(): bool
+    {
+        $this->loadMissing(['items.product', 'items.variant']);
+        $changed = false;
+
+        foreach ($this->items as $item) {
+            if (! $item->product) {
+                continue;
+            }
+            $live = $item->variant?->price ?? $item->product->price;
+            if ($live === null) {
+                continue;
+            }
+            if (abs((float) $item->price - (float) $live) > 0.001) {
+                $item->price = (float) $live; // saving hook recomputes total; saved hook recalculates the cart
+                $item->save();
+                $changed = true;
+            }
+        }
+
+        return $changed;
+    }
+
     public function recalculate(bool $skipAutoApply = false): void
     {
         $this->load(['items.product', 'coupon']);

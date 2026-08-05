@@ -82,6 +82,12 @@ class TokenController extends Controller
             return [[], 0, 0, [], 0];
         }
 
+        // Charge the CURRENT price: cart_items.price is a snapshot from when the
+        // item was added, so re-sync to the live product price before we build the
+        // Shiprocket cart (otherwise a since-changed price leaks into checkout and
+        // shows up as a phantom "pack discount" below).
+        $cart->syncItemPrices();
+
         $cartItems    = [];
         $cartTotal    = 0.0;
         $packDiscount = 0.0;
