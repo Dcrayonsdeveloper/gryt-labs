@@ -354,13 +354,29 @@ class Product extends Model
     public function packBundle(): ?array
     {
         $b = $this->pack_config['bundle'] ?? null;
-        if (! is_array($b) || ! isset($b['single'], $b['pair'])) {
+        if (! is_array($b)) {
             return null;
         }
-        $single = (float) $b['single'];
-        $pair   = (float) $b['pair'];
 
-        return ($single > 0 && $pair > 0) ? ['single' => $single, 'pair' => $pair] : null;
+        // Explicit per-quantity prices win, e.g. tiers => [1=>299, 2=>499, 3=>897, 4=>998].
+        $tiers = [];
+        foreach ((array) ($b['tiers'] ?? []) as $k => $v) {
+            if (is_array($v) && isset($v['qty'], $v['price'])) {
+                $tiers[(int) $v['qty']] = (float) $v['price'];
+            } elseif (is_numeric($k) && is_numeric($v)) {
+                $tiers[(int) $k] = (float) $v;
+            }
+        }
+
+        $single = isset($b['single']) ? (float) $b['single'] : null;
+        $pair   = isset($b['pair']) ? (float) $b['pair'] : null;
+
+        // Need either explicit tiers, or a single+pair formula.
+        if (empty($tiers) && (! $single || ! $pair)) {
+            return null;
+        }
+
+        return ['tiers' => $tiers, 'single' => $single, 'pair' => $pair];
     }
 
     public function hasPackOffer(): bool
@@ -372,9 +388,27 @@ class Product extends Model
     public function getPackTotalPrice(int $quantity): float
     {
         $quantity = max(1, $quantity);
+        $bundle = $this->packBundle();
+        if (! $bundle) {
+            return (float) $this->price * $quantity;
+        }
 
-        if ($bundle = $this->packBundle()) {
+        // 1) Explicit price for this exact quantity wins.
+        if (isset($bundle['tiers'][$quantity])) {
+            return (float) $bundle['tiers'][$quantity];
+        }
+
+        // 2) Pairs + singles formula (e.g. pre-workout), if configured.
+        if ($bundle['single'] && $bundle['pair']) {
             return intdiv($quantity, 2) * $bundle['pair'] + ($quantity % 2) * $bundle['single'];
+        }
+
+        // 3) Beyond the defined tiers with no formula: extend at the largest tier's per-unit rate.
+        if (! empty($bundle['tiers'])) {
+            $maxQty  = max(array_keys($bundle['tiers']));
+            $perUnit = $bundle['tiers'][$maxQty] / $maxQty;
+
+            return round($perUnit * $quantity, 2);
         }
 
         return (float) $this->price * $quantity;
