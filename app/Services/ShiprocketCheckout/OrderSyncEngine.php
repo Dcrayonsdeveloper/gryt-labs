@@ -76,6 +76,11 @@ class OrderSyncEngine
         foreach ($this->candidateIds($days, $onlyId) as $cid) {
             $report['scanned']++;
 
+            // Intentionally deleted (orders:delete ignore-list) → stays deleted.
+            if (ReconcileIgnoreList::has($cid)) {
+                continue;
+            }
+
             if ($this->findLocalOrder($cid)) {
                 $report['existing']++;
                 continue;
@@ -96,9 +101,14 @@ class OrderSyncEngine
                 continue;
             }
 
-            // Never double-create under an alternate id Shiprocket may use.
+            // Never double-create under an alternate id Shiprocket may use —
+            // and if ANY id form is ignore-listed, the deletion was intentional.
+            $altIds = array_filter(array_map('strval', [$sr['cart_id'] ?? '', $sr['platform_order_id'] ?? '', $sr['fastrr_order_id'] ?? '']));
+            if (array_intersect($altIds, ReconcileIgnoreList::all())) {
+                continue;
+            }
             $known = false;
-            foreach (array_filter(array_map('strval', [$sr['cart_id'] ?? '', $sr['platform_order_id'] ?? '', $sr['fastrr_order_id'] ?? ''])) as $aid) {
+            foreach ($altIds as $aid) {
                 if ($this->findLocalOrder($aid)) { $known = true; break; }
             }
             if ($known) { $report['existing']++; continue; }
@@ -236,6 +246,13 @@ class OrderSyncEngine
      */
     public function createFromShape(array $m): array
     {
+        // Hard guard for EVERY creation path: an ignore-listed id was deleted
+        // on purpose (orders:delete) — no caller may recreate it.
+        if (ReconcileIgnoreList::has((string) $m['shiprocket_id'])) {
+            return ['status' => 'skipped_product', 'order' => null,
+                'message' => 'ignore-listed (intentionally deleted) — not recreated'];
+        }
+
         // Resolve every line to a real product BEFORE the transaction —
         // order_items.product_id is NOT NULL on prod MySQL.
         foreach ($m['items'] as $idx => $item) {
