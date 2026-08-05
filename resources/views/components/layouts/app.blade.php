@@ -799,8 +799,8 @@
                 <template x-for="item in $store.cart.items" :key="item.id">
                     <div class="flex gap-3 py-3 border-b border-neutral-100 last:border-0">
                         {{-- Image --}}
-                        <a :href="item.url || '#'" class="shrink-0 w-20 h-20 bg-neutral-50 rounded-lg overflow-hidden">
-                            <img :src="item.image" :alt="item.name" class="w-full h-full object-cover" width="80" height="80" decoding="async">
+                        <a :href="item.url || '#'" class="shrink-0 w-20 h-20 bg-white border border-neutral-100 rounded-lg overflow-hidden">
+                            <img :src="item.image" :alt="item.name" class="w-full h-full object-contain p-1" width="80" height="80" decoding="async">
                         </a>
 
                         {{-- Details --}}

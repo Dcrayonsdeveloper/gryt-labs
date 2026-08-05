@@ -383,7 +383,7 @@
                         <h3 class="text-sm font-bold text-[#0F1111]">Choose your pack &amp; save more</h3>
                         <span class="text-xs font-semibold text-[#067D62]" x-show="$store.pdpPack.currentSavings > 0" x-text="'You save ' + $store.pdpPack.formatPrice($store.pdpPack.currentSavings)"></span>
                     </div>
-                    <div class="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+                    <div class="flex gap-2 overflow-x-auto pt-3 pb-1 -mx-0.5 px-0.5">
                         <template x-for="p in $store.pdpPack.packs" :key="p.qty">
                             <button type="button" @click="$store.pdpPack.select(p.qty)"
                                     class="relative shrink-0 w-[116px] text-left rounded-lg border-2 p-2.5 pt-3.5 transition-colors bg-white"
