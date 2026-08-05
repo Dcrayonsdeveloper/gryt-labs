@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Order;
 use App\Models\Tenant;
+use App\Services\ShiprocketCheckout\ReconcileIgnoreList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -25,17 +26,19 @@ use Illuminate\Support\Facades\DB;
 class DeleteOrders extends Command
 {
     protected $signature = 'orders:delete
-        {--order=* : Order number(s) to delete (required)}
+        {--order=* : Order number(s) to delete}
+        {--sr-id=* : Shiprocket order id(s) to delete AND permanently ignore-list (survives reconcile)}
         {--tenant= : Only this tenant id (default: all tenants)}
         {--force : Actually delete (default: dry-run preview)}';
 
-    protected $description = 'Delete specific orders by order_number (test-order cleanup). Dry-run unless --force.';
+    protected $description = 'Delete specific orders by order_number or Shiprocket id (test-order cleanup). Dry-run unless --force.';
 
     public function handle(): int
     {
         $numbers = array_values(array_filter((array) $this->option('order')));
-        if (empty($numbers)) {
-            $this->error('Pass at least one --order=ORD-… (this command never deletes all orders).');
+        $srIds   = array_values(array_filter(array_map('strval', (array) $this->option('sr-id'))));
+        if (empty($numbers) && empty($srIds)) {
+            $this->error('Pass at least one --order=ORD-… or --sr-id=<shiprocket id> (this command never deletes all orders).');
             return self::FAILURE;
         }
 
@@ -55,7 +58,15 @@ class DeleteOrders extends Command
         foreach ($tenants as $tenant) {
             tenancy()->initialize($tenant);
             try {
-                $orders = Order::whereIn('order_number', $numbers)->get();
+                $orders = Order::where(function ($q) use ($numbers, $srIds) {
+                    if ($numbers) { $q->orWhereIn('order_number', $numbers); }
+                    if ($srIds)   { $q->orWhereIn('shiprocket_order_id', $srIds); }
+                })->get();
+
+                // Explicitly-passed Shiprocket ids are ignore-listed even when no local
+                // order matches — so a copy reconcile already recreated (new order_number,
+                // same Shiprocket id) is blocked from here on.
+                $ignoreIds = $force ? $srIds : [];
 
                 foreach ($orders as $order) {
                     $this->line(sprintf(
@@ -69,12 +80,24 @@ class DeleteOrders extends Command
                     ));
 
                     if ($force) {
+                        // Record every Shiprocket id form so reconcile-orders never
+                        // recreates this (it still lives as SUCCESS on Shiprocket).
+                        foreach ([$order->shiprocket_order_id, data_get($order->metadata, 'shiprocket_cart_id')] as $sid) {
+                            if ($sid) {
+                                $ignoreIds[] = (string) $sid;
+                            }
+                        }
                         DB::transaction(function () use ($order) {
                             $order->statusHistory()->delete();
                             $order->delete(); // cascades items/payments/shipments/returns
                         });
                         $deleted++;
                     }
+                }
+
+                if ($ignoreIds) {
+                    ReconcileIgnoreList::add($ignoreIds);
+                    $this->line('  ↳ ignore-listed ' . count($ignoreIds) . ' Shiprocket id(s) so reconcile keeps them deleted.');
                 }
 
                 // Report any requested numbers not present in this tenant.
