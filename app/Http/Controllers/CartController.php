@@ -610,17 +610,14 @@ class CartController extends Controller
 
     protected function getOrCreateCart(): Cart
     {
-        if (auth()->check()) {
-            return Cart::firstOrCreate(
-                ['user_id' => auth()->id()],
-                ['session_id' => null]
-            );
-        }
+        $cart = auth()->check()
+            ? Cart::firstOrCreate(['user_id' => auth()->id()], ['session_id' => null])
+            : Cart::firstOrCreate(['session_id' => session()->getId()], ['user_id' => null]);
 
-        $sessionId = session()->getId();
-        return Cart::firstOrCreate(
-            ['session_id' => $sessionId],
-            ['user_id' => null]
-        );
+        // Keep line-item prices in sync with the live product price so an admin
+        // price change reflects immediately in the cart, subtotal and checkout.
+        $cart->syncItemPrices();
+
+        return $cart;
     }
 }
