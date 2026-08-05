@@ -343,10 +343,83 @@ class Product extends Model
      *
      * Returns the base price if packs are disabled or quantity doesn't match a tier.
      */
+    /**
+     * Per-product "buy more, save" bundle, stored in pack_config['bundle'] as
+     * ['single' => 599, 'pair' => 999]. Total for N units = (N/2 pairs)·pair +
+     * (leftover single)·single. e.g. 1→599, 2→999, 3→1598, 4→1998. Returns null
+     * when the product has no bundle configured.
+     *
+     * @return array{single: float, pair: float}|null
+     */
+    public function packBundle(): ?array
+    {
+        $b = $this->pack_config['bundle'] ?? null;
+        if (! is_array($b) || ! isset($b['single'], $b['pair'])) {
+            return null;
+        }
+        $single = (float) $b['single'];
+        $pair   = (float) $b['pair'];
+
+        return ($single > 0 && $pair > 0) ? ['single' => $single, 'pair' => $pair] : null;
+    }
+
+    public function hasPackOffer(): bool
+    {
+        return $this->packBundle() !== null;
+    }
+
+    /** Total price for buying $quantity units (bundle formula, or straight price). */
+    public function getPackTotalPrice(int $quantity): float
+    {
+        $quantity = max(1, $quantity);
+
+        if ($bundle = $this->packBundle()) {
+            return intdiv($quantity, 2) * $bundle['pair'] + ($quantity % 2) * $bundle['single'];
+        }
+
+        return (float) $this->price * $quantity;
+    }
+
+    /**
+     * Pack tiers for the PDP selector / add-to-cart popup (qty 1..$max), with the
+     * struck-through "was" price derived from the product MRP.
+     *
+     * @return array<int, array{qty:int,total:int,unit:float,mrp:int,savings:int,savingsPct:int}>
+     */
+    public function packTiers(int $max = 4): array
+    {
+        if (! $this->hasPackOffer()) {
+            return [];
+        }
+
+        $unitMrp = (float) $this->mrp;
+        $tiers = [];
+        for ($q = 1; $q <= $max; $q++) {
+            $total = $this->getPackTotalPrice($q);
+            $mrp   = $unitMrp > 0 ? $unitMrp * $q : 0;
+            $save  = max(0, $mrp - $total);
+            $tiers[] = [
+                'qty'        => $q,
+                'total'      => (int) round($total),
+                'unit'       => round($total / $q, 2),
+                'mrp'        => (int) round($mrp),
+                'savings'    => (int) round($save),
+                'savingsPct' => $mrp > 0 ? (int) round($save / $mrp * 100) : 0,
+            ];
+        }
+
+        return $tiers;
+    }
+
     public function getPackUnitPrice(int $quantity): float
     {
         if ($quantity < 1) {
             return (float) $this->price;
+        }
+
+        // Per-product bundle takes precedence over the global pack setting.
+        if ($this->packBundle()) {
+            return round($this->getPackTotalPrice($quantity) / $quantity, 2);
         }
 
         $packsEnabled = (bool) Setting::get('product_packs_enabled', false);

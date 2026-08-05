@@ -29,7 +29,13 @@ class CartItem extends Model
     protected static function booted(): void
     {
         static::saving(function ($item) {
-            $item->total = $item->price * $item->quantity;
+            // Bundle products price by TOTAL (e.g. 2 for 999, 3 for 1598), which
+            // isn't always price×qty — use the exact bundle total so odd quantities
+            // don't drift by a paisa. Falls back to price×qty for normal products.
+            $product = $item->product;
+            $item->total = ($product && $product->hasPackOffer())
+                ? $product->getPackTotalPrice((int) $item->quantity)
+                : $item->price * $item->quantity;
         });
 
         static::saved(function ($item) {

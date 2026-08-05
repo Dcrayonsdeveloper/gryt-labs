@@ -560,9 +560,27 @@
 
                 {{-- Choose Your Pack (tenant setting — bundle pricing UI) --}}
                 @php
-                    $packsEnabled = (bool) $theme->get('product_packs_enabled') && $product->mrp > 0;
+                    $hasBundle = $product->hasPackOffer();
+                    $packsEnabled = $hasBundle || ((bool) $theme->get('product_packs_enabled') && $product->mrp > 0);
                     $packsData = [];
-                    if ($packsEnabled) {
+                    if ($hasBundle) {
+                        // Per-product bundle: absolute tier prices (e.g. 1→599, 2→999, 3→1598).
+                        $pc = $product->pack_config ?? [];
+                        $unitLabel = $pc['unit_label'] ?? 'Item';
+                        $bundleBadges = $pc['badges'] ?? [2 => 'MOST POPULAR', 4 => 'BEST VALUE'];
+                        foreach ($product->packTiers(4) as $t) {
+                            $packsData[] = [
+                                'qty'        => $t['qty'],
+                                'label'      => $t['qty'] === 1 ? 'Buy 1' : 'Buy ' . $t['qty'],
+                                'desc'       => $t['qty'] . ' ' . $unitLabel . ($t['qty'] > 1 ? 's' : ''),
+                                'badge'      => $bundleBadges[$t['qty']] ?? null,
+                                'price'      => $t['total'],
+                                'mrp'        => $t['mrp'],
+                                'savings'    => $t['savings'],
+                                'savingsPct' => $t['savingsPct'],
+                            ];
+                        }
+                    } elseif ($packsEnabled) {
                         $unitPrice = (float) $product->price;
                         $unitMrp = (float) $product->mrp;
                         $pc = $product->pack_config ?? [];
