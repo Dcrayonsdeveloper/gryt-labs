@@ -148,6 +148,7 @@ class CouponController extends Controller
             'expires_at' => 'nullable|date|after:starts_at',
             'is_active' => 'boolean',
             'is_stackable' => 'boolean',
+            'show_on_product_page' => 'boolean',
             'auto_apply' => 'boolean',
             'applicable_products' => 'nullable|array',
             'applicable_products.*' => 'exists:products,id',
@@ -170,6 +171,7 @@ class CouponController extends Controller
         // Ensure boolean defaults
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_stackable'] = $request->boolean('is_stackable');
+        $validated['show_on_product_page'] = $request->boolean('show_on_product_page');
         $validated['auto_apply'] = $request->boolean('auto_apply');
 
         // Default nullable numeric fields to 0 (DB has NOT NULL constraint)
@@ -232,6 +234,7 @@ class CouponController extends Controller
             'expires_at' => 'nullable|date|after:starts_at',
             'is_active' => 'boolean',
             'is_stackable' => 'boolean',
+            'show_on_product_page' => 'boolean',
             'auto_apply' => 'boolean',
             'applicable_products' => 'nullable|array',
             'applicable_products.*' => 'exists:products,id',
@@ -254,6 +257,7 @@ class CouponController extends Controller
         // Ensure boolean defaults
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_stackable'] = $request->boolean('is_stackable');
+        $validated['show_on_product_page'] = $request->boolean('show_on_product_page');
         $validated['auto_apply'] = $request->boolean('auto_apply');
 
         // Default nullable numeric fields to 0 (DB has NOT NULL constraint)

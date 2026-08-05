@@ -359,6 +359,19 @@
                             </label>
                         </div>
 
+                        <div class="border-t border-neutral-100 pt-4">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="hidden" name="show_on_product_page" value="0">
+                                <input type="checkbox" name="show_on_product_page" value="1" id="show_on_product_page"
+                                       class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                                       @checked(old('show_on_product_page', $coupon->show_on_product_page))>
+                                <div>
+                                    <span class="text-sm font-medium text-neutral-700">Show in "Available Offers" on Product Page</span>
+                                    <p class="text-xs text-neutral-600">Uncheck to hide this coupon from product pages — it still works when entered at cart/checkout</p>
+                                </div>
+                            </label>
+                        </div>
+
                         <div class="border-t border-neutral-100 pt-3">
                             <p class="text-xs text-neutral-600">
                                 <span class="font-medium text-neutral-600">Manual:</span> Customer enters coupon code at checkout.
