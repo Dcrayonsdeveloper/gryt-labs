@@ -531,8 +531,47 @@
                 <div x-data="quantitySelector()" class="border border-[#D5D9D9] rounded-lg bg-white xl:sticky xl:top-20">
 
                     <div class="p-4 space-y-3">
+                        @php
+                            $hasBundle = $product->hasPackOffer();
+                            $bundleTiers = $hasBundle ? collect($product->packTiers(4))->map(function ($t) {
+                                $t['badge'] = [2 => 'BEST VALUE'][$t['qty']] ?? null;
+                                return $t;
+                            })->values()->all() : [];
+                        @endphp
+
+                        @if($hasBundle)
+                        {{-- Bundle offer: Amazon-style pack selector that drives `quantity` --}}
+                        <div x-data="{ tiers: {{ \Illuminate\Support\Js::from($bundleTiers) }}, cur() { return this.tiers.find(t => t.qty == quantity) || null; } }" x-init="quantity = 1" class="space-y-2">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-2xl font-bold text-[#0F1111]" x-text="'₹' + (cur()?.total ?? ({{ (int) $product->price }} * quantity)).toLocaleString('en-IN')"></span>
+                                <template x-if="cur() && cur().mrp > cur().total">
+                                    <span class="text-sm text-neutral-400 line-through" x-text="'₹' + cur().mrp.toLocaleString('en-IN')"></span>
+                                </template>
+                                <template x-if="cur() && cur().savingsPct > 0">
+                                    <span class="text-xs font-bold text-[#B12704]" x-text="'-' + cur().savingsPct + '%'"></span>
+                                </template>
+                            </div>
+                            <p class="text-[13px] font-bold text-[#0F1111]">Choose your pack &amp; save more</p>
+                            <div class="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+                                <template x-for="t in tiers" :key="t.qty">
+                                    <button type="button" @click="quantity = t.qty"
+                                            class="relative shrink-0 w-[100px] text-left rounded-lg border-2 p-2 pt-3 transition-colors"
+                                            :class="quantity == t.qty ? 'border-[#E77600] bg-[#FFF7ED]' : 'border-[#D5D9D9] hover:border-neutral-400'">
+                                        <template x-if="t.badge">
+                                            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-bold text-white bg-[#067D62] px-1.5 py-0.5 rounded whitespace-nowrap" x-text="t.badge"></span>
+                                        </template>
+                                        <img src="{{ $product->primary_image_url }}" alt="" class="w-full h-11 object-contain mb-1">
+                                        <div class="text-[11px] font-semibold text-[#565959]" x-text="t.qty === 1 ? 'Buy 1' : 'Buy ' + t.qty"></div>
+                                        <div class="text-[13px] font-bold text-[#0F1111]" x-text="'₹' + t.total.toLocaleString('en-IN')"></div>
+                                        <div class="text-[10px] text-neutral-400 line-through leading-tight" x-show="t.mrp > t.total" x-text="'₹' + t.mrp.toLocaleString('en-IN')"></div>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                        @else
                         {{-- Price --}}
                         <div class="text-2xl font-bold text-[#0F1111]">@price($product->price)</div>
+                        @endif
 
 
                         {{-- Stock --}}
@@ -544,6 +583,7 @@
 
                         {{-- Qty + Buttons --}}
                         @if($product->stock_quantity > 0)
+                        @unless($hasBundle)
                         <div class="flex items-center gap-2">
                             <label class="text-sm text-[#0F1111]">Qty:</label>
                             <select x-model="quantity" class="border border-[#D5D9D9] rounded-lg bg-[#F0F2F2] text-sm py-1.5 px-3 shadow-sm">
@@ -552,6 +592,7 @@
                                 @endfor
                             </select>
                         </div>
+                        @endunless
 
                         <div class="flex flex-col gap-2" data-sticky-trigger>
                             <button x-data="{ adding: false, added: false }"
