@@ -206,6 +206,50 @@
     </section>
     @endif
 
+    <!-- FOUNDER -->
+    @php $founderPhoto = $theme->get('founder_photo_url', ''); @endphp
+    <section class="py-14 sm:py-16 bg-neutral-50">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl border border-neutral-100 p-6 sm:p-8">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div class="shrink-0 text-center">
+                            @if($founderPhoto)
+                                <img src="{{ $founderPhoto }}" alt="Prabhat Ranjan — Founder, {{ $storeName }}"
+                                     class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border border-neutral-100 shadow-sm">
+                            @else
+                                <div class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center text-3xl font-extrabold"
+                                     style="background: var(--gryt-lime-tint); color:#4d6d00;">PR</div>
+                            @endif
+                            <a href="https://www.linkedin.com/in/prabhnz" target="_blank" rel="noopener"
+                               class="mt-3 inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full text-white transition-opacity hover:opacity-90"
+                               style="background:#0A66C2;">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                                LinkedIn
+                            </a>
+                        </div>
+                        <div class="text-center sm:text-left">
+                            <span class="gryt-eyebrow inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.2em] mb-2">
+                                <span class="bar w-5 h-px"></span>
+                                Meet the Founder
+                            </span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold text-neutral-900">Prabhat Ranjan</h2>
+                            <p class="text-[13px] font-semibold mt-0.5" style="color:#4d6d00;">Founder, {{ $storeName }}</p>
+                            <p class="text-[14px] text-neutral-600 leading-relaxed mt-3">
+                                GRYT was born from Prabhat's own journey — years of fitness discipline built while living and
+                                working in New Zealand, and a deeper purpose shaped by watching a close family member fight
+                                serious health challenges. The name comes from <strong>grit</strong>: the ability to stay
+                                resilient, focused and committed no matter how difficult the journey becomes. That belief —
+                                that wellness should be built on honesty, transparency and consistency rather than quick
+                                fixes — is what every {{ $storeName }} product stands on.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- VALUES GRID (only show when no custom about_html_content, to avoid duplicate sections) -->
     @if(!$aboutHtml)
     <section class="py-14 sm:py-18 bg-neutral-50">
