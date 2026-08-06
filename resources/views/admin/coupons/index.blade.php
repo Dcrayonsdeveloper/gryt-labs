@@ -214,11 +214,11 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="border-bottom:1px solid #e1e1e1">
-                            <th class="px-4 py-3">Code</th>
-                            <th class="px-4 py-3">Orders</th>
-                            <th class="px-4 py-3">Sales</th>
-                            <th class="px-4 py-3">Discount given</th>
-                            <th class="px-4 py-3"></th>
+                            <th class="px-4 py-3 whitespace-nowrap">Code</th>
+                            <th class="px-4 py-3 whitespace-nowrap">Orders</th>
+                            <th class="px-4 py-3 whitespace-nowrap">Sales</th>
+                            <th class="px-4 py-3 whitespace-nowrap">Discount given</th>
+                            <th class="px-4 py-3 w-1"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -230,9 +230,9 @@
                                 <td class="px-4 py-3 text-gray-600">{{ number_format($sc['orders']) }}</td>
                                 <td class="px-4 py-3 text-gray-900 font-medium">@price($sc['sales'])</td>
                                 <td class="px-4 py-3 text-gray-600">@price($sc['discount'])</td>
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-4 py-3 text-right whitespace-nowrap">
                                     @if($sc['managed'])
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-50 text-green-700">Also a store coupon</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-50 text-green-700 whitespace-nowrap">Also a store coupon</span>
                                     @endif
                                 </td>
                             </tr>
