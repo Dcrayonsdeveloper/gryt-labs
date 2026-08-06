@@ -26,6 +26,22 @@ class Setting extends Model
         'mail_password',
     ];
 
+    /**
+     * Bust the settings cache on ANY write.
+     *
+     * Setting::get() serves from a 5-minute cached array, but only Setting::set()
+     * used to clear it — the 17 places that write via updateOrCreate (admin
+     * Settings forms included) left the app reading stale values, so a saved
+     * setting could appear to have no effect for minutes.
+     */
+    protected static function booted(): void
+    {
+        // Pass the row's group so getGroup()'s per-group cache is cleared too.
+        $flush = fn (self $setting) => static::flushCache($setting->group ?: null);
+        static::saved($flush);
+        static::deleted($flush);
+    }
+
     protected function casts(): array
     {
         return [
