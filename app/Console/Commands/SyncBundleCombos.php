@@ -70,7 +70,9 @@ class SyncBundleCombos extends Command
             $combo ??= Product::where('sku', $comboSku)->first();
 
             $attrs = [
-                'name'              => $base->name . ' (Pack of 2)',
+                // "Pack of 2" alone reads as one item at Shiprocket checkout, where
+                // the line shows quantity 1 — spell out that the pack contains 2 units.
+                'name'              => $base->name . ' (Pack of 2 — contains 2 units)',
                 'sku'               => $comboSku,
                 'price'             => $pair,
                 'mrp'               => (float) $base->mrp * 2,
