@@ -27,9 +27,10 @@ class BackfillCapiPurchases extends Command
 {
     protected $signature = 'capi:backfill
         {--tenant= : Only this tenant id (default: all tenants)}
-        {--days=7 : Look-back window (Meta rejects events older than 7 days)}
-        {--order=* : Only these order_number(s)}
+        {--days=2 : Look-back window. Default 2 (Meta pixel↔server dedup only spans ~48h); up to 7 with --force}
+        {--order=* : Only these order_number(s) — bypasses the date window for selection}
         {--reset-false-stamps : Clear legacy "sent" stamps that have no Facebook receipt}
+        {--force : Allow >48h window / sending when Shiprocket handles the pixel (risk: double-counted conversions)}
         {--dry-run : Preview without sending or writing}';
 
     protected $description = 'Send missed Meta CAPI Purchase events for recent orders (and clear false legacy stamps)';
@@ -61,20 +62,38 @@ class BackfillCapiPurchases extends Command
 
     private function runTenant(AnalyticsService $analytics, string $tenantId): void
     {
-        $dry  = (bool) $this->option('dry-run');
-        $days = min(7, max(1, (int) $this->option('days'))); // Meta hard limit: 7 days
+        $dry   = (bool) $this->option('dry-run');
+        $reset = (bool) $this->option('reset-false-stamps');
+        $force = (bool) $this->option('force');
+        $days  = min(7, max(1, (int) $this->option('days'))); // Meta hard limit: 7 days
+
+        // Meta only dedups browser-pixel vs server events within ~48h. Beyond that,
+        // a backfilled Purchase for a customer whose pixel already fired = counted twice.
+        if ($days > 2 && ! $force) {
+            $this->warn("[{$tenantId}] --days={$days} exceeds Meta's ~48h dedup window — orders whose browser pixel already reported would be DOUBLE-COUNTED. Re-run with --force to accept, or keep --days=2.");
+            $days = 2;
+        }
+
+        $numbers = array_filter((array) $this->option('order'));
 
         $query = Order::query()
-            ->where('created_at', '>=', now()->subDays($days))
             ->whereNotIn('status', ['cancelled', 'refunded', 'returned'])
             ->orderBy('id');
-        if ($numbers = array_filter((array) $this->option('order'))) {
+        if ($numbers) {
+            // Explicitly named orders are selected regardless of age; the 7-day
+            // send limit below still applies (Meta rejects older event_time).
             $query->whereIn('order_number', $numbers);
+        } else {
+            $query->where('created_at', '>=', now()->subDays($days));
         }
         $orders = $query->get();
 
+        if ($numbers && ($missing = array_diff($numbers, $orders->pluck('order_number')->all()))) {
+            $this->warn("[{$tenantId}] not found (or excluded status): " . implode(', ', $missing));
+        }
+
         // ── Phase 1: clear legacy stamps (sent_at without Facebook's fbtrace receipt)
-        if ($this->option('reset-false-stamps')) {
+        if ($reset) {
             $legacy = $orders->filter(fn ($o) => data_get($o->metadata, 'capi_sent_at') && ! data_get($o->metadata, 'capi_fbtrace_id'));
             foreach ($legacy as $o) {
                 $this->line(sprintf('  %s[%s] %s: clearing unverified stamp (source=%s)',
@@ -100,7 +119,22 @@ class BackfillCapiPurchases extends Command
             return;
         }
 
-        $pending = $orders->filter(fn ($o) => ! data_get($o->metadata, 'capi_sent_at'));
+        // Shiprocket's own pixel already reports these purchases — sending ours too
+        // would double-count. Explicit --force (or --order) overrides.
+        if (Setting::get('fastrr_handles_purchase_pixel', false) && ! $force && ! $numbers) {
+            $this->warn("[{$tenantId}] fastrr_handles_purchase_pixel is ON (Shiprocket sends Purchase) — skipping to avoid double-counting. Use --force to override.");
+            return;
+        }
+
+        // In a dry run the phase-1 clears weren't written, so treat legacy-stamped
+        // orders as pending too — otherwise the preview reports far fewer than a
+        // real `--reset-false-stamps` run would actually send.
+        $pending = $orders->filter(function ($o) use ($dry, $reset) {
+            $sent  = data_get($o->metadata, 'capi_sent_at');
+            $trace = data_get($o->metadata, 'capi_fbtrace_id');
+
+            return ! $sent || ($dry && $reset && ! $trace);
+        });
         if ($pending->isEmpty()) {
             $this->info("[{$tenantId}] nothing to send — all orders in the window already have a verified send.");
             return;
@@ -108,14 +142,21 @@ class BackfillCapiPurchases extends Command
 
         $this->info("[{$tenantId}] sending " . $pending->count() . " Purchase event(s)…" . ($dry ? ' (dry-run, nothing sent)' : ''));
         foreach ($pending as $o) {
+            // Meta rejects event_time older than 7 days outright.
+            if ($o->created_at->lt(now()->subDays(7))) {
+                $this->line("  {$o->order_number}: SKIPPED — older than Meta's 7-day event_time limit ({$o->created_at->toDateString()})");
+                continue;
+            }
+
             if ($dry) {
                 $this->line("  [DRY] {$o->order_number}: would send (event_time=" . $o->created_at->toDateTimeString() . ')');
                 continue;
             }
 
             // Console runs synchronously, so the verdict is on the order right after.
+            // fbOnly: GA4/Google Ads already fired at checkout — don't re-send those.
             $o->load('items.product', 'user');
-            $outcome = $analytics->trackPurchase($o, null, $o->order_number, [], 'backfill', $o->created_at->timestamp);
+            $outcome = $analytics->trackPurchase($o, null, $o->order_number, [], 'backfill', $o->created_at->timestamp, true);
 
             $fresh = $o->fresh();
             $trace = data_get($fresh->metadata, 'capi_fbtrace_id');

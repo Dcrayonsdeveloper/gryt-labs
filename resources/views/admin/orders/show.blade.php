@@ -1015,10 +1015,10 @@
                             <span class="badge badge-error text-xs">Failed</span>
                         @elseif($capiLegacy)
                             <span class="badge badge-warning text-xs" title="Marked sent by old code, but no Facebook receipt exists — the CAPI token was not configured.">Unverified</span>
-                        @elseif(!$capiConfigured)
-                            <span class="badge badge-warning text-xs" title="Add the Conversions API token in Settings → SEO to enable server-side tracking.">Not configured</span>
                         @elseif($fastrHandlesPixel)
                             <span class="badge badge-info text-xs">Via Shiprocket</span>
+                        @elseif(!$capiConfigured)
+                            <span class="badge badge-warning text-xs" title="Add the Conversions API token in Settings → SEO to enable server-side tracking.">Not configured</span>
                         @else
                             <span class="badge badge-warning text-xs">Not sent</span>
                         @endif

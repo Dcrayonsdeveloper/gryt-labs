@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -37,7 +38,7 @@ class AnalyticsService
      *                 'skipped_no_config' (pixel/token not set — NOTHING was sent),
      *                 or 'skipped_excluded' (cancelled/test order).
      */
-    public function trackPurchase(Order $order, ?Request $request = null, ?string $eventId = null, array $fbCookieFallback = [], string $source = 'unknown', ?int $eventTime = null): string
+    public function trackPurchase(Order $order, ?Request $request = null, ?string $eventId = null, array $fbCookieFallback = [], string $source = 'unknown', ?int $eventTime = null, bool $fbOnly = false): string
     {
         // Never send Purchase events for cancelled/refunded/returned or test orders
         if (in_array($order->status, ['cancelled', 'refunded', 'returned'])) {
@@ -48,10 +49,38 @@ class AnalyticsService
             return 'skipped_excluded';
         }
 
-        $this->sendGA4PurchaseEvent($order);
-        $this->sendGAdsPurchaseEvent($order, $request);
+        // GA4/GAds have no event-id dedup, so guard them with their own once-flag —
+        // callers' capi_sent_at guard no longer covers them (it stays empty when the
+        // FB token is missing, and every success-page reload would re-send).
+        // capi:backfill passes fbOnly (GA4 already fired at checkout time).
+        if (! $fbOnly) {
+            $meta = is_array($order->metadata) ? $order->metadata : [];
+            if (empty($meta['ga_purchase_sent_at'])) {
+                $this->sendGA4PurchaseEvent($order);
+                $this->sendGAdsPurchaseEvent($order, $request);
+                self::stampOrderMeta($order->id, ['ga_purchase_sent_at' => now()->toIso8601String()]);
+            }
+        }
 
         return $this->sendFBPurchaseEvent($order, $request, $eventId, $fbCookieFallback, $source, $eventTime);
+    }
+
+    /**
+     * Merge keys into orders.metadata via a JSON-path UPDATE — atomic per key, so a
+     * concurrent whole-metadata save (pricing sync, webhook) can't be clobbered by
+     * a stale read-modify-write here. Falls back to initialising NULL metadata first
+     * (JSON_SET over SQL NULL would return NULL and drop the update).
+     */
+    private static function stampOrderMeta(int $orderId, array $keys): void
+    {
+        try {
+            Order::whereKey($orderId)->whereNull('metadata')->update(['metadata' => '{}']);
+            Order::whereKey($orderId)->update(
+                collect($keys)->mapWithKeys(fn ($v, $k) => ["metadata->{$k}" => $v])->all()
+            );
+        } catch (\Throwable $e) {
+            Log::warning('stampOrderMeta failed', ['order_id' => $orderId, 'error' => $e->getMessage()]);
+        }
     }
 
     // ─── ViewContent ─────────────────────────────────────────────────────
@@ -297,19 +326,27 @@ class AnalyticsService
         $orderId = $order->id;
         $finalEventId = $eventId;
 
+        // Claim the send NOW (before the deferred HTTP call) so a concurrent
+        // webhook/callback/success-page hit in the same seconds-wide window doesn't
+        // also dispatch: their capi_sent_at guard can't see a stamp that is only
+        // written after the response. Meta's event_id dedup is the backstop, but a
+        // claim avoids the duplicate request entirely. 5-minute TTL so a crashed
+        // terminate phase can be retried by capi:backfill.
+        $claim = Cache::add("capi_purchase_claim.{$orderId}", $source, 300);
+        if (! $claim) {
+            Log::info('Facebook CAPI Purchase already in flight — skipping duplicate', [
+                'order_id' => $orderId,
+                'source'   => $source,
+            ]);
+
+            return 'skipped_in_flight';
+        }
+
         $send = function () use ($pixelId, $accessToken, $payload, $orderId, $finalEventId, $source) {
-            $stamp = function (array $keys) use ($orderId) {
-                // Fresh read + quiet save: the order may have been updated between
-                // dispatch and this terminate-phase run, and stamping must not fire
-                // observers (OrderObserver would re-enter the pricing sync).
-                $fresh = Order::find($orderId);
-                if (! $fresh) {
-                    return;
-                }
-                $meta = is_array($fresh->metadata) ? $fresh->metadata : [];
-                $fresh->metadata = array_merge($meta, $keys);
-                $fresh->saveQuietly();
-            };
+            $stamp = fn (array $keys) => self::stampOrderMeta($orderId, $keys);
+            // The token rides in the Graph URL, so cURL exception messages can embed
+            // it — scrub before anything is stored on the order or logged.
+            $scrub = fn (string $s) => str_replace($accessToken, '***', $s);
 
             try {
                 $response = Http::timeout(5)->post(
@@ -330,22 +367,25 @@ class AnalyticsService
                     ]);
                 } else {
                     $stamp([
-                        'capi_error'    => 'HTTP ' . $response->status() . ': ' . mb_substr((string) $response->body(), 0, 300),
+                        'capi_error'    => $scrub('HTTP ' . $response->status() . ': ' . mb_substr((string) $response->body(), 0, 300)),
                         'capi_error_at' => now()->toIso8601String(),
                     ]);
                     Log::warning('Facebook CAPI Purchase rejected', [
                         'order_id' => $orderId,
                         'status' => $response->status(),
-                        'body' => $response->body(),
+                        'body' => $scrub((string) $response->body()),
                         'pixel_id' => $pixelId,
                     ]);
                 }
             } catch (\Throwable $e) {
                 $stamp([
-                    'capi_error'    => mb_substr($e->getMessage(), 0, 300),
+                    'capi_error'    => $scrub(mb_substr($e->getMessage(), 0, 300)),
                     'capi_error_at' => now()->toIso8601String(),
                 ]);
-                Log::warning('Facebook CAPI Purchase failed', ['order_id' => $orderId, 'error' => $e->getMessage()]);
+                Log::warning('Facebook CAPI Purchase failed', ['order_id' => $orderId, 'error' => $scrub($e->getMessage())]);
+            } finally {
+                // Release the claim: a failed send must stay retryable by capi:backfill.
+                Cache::forget("capi_purchase_claim.{$orderId}");
             }
         };
 
