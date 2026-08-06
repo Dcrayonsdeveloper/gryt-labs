@@ -92,9 +92,18 @@ class BackfillCapiPurchases extends Command
             $this->warn("[{$tenantId}] not found (or excluded status): " . implode(', ', $missing));
         }
 
-        // ── Phase 1: clear legacy stamps (sent_at without Facebook's fbtrace receipt)
+        // ── Phase 1: clear legacy stamps (sent_at without Facebook's fbtrace receipt).
+        // NOT limited to the send window: a stamp with no receipt is false whatever the
+        // order's age, and clearing it only corrects the record (it never sends anything).
         if ($reset) {
-            $legacy = $orders->filter(fn ($o) => data_get($o->metadata, 'capi_sent_at') && ! data_get($o->metadata, 'capi_fbtrace_id'));
+            $legacyQuery = Order::query()
+                ->whereNotNull('metadata->capi_sent_at')
+                ->whereNull('metadata->capi_fbtrace_id')
+                ->orderBy('id');
+            if ($numbers) {
+                $legacyQuery->whereIn('order_number', $numbers);
+            }
+            $legacy = $legacyQuery->get();
             foreach ($legacy as $o) {
                 $this->line(sprintf('  %s[%s] %s: clearing unverified stamp (source=%s)',
                     $dry ? '[DRY] ' : '', $tenantId, $o->order_number, data_get($o->metadata, 'capi_source', '-')));
