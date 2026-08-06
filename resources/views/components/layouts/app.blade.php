@@ -821,6 +821,8 @@
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
                                     </button>
                                     <span class="w-8 text-center text-sm font-medium text-neutral-900" x-text="item.quantity"></span>
+                                    <span x-show="(item.units_per || 1) > 1" class="text-[10px] text-neutral-500 ml-1"
+                                          x-text="'pack' + (item.quantity > 1 ? 's · ' : ' · ') + (item.units ?? item.quantity * (item.units_per || 1)) + ' units'"></span>
                                     <button @click="$store.cart.update(item.id, item.quantity + 1)"
                                             class="w-7 h-7 flex items-center justify-center text-neutral-500 hover:text-neutral-700 transition-colors">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>

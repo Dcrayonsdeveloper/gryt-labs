@@ -125,8 +125,13 @@ Alpine.store('cart', {
         return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     },
 
+    // Count physical units: a "Pack of 2" line is 2 units per quantity.
+    _unitsOf(item) {
+        return item.units ?? (item.quantity * (item.units_per ?? 1));
+    },
+
     _updateCount() {
-        this.itemCount = this.items.reduce((sum, item) => sum + item.quantity, 0);
+        this.itemCount = this.items.reduce((sum, item) => sum + this._unitsOf(item), 0);
     },
 
     async fetch() {
@@ -135,7 +140,7 @@ Alpine.store('cart', {
             const response = await axios.get('/cart/data');
             this.items = response.data.items || [];
             this.recommendations = response.data.recommendations || [];
-            this.itemCount = response.data.cart_count || this.items.reduce((sum, item) => sum + item.quantity, 0);
+            this.itemCount = response.data.cart_count ?? this.items.reduce((sum, item) => sum + this._unitsOf(item), 0);
         } catch (error) {
             console.error('Failed to fetch cart:', error);
         } finally {

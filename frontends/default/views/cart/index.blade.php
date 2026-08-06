@@ -399,6 +399,10 @@
                 'mrp' => (float) $item->product->mrp,
                 'discount_pct' => $item->product->discount_percentage ?? 0,
                 'quantity' => $item->quantity,
+                // A "Pack of 2" line is 2 physical units per quantity — the totals
+                // below are unit-based (mrp is the pack's mrp), so the count must be too.
+                'units_per' => $item->unitsPerQuantity(),
+                'units' => $item->quantity * $item->unitsPerQuantity(),
                 'updating' => false,
             ];
         })->values();
@@ -438,7 +442,9 @@
                 },
 
                 get totalQty() {
-                    return this.items.reduce((sum, i) => sum + i.quantity, 0);
+                    // Count physical units: a "Pack of 2" line is 2 units per quantity,
+                    // and the money below already totals units (mrp is the pack's mrp).
+                    return this.items.reduce((sum, i) => sum + (i.units ?? (i.quantity * (i.units_per ?? 1))), 0);
                 },
                 get subtotal() {
                     return this.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
