@@ -25,12 +25,16 @@
 
     // Per-product bundle offer → open the pack-picker popup instead of adding a single unit.
     $hasPack = $product->hasPackOffer();
+    $packBadges = $hasPack ? (array) ($product->pack_config['badges'] ?? []) : [];
     $cartClick = $hasPack
         ? "\$dispatch('open-pack-picker', " . \Illuminate\Support\Js::from([
               'productId' => $product->id,
               'name'      => $product->name,
               'image'     => $product->primary_image_url ?: $placeholderImage,
-              'tiers'     => $product->packTiers(4),
+              'heading'   => $product->pack_config['heading'] ?? 'Choose your pack & save',
+              'tiers'     => collect($product->packTiers(4))->map(fn ($t) => $t + [
+                  'badge' => $packBadges[$t['qty']] ?? $packBadges[(string) $t['qty']] ?? null,
+              ])->values()->all(),
           ]) . ")"
         : "\$store.cart.add({$product->id})";
 @endphp

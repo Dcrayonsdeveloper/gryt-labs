@@ -371,16 +371,19 @@
                 {{-- Quantity bundle offer (Amazon-style pack selector) — drives $store.pdpPack --}}
                 @php
                     $hasBundle = $product->hasPackOffer();
+                    // Per-quantity badge text, e.g. pack_config.badges = {"2": "BUY 1 GET 1 FREE"}
+                    $bundleBadges = (array) ($product->pack_config['badges'] ?? [2 => 'BEST VALUE']);
+                    $bundleHeading = $product->pack_config['heading'] ?? 'Choose your pack & save more';
                     $bundlePacks = $hasBundle ? collect($product->packTiers(4))->map(fn ($t) => [
                         'qty' => $t['qty'], 'price' => $t['total'], 'mrp' => $t['mrp'],
                         'savings' => $t['savings'], 'savingsPct' => $t['savingsPct'],
-                        'badge' => [2 => 'BEST VALUE'][$t['qty']] ?? null,
+                        'badge' => $bundleBadges[$t['qty']] ?? $bundleBadges[(string) $t['qty']] ?? null,
                     ])->values()->all() : [];
                 @endphp
                 @if($hasBundle)
                 <div x-data x-init="$store.pdpPack.init({{ \Illuminate\Support\Js::from($bundlePacks) }}, 1)" class="mt-4 border border-[#D5D9D9] rounded-lg p-3">
                     <div class="flex items-center justify-between mb-2.5">
-                        <h3 class="text-sm font-bold text-[#0F1111]">Choose your pack &amp; save more</h3>
+                        <h3 class="text-sm font-bold text-[#0F1111]">{{ $bundleHeading }}</h3>
                         <span class="text-xs font-semibold text-[#067D62]" x-show="$store.pdpPack.currentSavings > 0" x-text="'You save ' + $store.pdpPack.formatPrice($store.pdpPack.currentSavings)"></span>
                     </div>
                     <div class="flex gap-2 overflow-x-auto pt-3 pb-1 -mx-0.5 px-0.5">
