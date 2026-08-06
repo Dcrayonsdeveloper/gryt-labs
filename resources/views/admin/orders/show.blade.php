@@ -1012,7 +1012,7 @@
                         @if($capiVerified)
                             <span class="badge badge-success text-xs">Sent ✓</span>
                         @elseif(!empty($capiMeta['capi_error']))
-                            <span class="badge badge-danger text-xs">Failed</span>
+                            <span class="badge badge-error text-xs">Failed</span>
                         @elseif($capiLegacy)
                             <span class="badge badge-warning text-xs" title="Marked sent by old code, but no Facebook receipt exists — the CAPI token was not configured.">Unverified</span>
                         @elseif(!$capiConfigured)
