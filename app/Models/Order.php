@@ -18,6 +18,11 @@ class Order extends Model
         'user_agent',
         'admin_notes',
         'payment_collected_by',
+        // Internal scratchpad: Shiprocket ids, raw webhook payloads, CAPI receipts
+        // and Facebook error bodies. The customer order API returns the whole model
+        // as JSON (Api/V1/Order/OrderController), so keep it out of responses.
+        // Server-side property access ($order->metadata) and Blade are unaffected.
+        'metadata',
     ];
 
     protected $fillable = [

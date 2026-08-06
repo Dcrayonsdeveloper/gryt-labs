@@ -332,6 +332,20 @@ class AnalyticsService
         // written after the response. Meta's event_id dedup is the backstop, but a
         // claim avoids the duplicate request entirely. 5-minute TTL so a crashed
         // terminate phase can be retried by capi:backfill.
+        // Back off after a failure: capi_sent_at is only written on success, so
+        // without this every success-page refresh and every later webhook would
+        // re-attempt a doomed send (e.g. an invalid token) indefinitely. Failures
+        // stay recoverable — capi:backfill ignores this cooldown.
+        if (! app()->runningInConsole() && ! empty($order->metadata['capi_error_at'])) {
+            try {
+                if (\Illuminate\Support\Carbon::parse($order->metadata['capi_error_at'])->gt(now()->subHour())) {
+                    return 'skipped_recent_failure';
+                }
+            } catch (\Throwable $e) {
+                // Unparseable timestamp — fall through and retry.
+            }
+        }
+
         $claim = Cache::add("capi_purchase_claim.{$orderId}", $source, 300);
         if (! $claim) {
             Log::info('Facebook CAPI Purchase already in flight — skipping duplicate', [
