@@ -47,6 +47,15 @@ class CartItem extends Model
         });
     }
 
+    /**
+     * Physical units represented by ONE unit of quantity on this line.
+     * A "Pack of 2" combo product is 2 units; everything else is 1.
+     */
+    public function unitsPerQuantity(): int
+    {
+        return ! empty($this->product?->pack_config['combo_of']) ? 2 : 1;
+    }
+
     public function cart(): BelongsTo
     {
         return $this->belongsTo(Cart::class);

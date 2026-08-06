@@ -36,6 +36,10 @@ class CartController extends Controller
             'price' => (float) $i->price,
             'mrp' => (float) ($i->product->mrp ?? $i->price),
             'quantity' => $i->quantity,
+            // A "Pack of 2" line is 2 units per quantity — surface it so the cart
+            // can say "2 packs · 4 units" instead of an ambiguous "x 2".
+            'units_per' => $i->unitsPerQuantity(),
+            'units' => $i->quantity * $i->unitsPerQuantity(),
             'max_qty' => min(10, $i->product->stock_quantity ?? 10),
             'url' => $i->product ? route('products.show', $i->product->slug) : '#',
         ])->values();
@@ -72,6 +76,8 @@ class CartController extends Controller
                 'product_id' => $item->product_id,
                 'variant_id' => $item->variant_id,
                 'quantity' => $item->quantity,
+                'units_per' => $item->unitsPerQuantity(),
+                'units' => $item->quantity * $item->unitsPerQuantity(),
                 'price' => (float) $item->price,
                 'name' => $item->product->name ?? '',
                 'product_name' => $item->product->name ?? '',
@@ -90,7 +96,7 @@ class CartController extends Controller
 
         return response()->json([
             'items' => $items,
-            'cart_count' => $cart->items->sum('quantity'),
+            'cart_count' => $cart->unitCount(),
             'subtotal' => (float) $cart->subtotal,
             'discount' => (float) $cart->discount,
             'total' => (float) $cart->total,
@@ -179,7 +185,7 @@ class CartController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Product added to cart',
-                'cart_count' => $cart->items->sum('quantity'),
+                'cart_count' => $cart->unitCount(),
                 'cart_total' => $cart->total,
                 'fb_event' => [
                     'event_id' => $eventId,
@@ -252,7 +258,7 @@ class CartController extends Controller
                 'message' => $message,
                 'coupon_removed' => $couponRemoved,
                 'item_total' => $cartItem->quantity * $cartItem->price,
-                'cart_count' => $cart->items->sum('quantity'),
+                'cart_count' => $cart->unitCount(),
                 'cart_subtotal' => (float) $cart->subtotal,
                 'cart_discount' => (float) $cart->discount,
                 'cart_total' => (float) $cart->total,
@@ -300,7 +306,7 @@ class CartController extends Controller
                 'success' => true,
                 'message' => $message,
                 'coupon_removed' => $couponRemoved,
-                'cart_count' => $cart->items->sum('quantity'),
+                'cart_count' => $cart->unitCount(),
                 'cart_subtotal' => (float) $cart->subtotal,
                 'cart_discount' => (float) $cart->discount,
                 'cart_total' => (float) $cart->total,

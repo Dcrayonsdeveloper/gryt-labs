@@ -311,6 +311,20 @@ class Cart extends Model
 
     public function getItemCount(): int
     {
-        return $this->items->sum('quantity');
+        return $this->unitCount();
+    }
+
+    /**
+     * Number of physical units in the cart.
+     *
+     * A "Pack of 2" combo line is ONE line of quantity N but 2N units, and the
+     * money already reflects units (MRP = 2N × unit MRP). Counting lines instead
+     * made the header read "2 items" for 4 bottles — inconsistent with the totals.
+     */
+    public function unitCount(): int
+    {
+        $this->loadMissing('items.product');
+
+        return (int) $this->items->sum(fn ($i) => $i->quantity * $i->unitsPerQuantity());
     }
 }

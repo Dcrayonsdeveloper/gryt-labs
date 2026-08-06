@@ -139,7 +139,12 @@
                                             <div class="hidden sm:flex flex-col items-end justify-center shrink-0">
                                                 <p class="text-[13px] font-bold text-neutral-900" x-text="fp(item.price * item.quantity)"></p>
                                                 <template x-if="item.quantity > 1">
-                                                    <p class="text-[10px] text-neutral-600 mt-0.5" x-text="fp(item.price) + ' x ' + item.quantity"></p>
+                                                    <p class="text-[10px] text-neutral-600 mt-0.5"
+                                                       x-text="fp(item.price) + ' x ' + item.quantity + ((item.units_per || 1) > 1 ? ' packs (' + item.units + ' units)' : '')"></p>
+                                                </template>
+                                                {{-- A single pack is still 2 units — say so, or 'Pack of 2' with no qty reads as one bottle. --}}
+                                                <template x-if="item.quantity === 1 && (item.units_per || 1) > 1">
+                                                    <p class="text-[10px] text-neutral-600 mt-0.5" x-text="item.units + ' units'"></p>
                                                 </template>
                                             </div>
                                         </div>
