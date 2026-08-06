@@ -218,7 +218,6 @@
                             <th class="px-4 py-3 whitespace-nowrap">Orders</th>
                             <th class="px-4 py-3 whitespace-nowrap">Sales</th>
                             <th class="px-4 py-3 whitespace-nowrap">Discount given</th>
-                            <th class="px-4 py-3 w-1"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -226,15 +225,13 @@
                             <tr style="border-bottom:1px solid #e1e1e1">
                                 <td class="px-4 py-3">
                                     <span class="font-medium text-gray-900">{{ $sc['code'] }}</span>
+                                    @if($sc['managed'])
+                                        <span class="inline-flex items-center px-2 py-0.5 ml-2 rounded-full text-[11px] font-medium bg-green-50 text-green-700 whitespace-nowrap">Also a store coupon</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3 text-gray-600">{{ number_format($sc['orders']) }}</td>
                                 <td class="px-4 py-3 text-gray-900 font-medium">@price($sc['sales'])</td>
                                 <td class="px-4 py-3 text-gray-600">@price($sc['discount'])</td>
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    @if($sc['managed'])
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-50 text-green-700 whitespace-nowrap">Also a store coupon</span>
-                                    @endif
-                                </td>
                             </tr>
                         @endforeach
                     </tbody>
