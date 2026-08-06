@@ -30,15 +30,10 @@ class TrackOrderPlacedAnalytics
                 return;
             }
 
-            // Use order_number as eventId (same as controllers) so Meta dedup works
+            // Use order_number as eventId (same as controllers) so Meta dedup works.
+            // The service stamps capi_* metadata itself from Facebook's actual response.
             $eventId = $order->order_number;
-            $this->analytics->trackPurchase($order, request(), $eventId);
-
-            $meta['capi_sent_at'] = now()->toIso8601String();
-            $meta['fb_event_id']  = $eventId;
-            $meta['capi_source']  = 'event_listener';
-            $order->metadata = $meta;
-            $order->save();
+            $this->analytics->trackPurchase($order, request(), $eventId, [], 'event_listener');
         } catch (\Throwable $e) {
             Log::warning('TrackOrderPlacedAnalytics failed', [
                 'order_id' => $event->order->id ?? null,

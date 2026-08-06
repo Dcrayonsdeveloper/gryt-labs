@@ -1000,18 +1000,30 @@
                     @php
                         $capiMeta = $order->metadata ?? [];
                         $fastrHandlesPixel = (bool) \App\Models\Setting::get('fastrr_handles_purchase_pixel', false);
+                        // "Sent" is only trusted when it carries Facebook's receipt
+                        // (capi_fbtrace_id) — legacy stamps were written without any send.
+                        $capiVerified   = !empty($capiMeta['capi_sent_at']) && !empty($capiMeta['capi_fbtrace_id']);
+                        $capiLegacy     = !empty($capiMeta['capi_sent_at']) && empty($capiMeta['capi_fbtrace_id']);
+                        $capiConfigured = \App\Models\Setting::get('facebook_pixel_id')
+                            && (\App\Models\Setting::get('facebook_capi_token') ?: \App\Models\Setting::get('facebook_capi_access_token'));
                     @endphp
                     <div class="flex justify-between items-center">
                         <span class="text-neutral-600">Facebook CAPI</span>
-                        @if(!empty($capiMeta['capi_sent_at']))
-                            <span class="badge badge-success text-xs">Sent</span>
+                        @if($capiVerified)
+                            <span class="badge badge-success text-xs">Sent ✓</span>
+                        @elseif(!empty($capiMeta['capi_error']))
+                            <span class="badge badge-danger text-xs">Failed</span>
+                        @elseif($capiLegacy)
+                            <span class="badge badge-warning text-xs" title="Marked sent by old code, but no Facebook receipt exists — the CAPI token was not configured.">Unverified</span>
+                        @elseif(!$capiConfigured)
+                            <span class="badge badge-warning text-xs" title="Add the Conversions API token in Settings → SEO to enable server-side tracking.">Not configured</span>
                         @elseif($fastrHandlesPixel)
                             <span class="badge badge-info text-xs">Via Shiprocket</span>
                         @else
                             <span class="badge badge-warning text-xs">Not sent</span>
                         @endif
                     </div>
-                    @if(!empty($capiMeta['capi_sent_at']))
+                    @if($capiVerified)
                         <div class="flex justify-between items-center">
                             <span class="text-neutral-600">CAPI Source</span>
                             <span class="font-medium text-neutral-700 text-xs">{{ $capiMeta['capi_source'] ?? '-' }}</span>
@@ -1019,6 +1031,15 @@
                         <div class="flex justify-between items-center">
                             <span class="text-neutral-600">CAPI Sent At</span>
                             <span class="font-medium text-neutral-700 text-xs">{{ \Carbon\Carbon::parse($capiMeta['capi_sent_at'])->format('M d, Y h:i A') }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-neutral-600">FB Trace</span>
+                            <span class="font-medium text-neutral-700 text-xs" title="Facebook's delivery receipt (fbtrace_id)">{{ $capiMeta['capi_fbtrace_id'] }}</span>
+                        </div>
+                    @elseif(!empty($capiMeta['capi_error']))
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="text-neutral-600 shrink-0">CAPI Error</span>
+                            <span class="font-medium text-red-600 text-xs break-all text-right">{{ \Illuminate\Support\Str::limit($capiMeta['capi_error'], 120) }}</span>
                         </div>
                     @endif
                 </div>

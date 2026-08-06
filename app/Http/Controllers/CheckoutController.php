@@ -675,12 +675,8 @@ class CheckoutController extends Controller
 
         $meta = $order->metadata ?? [];
         if (empty($meta['capi_sent_at'])) {
-            app(AnalyticsService::class)->trackPurchase($order, request(), $fbPurchaseEventId);
-            $meta['capi_sent_at'] = now()->toIso8601String();
-            $meta['fb_event_id']  = $fbPurchaseEventId;
-            $meta['capi_source']  = 'checkout_native';
-            $order->metadata = $meta;
-            $order->save();
+            // Service stamps capi_* itself from Facebook's actual response.
+            app(AnalyticsService::class)->trackPurchase($order, request(), $fbPurchaseEventId, [], 'checkout_native');
         }
 
         return view('checkout.success', compact('order', 'fbPurchaseEventId'));
@@ -866,12 +862,8 @@ class CheckoutController extends Controller
 
                 $meta = $order->metadata ?? [];
                 if (empty($meta['capi_sent_at'])) {
-                    app(AnalyticsService::class)->trackPurchase($order, $request, $fbPurchaseEventId);
-                    $meta['capi_sent_at'] = now()->toIso8601String();
-                    $meta['fb_event_id']  = $fbPurchaseEventId;
-                    $meta['capi_source']  = 'checkout_idempotent';
-                    $order->metadata = $meta;
-                    $order->save();
+                    // Service stamps capi_* itself from Facebook's actual response.
+                    app(AnalyticsService::class)->trackPurchase($order, $request, $fbPurchaseEventId, [], 'checkout_idempotent');
                 }
 
                 return view('checkout.shiprocket-success', [
@@ -1030,12 +1022,8 @@ class CheckoutController extends Controller
 
             $meta = $finalOrder->metadata ?? [];
             if (empty($meta['capi_sent_at'])) {
-                app(AnalyticsService::class)->trackPurchase($finalOrder, $request, $fbPurchaseEventId);
-                $meta['capi_sent_at'] = now()->toIso8601String();
-                $meta['fb_event_id']  = $fbPurchaseEventId;
-                $meta['capi_source']  = 'checkout_shiprocket';
-                $finalOrder->metadata = $meta;
-                $finalOrder->save();
+                // Service stamps capi_* itself from Facebook's actual response.
+                app(AnalyticsService::class)->trackPurchase($finalOrder, $request, $fbPurchaseEventId, [], 'checkout_shiprocket');
             }
         }
 
