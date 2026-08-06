@@ -49,19 +49,19 @@
                         <svg class="w-4 h-4 text-success-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        In the same condition as received — unused and in working order
+                        Unopened and unused, with the safety seal intact
                     </li>
                     <li class="flex items-start gap-2 text-[13px] text-neutral-600">
                         <svg class="w-4 h-4 text-success-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        In its original packaging with all accessories and manuals included
+                        In its original packaging
                     </li>
                     <li class="flex items-start gap-2 text-[13px] text-neutral-600">
                         <svg class="w-4 h-4 text-success-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Free from physical damage, scratches, or signs of use
+                        Requested within {{ $returnDays }} days of delivery
                     </li>
                     <li class="flex items-start gap-2 text-[13px] text-neutral-600">
                         <svg class="w-4 h-4 text-success-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,25 +81,19 @@
                         <svg class="w-4 h-4 text-danger-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
-                        Products with broken or tampered warranty seals
+                        Opened or used supplements — for health and safety reasons
                     </li>
                     <li class="flex items-start gap-2 text-[13px] text-neutral-600">
                         <svg class="w-4 h-4 text-danger-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
-                        Items damaged due to misuse, power surges, or improper handling
+                        Products with a broken safety seal (unless reported as damaged/tampered with an unboxing video)
                     </li>
                     <li class="flex items-start gap-2 text-[13px] text-neutral-600">
                         <svg class="w-4 h-4 text-danger-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
-                        Installed or activated software and digital products
-                    </li>
-                    <li class="flex items-start gap-2 text-[13px] text-neutral-600">
-                        <svg class="w-4 h-4 text-danger-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                        Products with missing accessories, cables, or original packaging
+                        Items damaged by improper storage or handling after delivery
                     </li>
                     <li class="flex items-start gap-2 text-[13px] text-neutral-600">
                         <svg class="w-4 h-4 text-danger-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +126,7 @@
                             <span class="text-sm font-bold text-primary-600">2</span>
                         </div>
                         <h3 class="text-sm font-semibold text-neutral-900 mb-1">Ship Item</h3>
-                        <p class="text-xs text-neutral-600 leading-relaxed">Pack the item securely and ship it using the provided return label.</p>
+                        <p class="text-xs text-neutral-600 leading-relaxed">We arrange a pickup from your address in most locations — or share the return address if pickup isn't available.</p>
                     </div>
                     <div class="text-center">
                         <div class="w-10 h-10 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -186,13 +180,26 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-[15px] font-bold text-neutral-900 mb-1">Damaged or Defective Items</h2>
+                        <h2 class="text-[15px] font-bold text-neutral-900 mb-1">Damaged or Tampered Items</h2>
                         <p class="text-[13px] text-neutral-600 leading-relaxed">
-                            If you receive a damaged or defective item, please contact us within {{ $damageClaimHours }} hours of
-                            delivery with photos of the damage. We will arrange for a replacement or refund.
+                            If you receive a damaged or tampered package, contact us within {{ $damageClaimHours }} hours of
+                            delivery. <strong>An unboxing video showing the sealed package being opened is required for all
+                            damage and tampering claims</strong> — we recommend recording every unboxing. Once verified, we
+                            will arrange a replacement or full refund immediately.
                         </p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Cancellations -->
+            <div class="bg-white border border-neutral-100 rounded-xl p-5 sm:p-6 mb-4">
+                <h2 class="text-[15px] font-bold text-neutral-900 mb-2">Order Cancellations</h2>
+                <p class="text-[13px] text-neutral-600 leading-relaxed">
+                    Orders can be cancelled anytime <strong>before dispatch</strong> from your account or by contacting
+                    support. Once an order has been dispatched it can no longer be cancelled — please receive it and use
+                    the return process instead. Refunds for cancelled prepaid orders reach your original payment method
+                    within {{ $refundDays }} business days.
+                </p>
             </div>
 
             <!-- Questions -->

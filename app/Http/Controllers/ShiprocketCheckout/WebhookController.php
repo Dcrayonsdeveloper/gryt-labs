@@ -1163,15 +1163,11 @@ class WebhookController extends Controller
         ]);
 
         try {
-            app(AnalyticsService::class)->trackPurchase($order, $request, $eventId, $fbCookieFallback);
+            // The service stamps capi_* metadata itself — from Facebook's actual
+            // response — so a missing token or a rejected event is never shown as "Sent".
+            $outcome = app(AnalyticsService::class)->trackPurchase($order, $request, $eventId, $fbCookieFallback, 'webhook');
 
-            $meta['capi_sent_at'] = now()->toIso8601String();
-            $meta['fb_event_id']  = $eventId;
-            $meta['capi_source']  = 'webhook';
-            $order->metadata = $meta;
-            $order->save();
-
-            Log::info('ShiprocketCheckoutWebhook: CAPI Purchase fired', [
+            Log::info('ShiprocketCheckoutWebhook: CAPI Purchase ' . $outcome, [
                 'order_id'     => $order->id,
                 'order_number' => $order->order_number,
                 'event_id'     => $eventId,

@@ -31,20 +31,27 @@ class AnalyticsService
 
     // ─── Purchase ────────────────────────────────────────────────────────
 
-    public function trackPurchase(Order $order, ?Request $request = null, ?string $eventId = null, array $fbCookieFallback = []): void
+    /**
+     * @return string  Meta CAPI outcome: 'dispatched' (send queued; the order's
+     *                 capi_* metadata is written from Facebook's actual response),
+     *                 'skipped_no_config' (pixel/token not set — NOTHING was sent),
+     *                 or 'skipped_excluded' (cancelled/test order).
+     */
+    public function trackPurchase(Order $order, ?Request $request = null, ?string $eventId = null, array $fbCookieFallback = [], string $source = 'unknown', ?int $eventTime = null): string
     {
         // Never send Purchase events for cancelled/refunded/returned or test orders
         if (in_array($order->status, ['cancelled', 'refunded', 'returned'])) {
-            return;
+            return 'skipped_excluded';
         }
         $email = strtolower(trim($order->user?->email ?? $order->guest_email ?? ''));
         if ($email && (str_contains($email, 'test') || str_contains($email, '@example.'))) {
-            return;
+            return 'skipped_excluded';
         }
 
         $this->sendGA4PurchaseEvent($order);
         $this->sendGAdsPurchaseEvent($order, $request);
-        $this->sendFBPurchaseEvent($order, $request, $eventId, $fbCookieFallback);
+
+        return $this->sendFBPurchaseEvent($order, $request, $eventId, $fbCookieFallback, $source, $eventTime);
     }
 
     // ─── ViewContent ─────────────────────────────────────────────────────
@@ -224,13 +231,20 @@ class AnalyticsService
         })->afterResponse();
     }
 
-    private function sendFBPurchaseEvent(Order $order, ?Request $request = null, ?string $eventId = null, array $fbCookieFallback = []): void
+    private function sendFBPurchaseEvent(Order $order, ?Request $request = null, ?string $eventId = null, array $fbCookieFallback = [], string $source = 'unknown', ?int $eventTime = null): string
     {
         $pixelId = Setting::get('facebook_pixel_id');
         $accessToken = Setting::get('facebook_capi_token') ?: Setting::get('facebook_capi_access_token');
 
         if (!$pixelId || !$accessToken) {
-            return;
+            // Loud, not silent: this is the money event — a missing token used to be
+            // invisible (orders were even stamped "sent"). Callers surface this state.
+            Log::info('Facebook CAPI Purchase skipped — pixel/token not configured', [
+                'order' => $order->order_number,
+                'missing' => !$pixelId ? 'facebook_pixel_id' : 'facebook_capi_token',
+            ]);
+
+            return 'skipped_no_config';
         }
 
         $user = $order->user;
@@ -252,7 +266,8 @@ class AnalyticsService
 
         $event = [
             'event_name' => 'Purchase',
-            'event_time' => now()->timestamp,
+            // Backfill passes the order's real placement time (Meta accepts ≤7 days old)
+            'event_time' => $eventTime ?? now()->timestamp,
             'action_source' => 'website',
             'event_source_url' => $request?->fullUrl() ?? config('app.url'),
             'user_data' => $userData,
@@ -279,24 +294,71 @@ class AnalyticsService
             $payload['test_event_code'] = $testCode;
         }
 
-        dispatch(function () use ($pixelId, $accessToken, $payload) {
+        $orderId = $order->id;
+        $finalEventId = $eventId;
+
+        $send = function () use ($pixelId, $accessToken, $payload, $orderId, $finalEventId, $source) {
+            $stamp = function (array $keys) use ($orderId) {
+                // Fresh read + quiet save: the order may have been updated between
+                // dispatch and this terminate-phase run, and stamping must not fire
+                // observers (OrderObserver would re-enter the pricing sync).
+                $fresh = Order::find($orderId);
+                if (! $fresh) {
+                    return;
+                }
+                $meta = is_array($fresh->metadata) ? $fresh->metadata : [];
+                $fresh->metadata = array_merge($meta, $keys);
+                $fresh->saveQuietly();
+            };
+
             try {
                 $response = Http::timeout(5)->post(
                     "https://graph.facebook.com/v22.0/{$pixelId}/events?access_token={$accessToken}",
                     $payload
                 );
 
-                if (!$response->successful()) {
+                if ($response->successful()) {
+                    // Only NOW is the event truly delivered — stamp with Facebook's receipt.
+                    $stamp([
+                        'capi_sent_at'         => now()->toIso8601String(),
+                        'capi_source'          => $source,
+                        'fb_event_id'          => $finalEventId,
+                        'capi_events_received' => (int) $response->json('events_received', 0),
+                        'capi_fbtrace_id'      => $response->json('fbtrace_id'),
+                        'capi_error'           => null,
+                        'capi_error_at'        => null,
+                    ]);
+                } else {
+                    $stamp([
+                        'capi_error'    => 'HTTP ' . $response->status() . ': ' . mb_substr((string) $response->body(), 0, 300),
+                        'capi_error_at' => now()->toIso8601String(),
+                    ]);
                     Log::warning('Facebook CAPI Purchase rejected', [
+                        'order_id' => $orderId,
                         'status' => $response->status(),
                         'body' => $response->body(),
                         'pixel_id' => $pixelId,
                     ]);
                 }
             } catch (\Throwable $e) {
-                Log::warning('Facebook CAPI Purchase failed', ['error' => $e->getMessage()]);
+                $stamp([
+                    'capi_error'    => mb_substr($e->getMessage(), 0, 300),
+                    'capi_error_at' => now()->toIso8601String(),
+                ]);
+                Log::warning('Facebook CAPI Purchase failed', ['order_id' => $orderId, 'error' => $e->getMessage()]);
             }
-        })->afterResponse();
+        };
+
+        if (app()->runningInConsole()) {
+            // capi:backfill needs the result immediately (it reports per order);
+            // there's no HTTP response to defer behind in console anyway.
+            $send();
+        } else {
+            // Never slow checkout: run after the response is sent to the customer.
+            dispatch($send)->afterResponse();
+        }
+
+        return 'dispatched';
     }
 
     // =====================================================================

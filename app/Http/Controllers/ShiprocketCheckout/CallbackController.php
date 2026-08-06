@@ -829,13 +829,9 @@ class CallbackController extends Controller
                     'fbc' => $acMeta['fbc'] ?? null,
                     'fbp' => $acMeta['fbp'] ?? null,
                 ]);
-                app(AnalyticsService::class)->trackPurchase($order, $request, $fbEventId, $fbCookieFallback);
-
-                $meta['capi_sent_at'] = now()->toIso8601String();
-                $meta['fb_event_id']  = $fbEventId;
-                $meta['capi_source']  = 'callback';
-                $order->metadata = $meta;
-                $order->save();
+                // Service stamps capi_* itself from Facebook's actual response —
+                // never mark "sent" here (a missing token used to be shown as Sent).
+                app(AnalyticsService::class)->trackPurchase($order, $request, $fbEventId, $fbCookieFallback, 'callback');
             }
         }
 

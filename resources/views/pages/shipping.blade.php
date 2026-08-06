@@ -9,7 +9,7 @@
     @php
         $freeShipThreshold = $theme->get('free_shipping_threshold', 499);
         $flatRate = $theme->get('flat_rate_amount', 49);
-        $standardDays = $theme->get('standard_delivery_days', '5-7');
+        $standardDays = $theme->get('standard_delivery_days', '3-7');
         $expressDays = $theme->get('express_delivery_days', '2-3');
         $expressCost = $theme->get('express_delivery_cost', 99);
         $sameDayCost = $theme->get('same_day_delivery_cost', 149);
@@ -70,10 +70,10 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-sm font-semibold text-neutral-900">Express Delivery</h3>
-                                <p class="text-xs text-neutral-600 mt-0.5">{{ $expressDays }} business days</p>
-                                <p class="text-sm font-bold text-neutral-900 mt-1.5">{{ $cs }}{{ $expressCost }}</p>
-                                <p class="text-[11px] text-neutral-600 mt-0.5">Available in select cities</p>
+                                <h3 class="text-sm font-semibold text-neutral-900">Fast Dispatch</h3>
+                                <p class="text-xs text-neutral-600 mt-0.5">Shipped within 24 hours</p>
+                                <p class="text-sm font-bold text-neutral-900 mt-1.5">Trusted couriers</p>
+                                <p class="text-[11px] text-neutral-600 mt-0.5">Metro cities typically in 3-4 days</p>
                             </div>
                         </div>
                     </div>
@@ -86,10 +86,10 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-sm font-semibold text-neutral-900">Same Day Delivery</h3>
-                                <p class="text-xs text-neutral-600 mt-0.5">Order before {{ $sameDayCutoff }}</p>
-                                <p class="text-sm font-bold text-neutral-900 mt-1.5">{{ $cs }}{{ $sameDayCost }}</p>
-                                <p class="text-[11px] text-neutral-600 mt-0.5">{{ $sameDayCities }}</p>
+                                <h3 class="text-sm font-semibold text-neutral-900">Pan-India Delivery</h3>
+                                <p class="text-xs text-neutral-600 mt-0.5">Every state &amp; union territory</p>
+                                <p class="text-sm font-bold text-neutral-900 mt-1.5">All-India coverage</p>
+                                <p class="text-[11px] text-neutral-600 mt-0.5">Check your pincode at checkout</p>
                             </div>
                         </div>
                     </div>

@@ -15,7 +15,7 @@
         <?php
         $returnDays = $theme->get('return_policy_days', 7);
         $refundDays = $theme->get('refund_processing_days', '5-7');
-        $standardDays = $theme->get('standard_delivery_days', '5-7');
+        $standardDays = $theme->get('standard_delivery_days', '3-7');
         $expressDays = $theme->get('express_delivery_days', '2-3');
         $faqSchema = [
             '@context' => 'https://schema.org',
@@ -34,7 +34,7 @@
                     'name' => 'What payment methods do you accept?',
                     'acceptedAnswer' => [
                         '@type' => 'Answer',
-                        'text' => 'We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and bank transfers. All payments are processed securely through our payment partners.',
+                        'text' => 'We accept all major Indian payment methods — UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, Net Banking, Wallets, and Cash on Delivery (Partial Pay). All payments are processed securely through our payment partners.',
                     ],
                 ],
                 [
@@ -50,7 +50,7 @@
                     'name' => 'How long does shipping take?',
                     'acceptedAnswer' => [
                         '@type' => 'Answer',
-                        'text' => 'Shipping times vary depending on your location and chosen shipping method. Standard shipping typically takes ' . $standardDays . ' business days, while express shipping takes ' . $expressDays . ' business days. International shipping may take 7-14 business days.',
+                        'text' => 'We dispatch all orders within 24 hours. Standard delivery takes ' . $standardDays . ' business days depending on your location — metro cities typically receive orders in 3-4 days.',
                     ],
                 ],
                 [
@@ -58,7 +58,7 @@
                     'name' => 'Do you ship internationally?',
                     'acceptedAnswer' => [
                         '@type' => 'Answer',
-                        'text' => 'Yes, we ship to over 100 countries worldwide. Shipping costs and delivery times vary by destination. You can see the exact shipping costs at checkout.',
+                        'text' => 'Currently we deliver across India only — every state and union territory. We do not offer international shipping yet.',
                     ],
                 ],
                 [
@@ -66,7 +66,7 @@
                     'name' => 'What is your return policy?',
                     'acceptedAnswer' => [
                         '@type' => 'Answer',
-                        'text' => 'We offer a ' . $returnDays . '-day return policy for most items. Products must be unused and in their original packaging.',
+                        'text' => 'We offer a ' . $returnDays . '-day return policy. Products must be unopened, sealed and in their original packaging. Damage or tampering claims require an unboxing video and must be reported within 48 hours of delivery. Orders can be cancelled only before dispatch.',
                     ],
                 ],
                 [
@@ -143,7 +143,7 @@
                     </button>
                     <div x-show="open === 2" x-collapse>
                         <div class="px-5 pb-4 text-[13px] text-neutral-600 leading-relaxed border-t border-neutral-50">
-                            <p class="pt-3">We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and bank transfers. All payments are processed securely through our payment partners.</p>
+                            <p class="pt-3">We accept all major Indian payment methods — UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, Net Banking, Wallets, and Cash on Delivery (Partial Pay). All payments are processed securely through our payment partners.</p>
                         </div>
                     </div>
                 </div>
@@ -176,7 +176,7 @@
                     </button>
                     <div x-show="open === 4" x-collapse>
                         <div class="px-5 pb-4 text-[13px] text-neutral-600 leading-relaxed border-t border-neutral-50">
-                            <p class="pt-3">Shipping times vary depending on your location and chosen shipping method. Standard shipping typically takes {{ $standardDays }} business days, while express shipping takes {{ $expressDays }} business days. International shipping may take 7-14 business days.</p>
+                            <p class="pt-3">We dispatch all orders within 24 hours. Standard delivery takes {{ $standardDays }} business days depending on your location — metro cities typically receive orders in 3-4 days.</p>
                         </div>
                     </div>
                 </div>
@@ -191,7 +191,7 @@
                     </button>
                     <div x-show="open === 5" x-collapse>
                         <div class="px-5 pb-4 text-[13px] text-neutral-600 leading-relaxed border-t border-neutral-50">
-                            <p class="pt-3">Yes, we ship to over 100 countries worldwide. Shipping costs and delivery times vary by destination. You can see the exact shipping costs at checkout.</p>
+                            <p class="pt-3">Currently we deliver across India only — every state and union territory. We do not offer international shipping yet.</p>
                         </div>
                     </div>
                 </div>
@@ -209,7 +209,7 @@
                     </button>
                     <div x-show="open === 6" x-collapse>
                         <div class="px-5 pb-4 text-[13px] text-neutral-600 leading-relaxed border-t border-neutral-50">
-                            <p class="pt-3">We offer a {{ $returnDays }}-day return policy for most items. Products must be unused and in their original packaging. Please visit our <a href="{{ route('returns') }}" class="text-primary-600 hover:text-primary-700 font-medium">Returns Policy</a> page for full details.</p>
+                            <p class="pt-3">We offer a {{ $returnDays }}-day return policy. Products must be unopened, sealed and in their original packaging. Damage or tampering claims require an unboxing video and must be reported within 48 hours of delivery. Orders can be cancelled only before dispatch. Please visit our <a href="{{ route('returns') }}" class="text-primary-600 hover:text-primary-700 font-medium">Returns Policy</a> page for full details.</p>
                         </div>
                     </div>
                 </div>
