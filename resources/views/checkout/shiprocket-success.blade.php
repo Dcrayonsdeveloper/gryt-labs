@@ -58,6 +58,10 @@
     {{-- GA4 Purchase + Google Ads Conversion + FB Purchase tracking --}}
     {{-- Skipped entirely when Fastrr handles checkout (all tracking done by Fastrr) --}}
     {{-- Also skipped in test mode (cookie sr_test_mode=1) --}}
+    {{-- Read the flag here: no controller ever passed $fastrHandlesPixel, so the
+         guard below silently never fired — turning the setting on would have
+         double-counted every Purchase (ours + Shiprocket's). --}}
+    @php $fastrHandlesPixel = (bool) \App\Models\Setting::get('fastrr_handles_purchase_pixel', false); @endphp
     @if(isset($order) && $order && empty($isTestMode) && empty($fastrHandlesPixel))
     @php
         $hasGa4 = \App\Models\Setting::get('google_analytics_id');
