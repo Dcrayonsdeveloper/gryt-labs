@@ -207,20 +207,15 @@
     @endif
 
     <!-- FOUNDER -->
-    @php $founderPhoto = $theme->get('founder_photo_url', ''); @endphp
+    @php $founderPhoto = $theme->get('founder_photo_url', '') ?: asset('images/founder-prabhat.jpg'); @endphp
     <section class="py-14 sm:py-16 bg-neutral-50">
         <div class="container mx-auto px-4">
             <div class="max-w-3xl mx-auto">
                 <div class="bg-white rounded-2xl border border-neutral-100 p-6 sm:p-8">
                     <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                         <div class="shrink-0 text-center">
-                            @if($founderPhoto)
-                                <img src="{{ $founderPhoto }}" alt="Prabhat Ranjan — Founder, {{ $storeName }}"
-                                     class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border border-neutral-100 shadow-sm">
-                            @else
-                                <div class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center text-3xl font-extrabold"
-                                     style="background: var(--gryt-lime-tint); color:#4d6d00;">PR</div>
-                            @endif
+                            <img src="{{ $founderPhoto }}" alt="Prabhat Ranjan — Founder, {{ $storeName }}"
+                                 class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border border-neutral-100 shadow-sm">
                             <a href="https://www.linkedin.com/in/prabhnz" target="_blank" rel="noopener"
                                class="mt-3 inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full text-white transition-opacity hover:opacity-90"
                                style="background:#0A66C2;">
