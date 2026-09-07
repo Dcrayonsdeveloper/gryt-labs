@@ -68,7 +68,7 @@
                         <a href="{{ route('new-arrivals') }}" class="px-3 py-2 text-[13px] text-[#222] hover:text-primary-600 font-medium transition-colors tracking-wide uppercase">New Arrival</a>
                         <a href="{{ route('categories.index') }}" class="px-3 py-2 text-[13px] text-[#222] hover:text-primary-600 font-medium transition-colors tracking-wide uppercase">Collections</a>
                         <a href="{{ route('bestsellers') }}" class="px-3 py-2 text-[13px] text-[#222] hover:text-primary-600 font-medium transition-colors tracking-wide uppercase">Bestsellers</a>
-                        <a href="{{ route('offers') }}" class="px-3 py-2 text-[13px] text-[#4D7C0F] hover:text-[#3F6212] font-semibold transition-colors tracking-wide uppercase">Offers & Deals</a>
+                        <a href="{{ route('offers') }}" class="px-3 py-2 text-[13px] text-[#4D7C0F] hover:text-[#3F6212] font-semibold transition-colors tracking-wide uppercase">Offers</a>
                         <a href="{{ route('sale') }}" class="px-3 py-2 text-[13px] text-[#CC0C39] hover:text-[#A00A2E] font-semibold transition-colors tracking-wide uppercase">Sale</a>
                     </nav>
                 @endif

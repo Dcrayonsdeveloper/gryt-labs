@@ -289,11 +289,6 @@ class Product extends Model
         return (int) round((($this->mrp - $this->price) / $this->mrp) * 100);
     }
 
-    public function getIsOnSaleAttribute(): bool
-    {
-        return $this->price < $this->mrp;
-    }
-
     public function getPrimaryImageUrlAttribute(): string
     {
         // Prefer the eager-loaded primaryImage relation to avoid N+1 on listings
