@@ -14,7 +14,6 @@
         $codAdvance = $theme->get('cod_advance_amount', 100);
         $whatsappNumber = $theme->get('whatsapp_number', $theme->get('contact_phone', ''));
         $instagramUrl = $theme->get('social_instagram', '#');
-        $navratriPct = $theme->get('navratri_discount_pct', 5);
     @endphp
 
     <x-slot name="title">Offers & Deals - {{ $storeName }}</x-slot>
@@ -92,36 +91,6 @@
         @else
         <div class="container mx-auto px-4 py-10 lg:py-14">
             <div class="grid gap-8 lg:gap-10 max-w-4xl mx-auto">
-
-                <!-- OFFER 1: Navratri 5% Extra Off -->
-                <div class="rounded-2xl overflow-hidden shadow-lg border border-orange-100">
-                    <div class="p-1" style="background: linear-gradient(135deg, var(--color-primary-600), var(--color-accent-500));">
-                        <div class="bg-white rounded-xl p-6 lg:p-8">
-                            <div class="flex flex-col lg:flex-row lg:items-center gap-6">
-                                <div class="flex-shrink-0 w-20 h-20 lg:w-24 lg:h-24 rounded-2xl flex items-center justify-center text-4xl lg:text-5xl bg-primary-50">
-                                    🎉
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white bg-primary-600">Live Now</span>
-                                        <span class="px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700">Auto Applied</span>
-                                    </div>
-                                    <h2 class="text-xl lg:text-2xl font-bold text-[#0F1111] mb-2">Navratri Special - Extra {{ $navratriPct }}% Off</h2>
-                                    <p class="text-sm text-[#3a3a3a] mb-3">Celebrate Navratri with {{ $storeName }}! Get <strong>flat {{ $navratriPct }}% extra discount</strong> on your entire order, applied automatically at checkout after all other discounts. No coupon needed!</p>
-                                    <ul class="text-xs text-[#3a3a3a] space-y-1 mb-4">
-                                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Applied on top of coupon discounts</li>
-                                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Valid on all products, all payment methods</li>
-                                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Limited period offer</li>
-                                    </ul>
-                                    <a href="{{ route('products.index') }}" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 transition-all hover:scale-105">
-                                        Shop Now
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- OFFER 2: Video Review ₹100 Cashback -->
                 <div class="rounded-2xl overflow-hidden shadow-lg border border-blue-100">
