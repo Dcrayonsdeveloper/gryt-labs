@@ -222,13 +222,6 @@
                 @endif
             </div>
 
-            {{-- Free Delivery badge --}}
-            @if($product->price >= $theme->get('free_delivery_threshold', 499))
-                <p class="text-[11px] text-[#0F1111] mb-1.5">
-                    <span class="text-[#3a3a3a]">FREE Delivery by</span> <span class="font-medium">{{ config('app.name') }}</span>
-                </p>
-            @endif
-
             {{-- Scarcity badge --}}
             @if(!$outOfStock && $product->stock_quantity > 0 && $product->stock_quantity <= 10)
                 <p class="text-[11px] font-medium mb-1" style="color:{{ $badgeColor }}">
