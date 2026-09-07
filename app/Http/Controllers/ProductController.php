@@ -322,6 +322,32 @@ class ProductController extends Controller
         return view('products.new-arrivals', compact('products'));
     }
 
+    /**
+     * Storefront /sale — products the admin curated via Products -> Sale.
+     * Manual flag, not price < mrp: nearly everything carries a discount.
+     */
+    public function sale(Request $request): View|JsonResponse
+    {
+        $products = Product::query()
+            ->where('is_active', true)
+            ->where('is_on_sale', true)
+            ->with(['category', 'brand', 'primaryImage'])
+            ->orderByRaw('CASE WHEN mrp > price THEN 0 ELSE 1 END')
+            ->orderByDesc('sales_count')
+            ->paginate(24);
+
+        if ($request->ajax()) {
+            $html = '';
+            foreach ($products as $product) {
+                $html .= view('components.product-card', ['product' => $product])->render();
+            }
+
+            return response()->json(['html' => $html, 'hasMore' => $products->hasMorePages()]);
+        }
+
+        return view('products.sale', compact('products'));
+    }
+
     public function bestsellers(Request $request): View|JsonResponse
     {
         $products = Product::query()

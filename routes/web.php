@@ -257,6 +257,7 @@ Route::get('/discount/{code}', [App\Http\Controllers\DiscountLinkController::cla
 Route::redirect('/deals', '/pages/offers', 301);
 Route::get('/new-arrivals', [App\Http\Controllers\ProductController::class, 'newArrivals'])->name('new-arrivals');
 Route::get('/bestsellers', [App\Http\Controllers\ProductController::class, 'bestsellers'])->name('bestsellers');
+Route::get('/sale', [App\Http\Controllers\ProductController::class, 'sale'])->name('sale')->middleware('cache.response:5');
 Route::get('/wholesale', [App\Http\Controllers\WholesaleController::class, 'index'])->name('wholesale');
 
 // Cart

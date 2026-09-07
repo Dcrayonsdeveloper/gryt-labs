@@ -309,6 +309,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/products/import', [App\Http\Controllers\Admin\ProductController::class, 'import'])->name('products.import');
             Route::get('/products/bulk-edit', [App\Http\Controllers\Admin\ProductController::class, 'bulkEdit'])->name('products.bulk-edit');
             Route::put('/products/bulk-update', [App\Http\Controllers\Admin\ProductController::class, 'bulkUpdate'])->name('products.bulk-update');
+            // Sale curation — must precede the resource route so /products/sale
+            // is not swallowed by /products/{product}.
+            Route::get('/products/sale', [App\Http\Controllers\Admin\ProductController::class, 'sale'])->name('products.sale');
+            Route::put('/products/sale', [App\Http\Controllers\Admin\ProductController::class, 'saleUpdate'])->name('products.sale.update');
             Route::resource('products', App\Http\Controllers\Admin\ProductController::class);
             Route::put('/products/{product}/toggle-status', [App\Http\Controllers\Admin\ProductController::class, 'toggleStatus'])->name('products.toggle-status');
             Route::put('/products/{product}/toggle-featured', [App\Http\Controllers\Admin\ProductController::class, 'toggleFeatured'])->name('products.toggle-featured');

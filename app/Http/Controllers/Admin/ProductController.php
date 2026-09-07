@@ -138,6 +138,54 @@ class ProductController extends Controller
             ->with('success', "{$updated} product(s) updated successfully.");
     }
 
+    /**
+     * Curate the storefront /sale page.
+     *
+     * A manual flag rather than "price < mrp": nearly every product carries a
+     * discount, so an automatic rule would put the whole catalogue on sale.
+     */
+    public function sale(Request $request): View
+    {
+        $search = $request->query('search');
+
+        $products = Product::query()
+            ->when($search, fn ($q) => $q->where(fn ($x) => $x
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('sku', 'like', "%{$search}%")))
+            ->orderByDesc('is_on_sale')
+            ->orderBy('name')
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('admin.products.sale', [
+            'products'    => $products,
+            'search'      => $search,
+            'onSaleCount' => Product::where('is_on_sale', true)->count(),
+        ]);
+    }
+
+    public function saleUpdate(Request $request): RedirectResponse
+    {
+        // Scope the write to the submitted page only — clearing globally would
+        // silently drop products selected on other pages of the paginated list.
+        $pageIds  = array_filter(array_map('intval', (array) $request->input('page_ids', [])));
+        $selected = array_filter(array_map('intval', (array) $request->input('on_sale', [])));
+
+        if ($pageIds) {
+            Product::whereIn('id', $pageIds)->update(['is_on_sale' => false]);
+            $keep = array_intersect($selected, $pageIds);
+            if ($keep) {
+                Product::whereIn('id', $keep)->update(['is_on_sale' => true]);
+            }
+        }
+
+        \App\Http\Middleware\CacheResponse::bustAll();
+
+        $total = Product::where('is_on_sale', true)->count();
+
+        return back()->with('success', "Sale updated — {$total} product(s) now on sale.");
+    }
+
     public function bulkAction(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -216,6 +264,7 @@ class ProductController extends Controller
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'is_new_arrival' => 'boolean',
+            'is_on_sale' => 'boolean',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
             'main_image' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:20480',
@@ -238,6 +287,7 @@ class ProductController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_new_arrival'] = $request->boolean('is_new_arrival');
+        $validated['is_on_sale'] = $request->boolean('is_on_sale');
         $validated['seller_id'] = ($validated['seller_id'] ?? null) ?: null;
         $validated['brand_id'] = ($validated['brand_id'] ?? null) ?: null;
         $validated['amazon_url'] = ($validated['amazon_url'] ?? null) ?: null;
@@ -362,6 +412,7 @@ class ProductController extends Controller
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'is_new_arrival' => 'boolean',
+            'is_on_sale' => 'boolean',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
             'main_image' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:20480',
@@ -387,6 +438,7 @@ class ProductController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_new_arrival'] = $request->boolean('is_new_arrival');
+        $validated['is_on_sale'] = $request->boolean('is_on_sale');
         $validated['seller_id'] = ($validated['seller_id'] ?? null) ?: null;
         $validated['brand_id'] = ($validated['brand_id'] ?? null) ?: null;
         $validated['social_proof_text'] = ($validated['social_proof_text'] ?? null) ?: null;

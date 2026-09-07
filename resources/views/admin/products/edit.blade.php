@@ -830,6 +830,18 @@
                         </div>
                     </div>
 
+                    {{-- Sale Card --}}
+                    <div class="card overflow-hidden">
+                        <div class="px-5 py-4">
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="is_on_sale" value="1" {{ old('is_on_sale', $product->is_on_sale) ? 'checked' : '' }}
+                                       class="form-checkbox">
+                                <span class="text-sm font-semibold text-neutral-900">Show in Sale</span>
+                            </label>
+                            <p class="text-xs text-neutral-500 mt-1 ml-6">Tick to show this product on the <a href="{{ route('admin.products.sale') }}" class="text-blue-600 hover:underline">Sale</a> page (/sale). Manually curated — only ticked products appear.</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 

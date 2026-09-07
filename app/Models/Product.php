@@ -48,6 +48,7 @@ class Product extends Model
         'is_active',
         'is_featured',
         'is_new_arrival',
+        'is_on_sale',
         'is_taxable',
         'tax_rate',
         'hsn_code',
@@ -88,6 +89,7 @@ class Product extends Model
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'is_new_arrival' => 'boolean',
+            'is_on_sale' => 'boolean',
             'is_taxable' => 'boolean',
             'seo_data' => 'array',
             'attributes' => 'array',
@@ -264,6 +266,12 @@ class Product extends Model
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true);
+    }
+
+    /** Products the admin has curated onto the /sale page. */
+    public function scopeOnSale($query)
+    {
+        return $query->where('is_on_sale', true);
     }
 
     public function scopeInStock($query)

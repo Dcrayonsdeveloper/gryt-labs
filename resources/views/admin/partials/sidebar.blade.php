@@ -81,6 +81,7 @@
             <div x-show="open" x-cloak class="ml-8 space-y-px mb-1">
                 <a href="{{ route('admin.products.index') }}" class="{{ $subClass }} {{ $isActive('admin.products.*') ? 'text-neutral-800' : 'text-neutral-700 hover:text-neutral-900' }}">All Products</a>
                 <a href="{{ route('admin.categories.index') }}" class="{{ $subClass }} {{ $isActive('admin.categories.*') ? 'text-neutral-800' : 'text-neutral-700 hover:text-neutral-900' }}">Collections</a>
+                <a href="{{ route('admin.products.sale') }}" class="{{ $subClass }} {{ $isActive('admin.products.sale') ? 'text-neutral-800' : 'text-neutral-700 hover:text-neutral-900' }}">Sale</a>
                 <a href="{{ route('admin.inventory.index') }}" class="{{ $subClass }} {{ $isActive('admin.inventory.*') ? 'text-neutral-800' : 'text-neutral-700 hover:text-neutral-900' }}">Inventory</a>
                 <a href="{{ route('admin.brands.index') }}" class="{{ $subClass }} {{ $isActive('admin.brands.*') ? 'text-neutral-800' : 'text-neutral-700 hover:text-neutral-900' }}">Brands</a>
                 <a href="{{ route('admin.attributes.index') }}" class="{{ $subClass }} {{ $isActive('admin.attributes.*') ? 'text-neutral-800' : 'text-neutral-700 hover:text-neutral-900' }}">Attributes</a>
