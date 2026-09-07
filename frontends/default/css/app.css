@@ -79,3 +79,73 @@ img { content-visibility: auto; }
 
 /* Shared base styles (forms, cards, buttons, PDP, accessibility) */
 @import '../../_core/css/base.css';
+
+/* ── Navbar "Sale" badge ──────────────────────────────────────────────────
+   Pill-shaped, gradient, with a soft pulsing ring and a slow shine sweep so
+   the link reads as a live promo rather than another nav item. Motion is
+   dropped entirely for users who ask for reduced motion. */
+.nav-sale {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.32rem 0.75rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #CC0C39, #FF4D6D);
+    color: #fff !important;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    overflow: hidden;
+    animation: nav-sale-pulse 2.4s ease-in-out infinite;
+}
+
+.nav-sale:hover {
+    background: linear-gradient(135deg, #A00A2E, #E63956);
+    transform: translateY(-1px);
+}
+
+/* Sweeping highlight */
+.nav-sale::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: skewX(-20deg);
+    animation: nav-sale-shine 3.2s ease-in-out infinite;
+}
+
+/* Small blinking dot to signal "live" */
+.nav-sale__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: #fff;
+    animation: nav-sale-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes nav-sale-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(204, 12, 57, 0.5); }
+    50%      { box-shadow: 0 0 0 7px rgba(204, 12, 57, 0); }
+}
+
+@keyframes nav-sale-shine {
+    0%, 65%  { left: -60%; }
+    100%     { left: 130%; }
+}
+
+@keyframes nav-sale-blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-sale,
+    .nav-sale::after,
+    .nav-sale__dot {
+        animation: none;
+    }
+    .nav-sale::after { display: none; }
+}
