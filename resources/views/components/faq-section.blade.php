@@ -1,4 +1,4 @@
-@props(['faqs' => null, 'product' => null])
+@props(['faqs' => null, 'product' => null, 'exclude' => []])
 
 @php
     $cs = currency_symbol();
@@ -31,6 +31,19 @@
         ['q' => "What if I receive a damaged {$productName}?", 'a' => "If your {$productName} arrives damaged, contact us within 48 hours of delivery with photos and we'll arrange a free replacement or refund immediately."],
         ['q' => "Do you offer bulk discounts on {$productName}?", 'a' => "Yes, we offer special pricing on bulk orders of {$productName}. Please contact our support team for a custom quote."],
     ];
+
+    // Drop unwanted questions before selection, e.g. the warranty disclaimer reads
+    // oddly on listing pages where "this product" refers to nothing in particular.
+    if (!empty($exclude)) {
+        $faqPool = array_values(array_filter($faqPool, function ($f) use ($exclude) {
+            foreach ((array) $exclude as $needle) {
+                if (stripos($f['q'], (string) $needle) !== false) {
+                    return false;
+                }
+            }
+            return true;
+        }));
+    }
 
     // Priority: 1) explicit $faqs prop, 2) product-specific FAQs from DB, 3) auto-generated pool
     $productFaqs = is_array($product?->faqs) ? $product->faqs : [];

@@ -723,7 +723,7 @@
          TRUST BADGES + FAQ
          ========================================== -->
     <x-trust-badges />
-    <x-faq-section />
+    <x-faq-section :exclude="['warranty']" />
 
     {{-- Consultation Popup — Pure JS, no Alpine dependency --}}
     @if($theme->get('consultation_enabled') === '1')
