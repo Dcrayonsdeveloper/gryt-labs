@@ -15,7 +15,7 @@ class SettingSeeder extends Seeder
             ['group' => 'general', 'key' => 'site_tagline', 'value' => 'Built Through Purpose. Driven By Grit.', 'type' => 'string'],
             ['group' => 'general', 'key' => 'site_email', 'value' => 'info@gryt.co.in', 'type' => 'string'],
             ['group' => 'general', 'key' => 'site_phone', 'value' => '+91 7033586466', 'type' => 'string'],
-            ['group' => 'general', 'key' => 'site_address', 'value' => '1st Floor, Riddhi Siddhi Complex, Patliputra Path, near Central Bank, Rajendra Nagar, Patna, Bihar 800016', 'type' => 'string'],
+            ['group' => 'general', 'key' => 'site_address', 'value' => 'F.NO-403, BIRENDRA REGIDENCY, ROAD NO- 12, NEAR OVER BRIDGE, Rajendra Nagar, Patna, Bihar 800016', 'type' => 'string'],
             ['group' => 'general', 'key' => 'timezone', 'value' => 'Asia/Kolkata', 'type' => 'string'],
             ['group' => 'general', 'key' => 'date_format', 'value' => 'M d, Y', 'type' => 'string'],
             ['group' => 'general', 'key' => 'currency', 'value' => 'INR', 'type' => 'string'],
