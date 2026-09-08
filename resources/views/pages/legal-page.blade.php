@@ -74,6 +74,9 @@
                 </p>
             </div>
 
+            {{-- Who operates this brand (shown on every legal page) --}}
+            @include('partials.owned-by')
+
             {{-- Section Cards --}}
             @if($sections)
                 @foreach($sections as $section)

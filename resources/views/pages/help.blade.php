@@ -13,6 +13,7 @@
     </div>
 
     <div class="container mx-auto px-4 py-8 sm:py-12">
+        @include('partials.owned-by')
         <div class="max-w-4xl mx-auto">
             <div class="text-center mb-8 sm:mb-10">
                 <div class="w-14 h-14 mx-auto rounded-full bg-primary-50 flex items-center justify-center mb-4">

@@ -157,6 +157,7 @@
     <!-- TRUST STRIP -->
     <section class="bg-white border-b border-neutral-100">
         <div class="container mx-auto px-4">
+            @include('partials.owned-by')
             <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-neutral-100">
                 @php
                     $trustItems = [
