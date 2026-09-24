@@ -99,6 +99,31 @@ class Setting extends Model
         return $all[$key] ?? $default;
     }
 
+    /**
+     * Read a list setting, tolerating both storage shapes.
+     *
+     * Rows typed 'json'/'array' come back already decoded by the value accessor;
+     * plain 'string' rows come back as raw JSON text. Callers that json_decode()
+     * blindly fatal on the decoded form ("must be of type string, array given").
+     */
+    public static function getArray(string $key, array $default = []): array
+    {
+        $v = static::get($key);
+
+        if (is_array($v)) {
+            return $v;
+        }
+
+        if (is_string($v) && $v !== '') {
+            $decoded = json_decode($v, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return $default;
+    }
+
     public static function set(string $key, $value, string $type = 'string', string $group = 'general'): self
     {
         $setting = static::updateOrCreate(

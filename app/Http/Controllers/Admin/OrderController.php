@@ -405,7 +405,7 @@ class OrderController extends Controller
         ]);
         $name = trim($validated['name']);
 
-        $custom = json_decode(Setting::get('custom_shipping_carriers', '[]'), true) ?: [];
+        $custom = Setting::getArray('custom_shipping_carriers');
         if ($name !== '' && !in_array($name, $custom, true) && !in_array($name, self::defaultCarriers(), true)) {
             $custom[] = $name;
             Setting::set('custom_shipping_carriers', json_encode(array_values($custom)), 'json', 'shipping');
@@ -423,7 +423,7 @@ class OrderController extends Controller
     /** Default + admin-added carriers for the fulfilment dropdown. */
     public static function allCarriers(): array
     {
-        $custom = json_decode(Setting::get('custom_shipping_carriers', '[]'), true) ?: [];
+        $custom = Setting::getArray('custom_shipping_carriers');
         return array_values(array_unique(array_merge(self::defaultCarriers(), $custom)));
     }
 
