@@ -11,9 +11,9 @@ class BusinessSettingsSeeder extends Seeder
     {
         $settings = [
             // Contact Information
-            ['group' => 'contact', 'key' => 'contact_phone', 'value' => '+91 7033586466', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'contact_phone', 'value' => '+91 7033375782', 'type' => 'string'],
             ['group' => 'contact', 'key' => 'contact_email', 'value' => 'info@gryt.co.in', 'type' => 'string'],
-            ['group' => 'contact', 'key' => 'contact_whatsapp', 'value' => '917033586466', 'type' => 'string'],
+            ['group' => 'contact', 'key' => 'contact_whatsapp', 'value' => '917033375782', 'type' => 'string'],
             ['group' => 'contact', 'key' => 'company_address', 'value' => 'F.NO-403, BIRENDRA REGIDENCY, ROAD NO- 12, NEAR OVER BRIDGE, Rajendra Nagar, Patna, Bihar 800016', 'type' => 'string'],
             ['group' => 'contact', 'key' => 'business_hours', 'value' => 'Mon-Fri 9AM-6PM, Sat 10AM-4PM', 'type' => 'string'],
 
