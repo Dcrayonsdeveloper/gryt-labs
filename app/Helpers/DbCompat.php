@@ -89,6 +89,15 @@ class DbCompat
      * MySQL: IFNULL(col, default), PostgreSQL: COALESCE(col, default)
      * (COALESCE works on both, so always use this)
      */
+    /**
+     * Cast a column to text for cross-driver string comparison/COALESCE.
+     * Postgres spells it TEXT; MySQL/MariaDB only accepts CHAR and errors on TEXT.
+     */
+    public static function castText(string $column): string
+    {
+        return self::isPostgres() ? "CAST({$column} AS TEXT)" : "CAST({$column} AS CHAR)";
+    }
+
     public static function ifNull(string $column, string $default): string
     {
         return "COALESCE({$column}, {$default})";

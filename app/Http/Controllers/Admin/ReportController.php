@@ -101,7 +101,7 @@ class ReportController extends Controller
 
         // Real traffic data from product_views table
         $viewsData = ProductView::where('created_at', '>=', $startDate)
-            ->selectRaw(DbCompat::date('created_at') . ' as date, COUNT(*) as pageviews, COUNT(DISTINCT COALESCE(CAST(user_id AS TEXT), session_id)) as visitors')
+            ->selectRaw(DbCompat::date('created_at') . ' as date, COUNT(*) as pageviews, COUNT(DISTINCT COALESCE(' . DbCompat::castText('user_id') . ', session_id)) as visitors')
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -122,14 +122,14 @@ class ReportController extends Controller
         // Real conversion funnel from actual data
         $totalVisitors = ProductView::where('created_at', '>=', $startDate)
             ->distinct()
-            ->count(DB::raw('COALESCE(CAST(user_id AS TEXT), session_id)'));
+            ->count(DB::raw('COALESCE(' . DbCompat::castText('user_id') . ', session_id)'));
 
         $totalProductViews = ProductView::where('created_at', '>=', $startDate)->count();
 
         $addToCartUsers = CartItem::where('cart_items.created_at', '>=', $startDate)
             ->join('carts', 'cart_items.cart_id', '=', 'carts.id')
             ->distinct()
-            ->count(DB::raw('COALESCE(CAST(carts.user_id AS TEXT), carts.session_id)'));
+            ->count(DB::raw('COALESCE(' . DbCompat::castText('carts.user_id') . ', carts.session_id)'));
 
         $checkoutOrders = Order::where('created_at', '>=', $startDate)->count();
 
