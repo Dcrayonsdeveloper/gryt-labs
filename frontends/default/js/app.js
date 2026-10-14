@@ -108,6 +108,10 @@ Alpine.store('cart', {
     },
     async add(productId, quantity = 1, variantId = null) {
         if (this.isLoading) return;
+        // /cart/add requires sign-in. Check before the request so the shopper gets
+        // the login modal instead of a round trip ending in an error toast - same
+        // pattern the wishlist toggle below already uses.
+        if (document.body.dataset.authenticated !== 'true') { Alpine.store('authModal').open(); return; }
         this.isLoading = true;
         try {
             const r = await axios.post('/cart/add', { product_id: productId, variant_id: variantId, quantity });
@@ -117,7 +121,7 @@ Alpine.store('cart', {
             if (typeof fbq !== 'undefined' && r.data.fb_event) fbq('track', 'AddToCart', { content_ids: r.data.fb_event.content_ids, content_name: r.data.fb_event.content_name, content_type: r.data.fb_event.content_type, value: r.data.fb_event.value, currency: r.data.fb_event.currency }, { eventID: r.data.fb_event.event_id });
             this.open();
             this.fetch();
-        } catch (e) { Alpine.store('toast').error(e.response?.data?.error || 'Failed to add to cart'); }
+        } catch (e) { if (e.response?.status === 401) { Alpine.store('authModal').open(); return; } Alpine.store('toast').error(e.response?.data?.error || 'Failed to add to cart'); }
         finally { this.isLoading = false; }
     },
     async update(itemId, quantity) {
