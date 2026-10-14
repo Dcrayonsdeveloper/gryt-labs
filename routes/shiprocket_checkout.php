@@ -39,8 +39,12 @@ Route::post('/webhook/shipping-updates', [WebhookController::class, 'handle'])
 // ─── SDK Token (AJAX — browser → us → Shiprocket) ────────────────────────────
 // Called when customer clicks Buy Now or Checkout.
 // Returns a token the frontend passes to shiprocketCheckoutCustomHandler().
+//
+// 'auth' here is the other half of the checkout sign-in gate. The cart button opens
+// the Shiprocket SDK rather than hitting /checkout, so gating only the native
+// checkout route would leave this path wide open.
 Route::post('/api/shiprocket-checkout-token', TokenController::class)
-    ->middleware('throttle:30,1')
+    ->middleware(['auth', 'throttle:30,1'])
     ->name('shiprocket.checkout.token');
 
 // ─── Success Callback (Shiprocket → browser → us) ────────────────────────────

@@ -52,14 +52,16 @@
             @enderror
         </div>
 
-        <!-- Phone (Optional) -->
+        <!-- Phone (required - used for order and cart notifications) -->
         <div>
             <label for="phone" class="block text-sm font-medium text-neutral-700 mb-1">
-                Phone number <span class="text-neutral-600">(optional)</span>
+                Phone number
             </label>
-            <input type="tel" name="phone" id="phone" value="{{ old('phone') }}"
+            <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" required
+                   inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"
+                   title="Enter a 10-digit Indian mobile number"
                    class="form-input w-full @error('phone') border-error-300 @enderror"
-                   placeholder="+91 98765 43210">
+                   placeholder="10-digit mobile number">
             @error('phone')
                 <p class="mt-1 text-sm text-error-600">{{ $message }}</p>
             @enderror
