@@ -38,6 +38,35 @@ class WhatsAppService
     }
 
     /**
+     * Send an abandoned-cart recovery message.
+     *
+     * The admin "send reminders" action (routes/admin.php) has always called this method,
+     * but it was never defined — every click threw BadMethodCallException into the
+     * surrounding try/catch and was logged as "WhatsApp abandoned reminder failed", so the
+     * button silently did nothing.
+     *
+     * Template name resolution matches SendAbandonedCartWhatsApp so both paths use the
+     * same configured template.
+     */
+    public function sendAbandonedCartReminder(string $phone, string $name, float|int|string $cartTotal): bool
+    {
+        $templateName = Setting::get('whatsapp_cart_recovery_template', '')
+            ?: (config('app.tenant_id', '') . '_cart_recovery');
+
+        $total = (string) round((float) $cartTotal);
+
+        $bodyParams = [
+            ['type' => 'text', 'text' => $name],   // {{1}} customer name
+            ['type' => 'text', 'text' => $total],  // {{2}} cart value
+        ];
+
+        $fallback = "Hi {$name}, you left items worth Rs {$total} in your cart. "
+            . 'Complete your order before they sell out!';
+
+        return $this->sendTemplate($phone, $templateName, $bodyParams, $fallback);
+    }
+
+    /**
      * Check if WhatsApp is configured for the current tenant.
      */
     public function isConfigured(): bool
