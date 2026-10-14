@@ -119,17 +119,16 @@ class OtpService
         }
 
         $cleanPhone = $this->cleanPhone($phone);
-        $purposeText = match ($purpose) {
-            'login' => 'login to your account',
-            'reset_password' => 'reset your password',
-            'verify_phone' => 'verify your phone number',
-            default => 'verify your identity',
-        };
 
-        $storeName = Setting::get('store_name', config('app.name'));
-        $message = "Your {$storeName} OTP is: *{$code}*\n\nUse this to {$purposeText}.\nValid for " . self::OTP_EXPIRY_MINUTES . " minutes.\n\nDo not share this code with anyone.";
-
-        return $whatsapp->sendText($cleanPhone, $message);
+        // Must go out as an AUTHENTICATION template, not free-form text: Meta only
+        // delivers free-form messages inside the 24-hour window that opens when the
+        // customer messages the business first. A sign-in OTP never has that window,
+        // so sendText() returned success and the code was silently never delivered.
+        //
+        // The per-purpose wording that used to be built here is gone because Meta
+        // fixes the body of authentication templates; the code is the only variable.
+        // $purpose is still used by the caller for rate limiting and storage.
+        return $whatsapp->sendOtp($cleanPhone, $code);
     }
 
     /**
