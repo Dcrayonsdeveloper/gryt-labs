@@ -17,6 +17,36 @@ Alpine.plugin(intersect);
 window.Alpine = Alpine;
 
 // ========================================
+// Auth gate for cart writes
+// ========================================
+// /cart/add requires sign-in. Every add path ends in an axios call: the Alpine
+// cart store, the PDP "Add to cart" and "Buy Now" buttons, and the quick-add
+// buttons in the header and recommendation strips. Intercepting here covers all
+// of them in one place, instead of each call site showing "Failed to add to cart".
+//
+// Laravel returns 401 JSON (not a redirect) because these requests send
+// X-Requested-With / Accept: application/json, so there is nothing for the
+// browser to follow on its own.
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error.response?.status;
+        const url = error.config?.url || '';
+
+        if (status === 401 && url.includes('/cart')) {
+            // Come back to the product they were trying to add after signing in.
+            const next = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = `/login?redirect=${next}`;
+            // Keep the promise pending so call sites do not flash an error toast
+            // while the browser is already navigating away.
+            return new Promise(() => {});
+        }
+
+        return Promise.reject(error);
+    }
+);
+
+// ========================================
 // Global Utilities
 // ========================================
 

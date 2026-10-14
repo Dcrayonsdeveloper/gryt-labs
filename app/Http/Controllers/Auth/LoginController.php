@@ -12,8 +12,24 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function showLoginForm(): View
+    public function showLoginForm(Request $request): View
     {
+        // The cart auth gate bounces guests here as /login?redirect=/product/slug
+        // so they land back on the product they were adding instead of the account
+        // dashboard. Stored as the intended URL, which redirect()->intended() below
+        // already consumes.
+        //
+        // Only same-site absolute paths are accepted: a value starting with "//"
+        // or containing a scheme would be an open redirect.
+        $redirect = (string) $request->query('redirect', '');
+        if ($redirect !== ''
+            && str_starts_with($redirect, '/')
+            && !str_starts_with($redirect, '//')
+            && !str_contains($redirect, '\\')
+        ) {
+            $request->session()->put('url.intended', $redirect);
+        }
+
         return view('auth.login');
     }
 
