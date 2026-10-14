@@ -135,4 +135,26 @@ class AbandonedCheckout extends Model
             ]);
         }
     }
+
+    /**
+     * Name of the first product in the cart, for recovery messages.
+     *
+     * The cart_recovery WhatsApp template renders "you left {{2}} (Rs {{3}})", so it
+     * needs a product name. SendAbandonedCartWhatsApp already digs this out of
+     * cart_snapshot inline; this keeps the admin reminder path using the same source
+     * and the same 'your item' fallback for carts with no usable snapshot.
+     */
+    public function firstProductName(): string
+    {
+        $items = is_array($this->cart_snapshot) ? $this->cart_snapshot : [];
+        $first = $items[0] ?? null;
+
+        if (!is_array($first)) {
+            return 'your item';
+        }
+
+        $name = trim((string) ($first['product_name'] ?? ''));
+
+        return $name !== '' ? $name : 'your item';
+    }
 }

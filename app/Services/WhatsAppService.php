@@ -48,20 +48,29 @@ class WhatsAppService
      * Template name resolution matches SendAbandonedCartWhatsApp so both paths use the
      * same configured template.
      */
-    public function sendAbandonedCartReminder(string $phone, string $name, float|int|string $cartTotal): bool
-    {
+    public function sendAbandonedCartReminder(
+        string $phone,
+        string $name,
+        float|int|string $cartTotal,
+        ?string $productName = null,
+    ): bool {
         $templateName = Setting::get('whatsapp_cart_recovery_template', '')
             ?: (config('app.tenant_id', '') . '_cart_recovery');
 
-        $total = (string) round((float) $cartTotal);
+        $total   = (string) round((float) $cartTotal);
+        $product = trim((string) $productName) ?: 'your item';
 
+        // Must stay in step with the cart_recovery template, which renders
+        // "Hi {{1}}, you left {{2}} (Rs {{3}}) in your cart." A count mismatch here
+        // is rejected by Meta outright, so all three are always sent.
         $bodyParams = [
-            ['type' => 'text', 'text' => $name],   // {{1}} customer name
-            ['type' => 'text', 'text' => $total],  // {{2}} cart value
+            ['type' => 'text', 'text' => $name],     // {{1}} customer name
+            ['type' => 'text', 'text' => $product],  // {{2}} first product in cart
+            ['type' => 'text', 'text' => $total],    // {{3}} price
         ];
 
-        $fallback = "Hi {$name}, you left items worth Rs {$total} in your cart. "
-            . 'Complete your order before they sell out!';
+        $fallback = "Hi {$name}, you left {$product} (Rs {$total}) in your GRYT cart. "
+            . 'Complete your order before they sell out: https://gryt.co.in/cart';
 
         return $this->sendTemplate($phone, $templateName, $bodyParams, $fallback);
     }
