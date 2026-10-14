@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Mail;
 
 class OtpService
 {
-    private const MAX_OTPS_PER_DAY = 5;
+    private const MAX_OTPS_PER_24H = 10;
     private const OTP_EXPIRY_MINUTES = 10;
     private const OTP_LENGTH = 6;
 
@@ -19,14 +19,38 @@ class OtpService
      */
     public function send(string $identifier, string $purpose = 'login', bool $viaWhatsApp = true, bool $viaEmail = true): array
     {
-        // Rate limit: max 5 OTPs per identifier per day
-        $todayCount = DB::table('otp_codes')
+        // Rate limit: max 10 OTPs per identifier per rolling 24 hours.
+        //
+        // Deliberately a rolling window rather than whereDate(created_at, today()):
+        // a calendar day resets at midnight, so someone who exhausted the limit at
+        // 23:55 got a fresh allowance five minutes later, while someone who used it
+        // at 00:05 waited almost a full day. The rolling window treats both equally.
+        $since = now()->subDay();
+
+        $recentCount = DB::table('otp_codes')
             ->where('identifier', $identifier)
-            ->whereDate('created_at', today())
+            ->where('created_at', '>=', $since)
             ->count();
 
-        if ($todayCount >= self::MAX_OTPS_PER_DAY) {
-            return ['success' => false, 'message' => 'Too many OTP requests. Try again tomorrow.'];
+        if ($recentCount >= self::MAX_OTPS_PER_24H) {
+            // Tell them when the oldest request ages out, instead of "try tomorrow".
+            $oldest = DB::table('otp_codes')
+                ->where('identifier', $identifier)
+                ->where('created_at', '>=', $since)
+                ->orderBy('created_at')
+                ->value('created_at');
+
+            $retryAt = $oldest ? \Illuminate\Support\Carbon::parse($oldest)->addDay() : now()->addDay();
+            $minutes = max(1, (int) ceil(now()->diffInMinutes($retryAt, false)));
+            $wait    = $minutes >= 60
+                ? ceil($minutes / 60) . ' hour' . (ceil($minutes / 60) > 1 ? 's' : '')
+                : $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+
+            return [
+                'success' => false,
+                'message' => 'Too many OTP requests. You can request up to '
+                    . self::MAX_OTPS_PER_24H . ' codes in 24 hours. Please try again in ' . $wait . '.',
+            ];
         }
 
         // Invalidate previous unused OTPs

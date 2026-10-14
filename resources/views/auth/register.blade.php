@@ -64,6 +64,10 @@
                    placeholder="10-digit mobile number">
             @error('phone')
                 <p class="mt-1 text-sm text-error-600">{{ $message }}</p>
+            @else
+                <p class="mt-1 text-sm text-neutral-600">
+                    You'll receive your sign-in OTP on <span class="font-semibold">WhatsApp</span> at this number. Indian mobile numbers only.
+                </p>
             @enderror
         </div>
 

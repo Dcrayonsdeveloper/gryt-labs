@@ -109,7 +109,7 @@
                         <span x-show="verifying">Verifying...</span>
                     </button>
                     <p id="login-otp-error" x-show="error" x-text="error" role="alert" class="text-xs text-red-700" x-cloak></p>
-                    <p id="login-otp-hint" class="text-xs text-neutral-700">OTP sent via WhatsApp + Email. Valid 10 min.</p>
+                    <p id="login-otp-hint" class="text-xs text-neutral-700">OTP sent via WhatsApp + Email. Valid 10 min. Up to 10 codes per 24 hours.</p>
                 </div>
 
                 {{-- Step: Sending OTP --}}
@@ -190,6 +190,12 @@
                                placeholder="10-digit mobile number">
                         @error('phone')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @else
+                            {{-- Sign-in codes go out as a WhatsApp template; there is no SMS
+                                 channel, so say so here rather than letting people wait for a text. --}}
+                            <p class="mt-1 text-xs text-neutral-500">
+                                You'll receive your sign-in OTP on <span class="font-semibold">WhatsApp</span> at this number. Indian mobile numbers only.
+                            </p>
                         @enderror
                     </div>
 
