@@ -197,7 +197,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                         }
                         if ($ac->phone) {
                             try {
-                                app(\App\Services\WhatsAppService::class)->sendAbandonedCartReminder($ac->phone, $ac->name ?: 'there', $ac->cart_total);
+                                app(\App\Services\WhatsAppService::class)->sendAbandonedCartReminder($ac->phone, $ac->name ?: 'there', $ac->cart_total, $ac->firstProductName());
                                 $sent++;
                             } catch (\Exception $e) {
                                 \Illuminate\Support\Facades\Log::error('WhatsApp abandoned reminder failed: ' . $e->getMessage());
