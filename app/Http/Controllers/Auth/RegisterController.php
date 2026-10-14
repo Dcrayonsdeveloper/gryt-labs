@@ -24,10 +24,31 @@ class RegisterController extends Controller
 
     public function register(Request $request): RedirectResponse|JsonResponse
     {
+        // Normalise before validating so the unique check compares like with like:
+        // without this, "+91 98765 43210" and "9876543210" are the same number but
+        // both pass unique:users and create two accounts.
+        if ($request->filled('phone')) {
+            $digits = preg_replace('/\D/', '', (string) $request->input('phone'));
+            if (strlen($digits) === 12 && str_starts_with($digits, '91')) {
+                $digits = substr($digits, 2);
+            }
+            $request->merge(['phone' => $digits]);
+        }
+
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:101'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['nullable', 'string', 'max:20', 'unique:users'],
+            // Phone is mandatory: it is the only channel abandoned-cart and order
+            // notifications can reach, so an account without one is unreachable.
+            // Accepts an optional +91 / 91 prefix and spaces or dashes, then stores
+            // the bare 10 digits (WhatsAppService::cleanPhone adds 91 when sending).
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^(?:\+?91[\s-]?)?[6-9]\d{9}$/',
+                'unique:users',
+            ],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 

@@ -310,10 +310,14 @@ Route::post('/api/abandoned-capture', [App\Http\Controllers\CheckoutController::
     ->middleware('throttle:20,1')
     ->name('checkout.abandoned.capture');
 
-// Checkout (guest + auth)
+// Checkout — sign-in required to START checkout.
+// 'auth' is applied to the two entry points only, NOT the whole group: the payment
+// callbacks below (cashfree return/webhook, success, failed) are hit by the gateway
+// or by a redirect that may not carry the session, and gating those would break live
+// payments. Browsing and adding to cart stay open to guests on purpose.
 Route::prefix('checkout')->name('checkout.')->group(function () {
-    Route::get('/', [App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
-    Route::post('/process', [App\Http\Controllers\CheckoutController::class, 'process'])->middleware('throttle:10,1')->name('process');
+    Route::get('/', [App\Http\Controllers\CheckoutController::class, 'index'])->middleware('auth')->name('index');
+    Route::post('/process', [App\Http\Controllers\CheckoutController::class, 'process'])->middleware(['auth', 'throttle:10,1'])->name('process');
     Route::post('/gift-card/apply', [App\Http\Controllers\CheckoutController::class, 'applyGiftCard'])->middleware('throttle:10,1')->name('gift-card.apply');
     Route::post('/gift-card/remove', [App\Http\Controllers\CheckoutController::class, 'removeGiftCard'])->name('gift-card.remove');
     Route::post('/razorpay/create-order', [App\Http\Controllers\CheckoutController::class, 'createRazorpayOrder'])->middleware('throttle:10,1')->name('razorpay.create');

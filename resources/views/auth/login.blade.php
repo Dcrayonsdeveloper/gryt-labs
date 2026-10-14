@@ -182,10 +182,12 @@
 
                     <!-- Phone -->
                     <div>
-                        <label for="phone" class="block text-[13px] font-bold text-[#111] mb-1">Mobile number <span class="font-normal text-neutral-500">(optional)</span></label>
-                        <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" autocomplete="tel"
+                        <label for="phone" class="block text-[13px] font-bold text-[#111] mb-1">Mobile number</label>
+                        <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" autocomplete="tel" required
+                               inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"
+                               title="Enter a 10-digit Indian mobile number"
                                class="w-full px-3 py-[7px] border border-neutral-400 rounded text-sm text-[#111] focus:outline-none focus:ring-1 focus:ring-neutral-400 focus:border-neutral-400 @error('phone') border-red-500 @enderror"
-                               placeholder="Mobile number">
+                               placeholder="10-digit mobile number">
                         @error('phone')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
