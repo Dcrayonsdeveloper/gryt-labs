@@ -53,6 +53,7 @@ class WhatsAppService
         string $name,
         float|int|string $cartTotal,
         ?string $productName = null,
+        ?string $fallbackText = null,
     ): bool {
         $templateName = Setting::get('whatsapp_cart_recovery_template', '')
             ?: (config('app.tenant_id', '') . '_cart_recovery');
@@ -69,8 +70,10 @@ class WhatsAppService
             ['type' => 'text', 'text' => $total],    // {{3}} price
         ];
 
-        $fallback = "Hi {$name}, you left {$product} (Rs {$total}) in your GRYT cart. "
-            . 'Complete your order before they sell out: https://gryt.co.in/cart';
+        // Callers with richer per-touch copy (the reminder sequence includes discount
+        // codes) pass their own fallback, which non-Meta providers send verbatim.
+        $fallback = $fallbackText ?: ("Hi {$name}, you left {$product} (Rs {$total}) in your cart. "
+            . 'Complete your order before they sell out: ' . url('/cart'));
 
         return $this->sendTemplate($phone, $templateName, $bodyParams, $fallback);
     }

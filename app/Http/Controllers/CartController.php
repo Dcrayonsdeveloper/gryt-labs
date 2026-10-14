@@ -177,6 +177,18 @@ class CartController extends Controller
 
         $cart->recalculate();
 
+        // Capture for abandoned-cart recovery as soon as something is in the cart,
+        // not only when checkout is reached. Never let a bookkeeping failure break
+        // the add itself.
+        try {
+            AbandonedCheckout::captureFromCart($cart, 'cart');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Abandoned cart capture failed on add', [
+                'cart_id' => $cart->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
+
         // Facebook CAPI: AddToCart
         $eventId = AnalyticsService::generateEventId('atc');
         app(AnalyticsService::class)->trackAddToCart($product, $validated['quantity'], $request, $eventId);
@@ -247,6 +259,9 @@ class CartController extends Controller
         $cart->refresh();
         $cart->load('coupon');
 
+        // Quantity changed, so the stored snapshot and total are now stale.
+        $this->syncAbandonedCart($cart);
+
         $couponRemoved = $hadCoupon && !$cart->coupon_id;
         $message = $couponRemoved
             ? 'Cart updated. Coupon was removed as it no longer applies.'
@@ -296,6 +311,11 @@ class CartController extends Controller
         $cart->refresh();
         $cart->load('coupon');
 
+        // Keep the abandoned-cart row in step with the cart: refresh the snapshot,
+        // or drop the row entirely once the last item is gone so no reminder goes
+        // out for products the shopper has deliberately removed.
+        $this->syncAbandonedCart($cart);
+
         $couponRemoved = $hadCoupon && !$cart->coupon_id;
         $message = $couponRemoved
             ? 'Item removed from cart. Coupon was removed as it no longer applies.'
@@ -318,6 +338,32 @@ class CartController extends Controller
         return back()->with('success', $message);
     }
 
+    /**
+     * Keep the abandoned-cart row in step with the cart after a change.
+     *
+     * Refreshes the snapshot while items remain, and removes the row once the cart
+     * is empty so no reminder is sent for products that are no longer there.
+     * Bookkeeping must never break a cart operation, so failures are logged only.
+     */
+    private function syncAbandonedCart(Cart $cart): void
+    {
+        try {
+            $cart->loadMissing('items');
+
+            if ($cart->items->isEmpty()) {
+                AbandonedCheckout::releaseForCart($cart->id);
+                return;
+            }
+
+            AbandonedCheckout::captureFromCart($cart, 'cart');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Abandoned cart sync failed', [
+                'cart_id' => $cart->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function clear(): JsonResponse|RedirectResponse
     {
         $cart = $this->getOrCreateCart();
@@ -328,6 +374,10 @@ class CartController extends Controller
             'discount' => 0,
         ]);
         $cart->recalculate();
+
+        // Emptying the cart is an explicit "I don't want these" - drop the row so
+        // it stops qualifying for reminders.
+        AbandonedCheckout::releaseForCart($cart->id);
 
         if (request()->wantsJson()) {
             return response()->json([

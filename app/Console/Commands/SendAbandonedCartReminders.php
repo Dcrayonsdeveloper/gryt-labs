@@ -252,6 +252,20 @@ class SendAbandonedCartReminders extends Command
         $messageFn = $touch['whatsapp_message'];
         $body = $code ? $messageFn($name, $cartUrl, $code) : $messageFn($name, $cartUrl);
 
-        $whatsapp->sendText($checkout->phone, $body);
+        // Must be a template, not sendText(). Meta only delivers free-form messages
+        // inside the 24-hour window that opens when the customer messages the
+        // business first; an abandoned-cart nudge never has that window, so every
+        // sendText() here returned HTTP 200 and was then silently dropped - which
+        // is why these reminders have never actually reached anyone.
+        //
+        // $body is still built above and passed as the fallback, so non-Meta
+        // providers keep sending the original wording unchanged.
+        $whatsapp->sendAbandonedCartReminder(
+            $checkout->phone,
+            $name,
+            $checkout->cart_total,
+            $checkout->firstProductName(),
+            $body,
+        );
     }
 }
