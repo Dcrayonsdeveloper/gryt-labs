@@ -262,8 +262,50 @@ class WhatsAppService
         }
     }
 
-    private function sendMetaTemplate(string $phone, string $templateName, array $bodyParams): bool
+    /**
+     * Send a login/verification OTP via an AUTHENTICATION template.
+     *
+     * OtpService used to send the code as a free-form text message. Meta only
+     * delivers free-form text inside the 24-hour window that opens when the
+     * customer messages the business first, so for a sign-in OTP - where the
+     * customer has typically never messaged us - the API returned 200 and the
+     * message was then silently dropped. Nothing was logged, because nothing
+     * failed at the API layer.
+     *
+     * AUTHENTICATION templates carry a copy-code button, and Meta rejects the
+     * send with 131008 ("Button at index 0 of type Url requires a parameter")
+     * unless the code is passed as a button parameter as well as a body one.
+     */
+    public function sendOtp(string $phone, string $code): bool
     {
+        $provider = Setting::get('whatsapp_provider', 'meta');
+
+        if ($provider !== 'meta') {
+            return $this->sendText($phone, "Your verification code is {$code}. Valid for 10 minutes.");
+        }
+
+        $templateName = Setting::get('whatsapp_login_otp_template', '')
+            ?: (config('app.tenant_id', '') . '_login_otp');
+
+        return $this->sendMetaTemplate(
+            $phone,
+            $templateName,
+            [['type' => 'text', 'text' => $code]],
+            [[
+                'type'       => 'button',
+                'sub_type'   => 'url',
+                'index'      => '0',
+                'parameters' => [['type' => 'text', 'text' => $code]],
+            ]],
+        );
+    }
+
+    private function sendMetaTemplate(
+        string $phone,
+        string $templateName,
+        array $bodyParams,
+        array $extraComponents = [],
+    ): bool {
         $token = Setting::get('whatsapp_api_token', '') ?: config('services.meta.page_access_token');
         $phoneId = Setting::get('whatsapp_phone_number_id', '') ?: config('services.meta.whatsapp_phone_number_id');
 
@@ -284,12 +326,13 @@ class WhatsAppService
                     'template' => [
                         'name' => $templateName,
                         'language' => ['code' => 'en'],
-                        'components' => [
-                            [
+                        'components' => array_merge(
+                            [[
                                 'type' => 'body',
                                 'parameters' => $bodyParams,
-                            ],
-                        ],
+                            ]],
+                            $extraComponents,
+                        ),
                     ],
                 ]);
 
