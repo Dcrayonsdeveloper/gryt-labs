@@ -137,6 +137,79 @@ class AbandonedCheckout extends Model
     }
 
     /**
+     * Record (or refresh) the abandoned-cart row for a cart.
+     *
+     * Previously this only happened when someone reached the checkout page, so a
+     * shopper who added to cart and left was never captured and never reminded -
+     * every row in the table read "Viewed checkout". Carts are now captured the
+     * moment something is added, and refreshed on every change, so the snapshot
+     * and total always match what is actually in the cart.
+     *
+     * Contact details are copied from the signed-in user. Adding to cart requires
+     * an account, so phone and email are always present, which is what makes the
+     * reminder queries (they require phone_hash or email) able to match at all.
+     *
+     * phone_hash is a plain sha256 of the digits, matching how the Shiprocket
+     * webhook writes it, so both paths resolve to the same row.
+     */
+    public static function captureFromCart(\App\Models\Cart $cart, string $step = 'cart'): ?self
+    {
+        // load(), not loadMissing(): callers reach here straight after changing the
+        // cart, and loadMissing leaves an already-loaded relation untouched, so the
+        // snapshot and total would be written from pre-change quantities.
+        $cart->load('items.product');
+
+        if ($cart->items->isEmpty()) {
+            return null;
+        }
+
+        $user = auth()->user();
+        $phone = $user?->phone ? preg_replace('/\D/', '', (string) $user->phone) : null;
+        if ($phone && strlen($phone) === 12 && str_starts_with($phone, '91')) {
+            $phone = substr($phone, 2);
+        }
+
+        $attributes = [
+            'user_id'       => $user?->id,
+            'session_id'    => session()->getId(),
+            'cart_total'    => $cart->subtotal - $cart->discount,
+            'items_count'   => $cart->items->count(),
+            'step'          => $step,
+            'cart_snapshot' => $cart->items->map(fn ($item) => [
+                'product_id'   => $item->product_id,
+                'product_name' => $item->product?->name ?? 'Item',
+                'quantity'     => $item->quantity,
+                'price'        => $item->price,
+            ])->toArray(),
+        ];
+
+        if ($user) {
+            $attributes['name']  = trim($user->first_name . ' ' . $user->last_name) ?: null;
+            $attributes['email'] = $user->email;
+            if ($phone) {
+                $attributes['phone']      = $phone;
+                $attributes['phone_hash'] = hash('sha256', $phone);
+            }
+        }
+
+        return static::updateOrCreate(['cart_id' => $cart->id], $attributes);
+    }
+
+    /**
+     * Drop the abandoned-cart row once the cart is empty again.
+     *
+     * Without this, clearing the cart or removing the last item would still leave
+     * a row that keeps generating reminders for products the shopper no longer has.
+     * Recovered rows are left alone - they are the record of a successful purchase.
+     */
+    public static function releaseForCart(int $cartId): void
+    {
+        static::where('cart_id', $cartId)
+            ->where(fn ($q) => $q->where('recovered', false)->orWhereNull('recovered'))
+            ->delete();
+    }
+
+    /**
      * Name of the first product in the cart, for recovery messages.
      *
      * The cart_recovery WhatsApp template renders "you left {{2}} (Rs {{3}})", so it
