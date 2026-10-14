@@ -264,7 +264,15 @@ Route::get('/wholesale', [App\Http\Controllers\WholesaleController::class, 'inde
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/data', [App\Http\Controllers\CartController::class, 'data'])->name('data');
     Route::get('/', [App\Http\Controllers\CartController::class, 'index'])->name('index');
-    Route::post('/add', [App\Http\Controllers\CartController::class, 'add'])->name('add');
+    // Sign-in required to put anything in a cart. This is the authoritative gate:
+    // the PDP "Add to cart" and "Buy Now" buttons, the quick-add buttons in the
+    // header and recommendation strips, and direct axios calls all funnel through
+    // this one route, so gating it covers every path.
+    //
+    // Only 'add' is gated. cart.data and cart.index stay open (the header cart
+    // count polls /cart/data on every page), and a guest who cannot add can never
+    // have items to update or remove.
+    Route::post('/add', [App\Http\Controllers\CartController::class, 'add'])->middleware('auth')->name('add');
     Route::post('/apply-coupon', [App\Http\Controllers\CartController::class, 'applyCoupon'])->name('apply-coupon');
     Route::delete('/remove-coupon', [App\Http\Controllers\CartController::class, 'removeCoupon'])->name('remove-coupon');
     Route::delete('/', [App\Http\Controllers\CartController::class, 'clear'])->name('clear');
