@@ -48,7 +48,13 @@ class LoginController extends Controller
                 return response()->json(['success' => true]);
             }
 
-            return redirect()->intended(route('account.dashboard'));
+            // Land on the storefront, not the account dashboard - someone who just
+            // signed in is far more likely to want to carry on shopping.
+            //
+            // Still intended(), so the cart auth gate keeps working: a guest who
+            // clicked "Add to cart" is returned to that product page, and only a
+            // plain sign-in with no stored destination falls through to home.
+            return redirect()->intended(route('home'));
         }
 
         if ($request->wantsJson()) {
