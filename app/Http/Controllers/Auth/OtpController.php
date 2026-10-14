@@ -92,8 +92,11 @@ class OtpController extends Controller
         $request->session()->regenerate();
 
         return response()->json([
+            // Same as the password login path: home by default, but any stored
+            // destination still wins so the cart auth gate returns people to the
+            // product they were adding.
             'success' => true,
-            'redirect' => session()->pull('url.intended', route('account.dashboard')),
+            'redirect' => session()->pull('url.intended', route('home')),
         ]);
     }
 
@@ -180,11 +183,13 @@ class OtpController extends Controller
 
         Auth::login($user);
 
+        // A reset signs the user straight in, so it lands on the storefront like
+        // the other sign-in paths rather than dropping them on the dashboard.
         if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'redirect' => route('account.dashboard')]);
+            return response()->json(['success' => true, 'redirect' => route('home')]);
         }
 
-        return redirect()->route('account.dashboard')->with('success', 'Password reset successfully!');
+        return redirect()->route('home')->with('success', 'Password reset successfully!');
     }
 
     private function mergeGuestCart(Request $request): void
