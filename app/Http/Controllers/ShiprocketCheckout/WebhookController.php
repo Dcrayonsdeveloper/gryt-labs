@@ -210,8 +210,14 @@ class WebhookController extends Controller
                 ->where('phone_hash', $phoneHash)
                 ->whereNull('order_id')
                 ->where(function ($q) use ($orderId) {
-                    $q->whereRaw("(metadata->>'shiprocket_cart_id') IS NULL")
-                      ->orWhereRaw("(metadata->>'shiprocket_cart_id') = ?", [$orderId]);
+                    // metadata->>'key' is PostgreSQL-only. Production runs MariaDB,
+                    // where it is a syntax error, so this threw SQLSTATE[42000] and
+                    // returned a 500 for every webhook that reached this branch -
+                    // including every Abandon Cart event. DbCompat::jsonExtract
+                    // emits the right form per driver.
+                    $json = DbCompat::jsonExtract('metadata', 'shiprocket_cart_id');
+                    $q->whereRaw("({$json}) IS NULL")
+                      ->orWhereRaw("({$json}) = ?", [$orderId]);
                 })
                 ->latest()
                 ->first();
