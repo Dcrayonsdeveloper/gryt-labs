@@ -27,10 +27,11 @@ class SendAbandonedCartReminders extends Command
         // (admin/abandoned-cart-templates) can override them without a deploy.
         // Defaults match the original hardcoded copy.
         return [
-            // Touch 1: 1 hour — gentle reminder, no discount
+            // Touch 1: 1 hour — gentle reminder, no discount.
+            // Window closes at 11h so it hands over cleanly to touch 2 at 12h.
             0 => [
                 'min_age_minutes' => 60,
-                'max_age_hours' => 23,
+                'max_age_hours' => 11,
                 'discount_pct' => 0,
                 'coupon_hours' => 0,
                 'subject' => Setting::get('abandoned_cart_r1_subject', 'You left something behind!'),
@@ -38,10 +39,10 @@ class SendAbandonedCartReminders extends Command
                 'whatsapp_message' => fn ($name, $cartUrl) =>
                     "Hi {$name}! You left items in your cart.\n\nYour items are still waiting for you.\n\nComplete your order: {$cartUrl}",
             ],
-            // Touch 2: 24 hours — second nudge with 5% discount
+            // Touch 2: 12 hours — final nudge with 5% discount.
             1 => [
-                'min_age_minutes' => 24 * 60,
-                'max_age_hours' => 71,
+                'min_age_minutes' => 12 * 60,
+                'max_age_hours' => 48,
                 'discount_pct' => 5,
                 'coupon_hours' => 24,
                 'subject' => Setting::get('abandoned_cart_r2_subject', "Still thinking? Here's 5% off to help you decide"),
@@ -49,17 +50,12 @@ class SendAbandonedCartReminders extends Command
                 'whatsapp_message' => fn ($name, $cartUrl, $code) =>
                     "Hi {$name}! Still thinking about your cart?\n\nUse code *{$code}* for 5% OFF (valid 24 hours)!\n\nComplete your order: {$cartUrl}",
             ],
-            // Touch 3: 72 hours — final push with 10% discount
-            2 => [
-                'min_age_minutes' => 72 * 60,
-                'max_age_hours' => 168,
-                'discount_pct' => 10,
-                'coupon_hours' => 48,
-                'subject' => Setting::get('abandoned_cart_r3_subject', 'Last chance! 10% off your cart — expiring soon'),
-                'email_template' => 'emails.abandoned-cart-reminder-3',
-                'whatsapp_message' => fn ($name, $cartUrl, $code) =>
-                    "Hi {$name}! Last chance to grab your items!\n\nUse code *{$code}* for 10% OFF (valid 48 hours)!\n\nComplete your order now: {$cartUrl}\n\nDon't miss out!",
-            ],
+            // Two touches only - 1 hour, then 12 hours, then stop.
+            //
+            // The 72-hour third touch was removed deliberately. Eligibility is keyed
+            // on reminder_count matching the touch index, so once touch 2 has sent,
+            // reminder_count is 2 and no touch claims index 2 - the sequence ends by
+            // itself with nothing further to configure.
         ];
     }
 
