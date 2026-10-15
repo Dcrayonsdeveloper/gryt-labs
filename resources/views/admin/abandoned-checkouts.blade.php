@@ -43,7 +43,11 @@
         $totalCount = (clone $statsQuery)->count();
         $withContactCount = (clone $statsQuery)->where(function($q) { $q->whereNotNull('email')->orWhereNotNull('phone'); })->where('recovered', false)->count();
         $recoveredCount = (clone $statsQuery)->where('recovered', true)->count();
-        $shiprocketCount = (clone $statsQuery)->where('source', 'shiprocket_checkout')->where('recovered', false)->count();
+        // Must match the 'shiprocket' tab filter in routes/admin.php: carts Shiprocket
+        // reported as abandoned, identified by metadata.shiprocket_cart_id. Counting
+        // source = 'shiprocket_checkout' instead would include every checkout handoff.
+        $srJson = \App\Helpers\DbCompat::jsonExtract('metadata', 'shiprocket_cart_id');
+        $shiprocketCount = (clone $statsQuery)->whereRaw("({$srJson}) IS NOT NULL")->where('recovered', false)->count();
         $totalValue = (clone $statsQuery)->where('recovered', false)->sum('cart_total');
         $recoveredValue = (clone $statsQuery)->where('recovered', true)->sum('cart_total');
         $tab = request('tab', 'all');
