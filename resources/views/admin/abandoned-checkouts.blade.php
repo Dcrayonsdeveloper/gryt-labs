@@ -43,6 +43,7 @@
         $totalCount = (clone $statsQuery)->count();
         $withContactCount = (clone $statsQuery)->where(function($q) { $q->whereNotNull('email')->orWhereNotNull('phone'); })->where('recovered', false)->count();
         $recoveredCount = (clone $statsQuery)->where('recovered', true)->count();
+        $shiprocketCount = (clone $statsQuery)->where('source', 'shiprocket_checkout')->where('recovered', false)->count();
         $totalValue = (clone $statsQuery)->where('recovered', false)->sum('cart_total');
         $recoveredValue = (clone $statsQuery)->where('recovered', true)->sum('cart_total');
         $tab = request('tab', 'all');
@@ -79,6 +80,10 @@
         <a href="{{ route('admin.abandoned-checkouts', array_merge(request()->only(['from', 'to']), ['tab' => 'recovered'])) }}"
            class="pb-3 text-sm font-medium border-b-2 {{ $tab === 'recovered' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
             Recovered <span class="ml-1 text-xs text-gray-400">{{ $recoveredCount }}</span>
+        </a>
+        <a href="{{ route('admin.abandoned-checkouts', array_merge(request()->only(['from', 'to']), ['tab' => 'shiprocket'])) }}"
+           class="pb-3 text-sm font-medium border-b-2 {{ $tab === 'shiprocket' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+            Shiprocket <span class="ml-1 text-xs text-gray-400">{{ $shiprocketCount }}</span>
         </a>
     </div>
 

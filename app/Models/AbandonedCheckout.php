@@ -172,6 +172,9 @@ class AbandonedCheckout extends Model
         $attributes = [
             'user_id'       => $user?->id,
             'session_id'    => session()->getId(),
+            // Distinguishes carts captured on our own site from the ones Shiprocket
+            // reports ('shiprocket_checkout'), which is what the admin tabs split on.
+            'source'        => 'cart',
             'cart_total'    => $cart->subtotal - $cart->discount,
             'items_count'   => $cart->items->count(),
             'step'          => $step,

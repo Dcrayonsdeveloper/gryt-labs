@@ -90,6 +90,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
                     $query->where(function ($q) { $q->whereNotNull('email')->orWhereNotNull('phone'); })->where('recovered', false);
                 } elseif ($tab === 'recovered') {
                     $query->where('recovered', true);
+                } elseif ($tab === 'shiprocket') {
+                    // Carts Shiprocket reported from its own checkout, as opposed to
+                    // the ones captured on our site at add-to-cart ('cart').
+                    $query->where('source', 'shiprocket_checkout')->where('recovered', false);
                 }
 
                 // Date filter
