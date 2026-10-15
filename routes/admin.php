@@ -91,9 +91,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 } elseif ($tab === 'recovered') {
                     $query->where('recovered', true);
                 } elseif ($tab === 'shiprocket') {
-                    // Carts Shiprocket reported from its own checkout, as opposed to
-                    // the ones captured on our site at add-to-cart ('cart').
-                    $query->where('source', 'shiprocket_checkout')->where('recovered', false);
+                    // Only carts Shiprocket actually reported as abandoned, which is
+                    // what their dashboard counts.
+                    //
+                    // NOT source = 'shiprocket_checkout': that is also stamped on every
+                    // 'shiprocket_handoff' row, one per click of Proceed to Checkout,
+                    // including the ones that went on to convert. There are ~1,152 of
+                    // those against 51 genuinely abandoned carts in Shiprocket's own
+                    // dashboard, so filtering on source overstated it by 20x.
+                    //
+                    // The Abandon Cart webhook writes step 'webhook_initiated' and a
+                    // metadata.shiprocket_cart_id; the latter is the reliable marker.
+                    $json = \App\Helpers\DbCompat::jsonExtract('metadata', 'shiprocket_cart_id');
+                    $query->whereRaw("({$json}) IS NOT NULL")->where('recovered', false);
                 }
 
                 // Date filter
