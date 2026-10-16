@@ -21,6 +21,12 @@ class OfferCouponService
 
     public function __construct(private WhatsAppService $whatsapp) {}
 
+    /** Why the last send failed, for the admin flash message. */
+    public function lastError(): ?string
+    {
+        return $this->whatsapp->lastError();
+    }
+
     /**
      * Send the code and record the outcome on the lead.
      */
