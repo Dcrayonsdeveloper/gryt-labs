@@ -123,6 +123,6 @@ class SocialLoginController extends Controller
 
     private function validateProvider(string $provider): void
     {
-        abort_unless(in_array($provider, ['google', 'facebook']), 404);
+        abort_unless(in_array($provider, ['google']), 404);
     }
 }

@@ -71,7 +71,7 @@
                             <span x-show="!sending">Send OTP</span>
                             <span x-show="sending">Sending...</span>
                         </button>
-                        <p class="text-xs text-neutral-500 text-center">OTP will be sent via WhatsApp + Email</p>
+                        <p class="text-xs text-neutral-500 text-center">OTP will be sent via WhatsApp</p>
                     </div>
 
                     {{-- Step 2: Enter OTP --}}
