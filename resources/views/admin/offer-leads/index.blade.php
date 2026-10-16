@@ -31,6 +31,15 @@
         </div>
     @endunless
 
+    @if($stats['failed'] > 0)
+        <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg">
+            <span class="font-semibold">{{ number_format($stats['failed']) }} shopper(s) never received their code.</span>
+            The code is only sent on WhatsApp, so a failed send means they got nothing. Once the
+            <span class="font-mono text-xs">{{ $settings['whatsapp_offer_template'] ?: $settings['template_placeholder'] }}</span>
+            template is approved, tick those rows and use <span class="font-medium">Resend code</span> to send the backlog.
+        </div>
+    @endif
+
     @unless($couponExists)
         <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg">
             No active discount called <span class="font-semibold">{{ $couponCode }}</span> exists yet, so the code handed out by the popup will be rejected at checkout.
@@ -44,8 +53,8 @@
             $cards = [
                 ['label' => 'Numbers captured', 'value' => number_format($stats['total']), 'tone' => 'text-gray-900'],
                 ['label' => 'Verified on WhatsApp', 'value' => number_format($stats['verified']), 'tone' => 'text-green-600'],
-                ['label' => 'Not verified', 'value' => number_format($stats['pending']), 'tone' => 'text-gray-900'],
                 ['label' => 'Verified in last 7 days', 'value' => number_format($stats['last_7']), 'tone' => 'text-gray-900'],
+                ['label' => 'Code delivered on WhatsApp', 'value' => number_format($stats['delivered']), 'tone' => $stats['failed'] > 0 ? 'text-amber-600' : 'text-gray-900'],
             ];
         @endphp
         @foreach($cards as $card)
@@ -184,9 +193,14 @@
                   @submit.prevent="$el.querySelector('input[name=ids]').value = JSON.stringify(selected); $el.submit()">
                 @csrf
                 <input type="hidden" name="ids" value="">
-                <button type="submit" name="action" value="delete"
-                        onclick="return confirm('Delete the selected leads?')"
-                        class="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+                <div class="flex items-center gap-4">
+                    <button type="submit" name="action" value="resend"
+                            onclick="return confirm('Send the coupon code to the selected numbers on WhatsApp?')"
+                            class="text-sm text-gray-700 hover:text-gray-900 font-medium">Resend code</button>
+                    <button type="submit" name="action" value="delete"
+                            onclick="return confirm('Delete the selected leads?')"
+                            class="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+                </div>
             </form>
         </div>
 

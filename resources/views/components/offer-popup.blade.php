@@ -17,7 +17,7 @@
     $accent      = $theme->get('offer_popup_accent', '#4D7C0F');
     $accentLight = $theme->get('offer_popup_accent_light', '#B8DC24');
 
-    $delay       = max(0, (int) $theme->get('offer_popup_delay', 10));
+    $delay       = max(0, (int) $theme->get('offer_popup_delay', 5));
     $title       = $theme->get('offer_popup_title', 'Unlock your exclusive offer');
     $subtitle    = $theme->get('offer_popup_subtitle', 'Drop your WhatsApp number and we will send you a VIP code you can use right away.');
     $buttonText  = $theme->get('offer_popup_button_text', 'Get my code on WhatsApp');
@@ -151,25 +151,26 @@
                 <h2 class="text-xl font-extrabold text-neutral-900 leading-snug" x-text="heading"></h2>
                 <p class="text-sm text-neutral-500 mt-2 leading-relaxed" x-text="message"></p>
 
-                <div class="mt-5 rounded-xl border-2 border-dashed p-4" style="border-color: {{ $accent }}; background-color: {{ $accentLight }}1a;">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Your coupon code</p>
-                    <p class="text-3xl font-extrabold tracking-[0.15em] mt-1 text-neutral-900" x-text="code"></p>
-                    <button @click="copyCode()" type="button"
-                            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                        <span x-text="copied ? 'Copied!' : 'Copy code'"></span>
-                    </button>
+                {{-- The code itself is deliberately not rendered here: it is sent
+                     only over WhatsApp, so the number has to be real to get it. --}}
+                <div class="mt-5 rounded-xl border-2 border-dashed p-4 flex items-start gap-3 text-left"
+                     style="border-color: {{ $accent }}; background-color: {{ $accentLight }}1a;">
+                    <svg class="w-6 h-6 shrink-0 mt-0.5" fill="#25D366" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.2-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5 0-.2 0-.4-.1-.5 0-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3M12 2a10 10 0 00-8.6 15L2 22l5.1-1.3A10 10 0 1012 2z"/></svg>
+                    <div>
+                        <p class="text-sm font-bold text-neutral-900">Sent on WhatsApp</p>
+                        <p class="text-xs text-neutral-600 mt-0.5 leading-relaxed">
+                            Your coupon code is in your chat on <span class="font-semibold" x-text="'+91 ' + phone"></span>. Apply it in the coupon box at checkout to claim <span x-text="offerText"></span>.
+                        </p>
+                    </div>
                 </div>
-
-                <p class="text-xs text-neutral-500 mt-4 leading-relaxed">
-                    Apply <span class="font-bold text-neutral-800" x-text="code"></span> in the coupon box at checkout to claim <span x-text="offerText"></span>.
-                </p>
 
                 <a :href="shopUrl"
                    class="block w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white text-center transition-opacity hover:opacity-90"
                    style="background-color: {{ $accent }};">Start shopping</a>
 
-                <p x-show="whatsappNote" x-cloak class="text-[11px] text-neutral-400 mt-3 leading-relaxed">We have also sent this code to your WhatsApp.</p>
+                <p x-show="!delivered" x-cloak class="text-[11px] text-neutral-400 mt-3 leading-relaxed">
+                    Not there yet? It can take a minute to arrive.
+                </p>
             </div>
         </div>
     </div>
@@ -184,15 +185,13 @@ function offerPopup(config) {
         name: config.name || '',
         consent: false,
         otp: '',
-        code: '',
         offerText: '',
         shopUrl: '{{ url('/products') }}',
         heading: '',
         message: '',
         error: '',
         busy: false,
-        copied: false,
-        whatsappNote: false,
+        delivered: true,
         resendIn: 0,
         resendTimer: null,
 
@@ -201,7 +200,7 @@ function offerPopup(config) {
             if (localStorage.getItem('offer_popup_claimed')) return;
             if (sessionStorage.getItem('offer_popup_seen')) return;
 
-            setTimeout(() => this.tryShow(0), (config.delay ?? 10) * 1000);
+            setTimeout(() => this.tryShow(0), (config.delay ?? 5) * 1000);
         },
 
         tryShow(attempt) {
@@ -314,12 +313,11 @@ function offerPopup(config) {
                     return;
                 }
 
-                this.code = data.code;
                 this.offerText = data.offer_text || 'your exclusive discount';
                 this.shopUrl = data.shop_url || this.shopUrl;
                 this.heading = data.heading || 'You are on the VIP list!';
                 this.message = data.message || '';
-                this.whatsappNote = true;
+                this.delivered = data.delivered !== false;
                 this.step = 'done';
 
                 localStorage.setItem('offer_popup_claimed', '1');
@@ -346,25 +344,6 @@ function offerPopup(config) {
             }, 1000);
         },
 
-        copyCode() {
-            const done = () => {
-                this.copied = true;
-                setTimeout(() => { this.copied = false; }, 2000);
-            };
-
-            if (navigator.clipboard?.writeText) {
-                navigator.clipboard.writeText(this.code).then(done).catch(() => {});
-                return;
-            }
-
-            // Older mobile browsers (and any non-HTTPS preview) have no clipboard API.
-            const el = document.createElement('textarea');
-            el.value = this.code;
-            document.body.appendChild(el);
-            el.select();
-            try { document.execCommand('copy'); done(); } catch (e) {}
-            document.body.removeChild(el);
-        },
     };
 }
 </script>
