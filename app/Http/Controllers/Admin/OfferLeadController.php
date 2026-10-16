@@ -9,7 +9,6 @@ use App\Services\WhatsAppService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -138,26 +137,15 @@ class OfferLeadController extends Controller
             return back()->with('error', 'This number has not verified its OTP yet.');
         }
 
-        $sent = $this->sendCoupon($offerLead);
+        $sender = app(\App\Services\OfferCouponService::class);
+        $sent   = $sender->send($offerLead);
 
         return back()->with(
             $sent ? 'success' : 'error',
             $sent
                 ? "Code {$offerLead->coupon_code} sent to +91 {$offerLead->phone} on WhatsApp."
-                : 'WhatsApp send failed. Check the WhatsApp template name and API settings.',
+                : ($sender->lastError() ?: 'WhatsApp send failed.'),
         );
-    }
-
-    /**
-     * Send (or re-send) a verified lead its code, recording the outcome.
-     *
-     * WhatsApp is the only channel the code goes out on, so a failure here means
-     * the shopper has nothing - which is why the outcome is stored per lead and
-     * the failures can be fired again in bulk once a template is approved.
-     */
-    private function sendCoupon(OfferLead $lead): bool
-    {
-        return app(\App\Services\OfferCouponService::class)->send($lead);
     }
 
     public function destroy(OfferLead $offerLead): RedirectResponse
@@ -198,11 +186,12 @@ class OfferLeadController extends Controller
 
         // Resend is the recovery path for a batch that failed while a WhatsApp
         // template was still awaiting approval, so it only touches verified rows.
-        $leads = OfferLead::whereIn('id', $validated['ids'])->verified()->get();
-        $sent  = 0;
+        $leads  = OfferLead::whereIn('id', $validated['ids'])->verified()->get();
+        $sender = app(\App\Services\OfferCouponService::class);
+        $sent   = 0;
 
         foreach ($leads as $lead) {
-            if ($this->sendCoupon($lead)) {
+            if ($sender->send($lead)) {
                 $sent++;
             }
         }
@@ -212,7 +201,7 @@ class OfferLeadController extends Controller
         return back()->with(
             $failed > 0 ? 'error' : 'success',
             $failed > 0
-                ? "{$sent} sent, {$failed} failed. Check the WhatsApp template name and API settings."
+                ? trim("{$sent} sent, {$failed} failed. " . ($sender->lastError() ?: ''))
                 : "Code sent to {$sent} number(s) on WhatsApp.",
         );
     }

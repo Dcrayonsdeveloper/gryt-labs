@@ -11,6 +11,20 @@ use Illuminate\Support\Facades\Mail;
 class WhatsAppService
 {
     /**
+     * Why the last send failed, in words a shop owner can act on.
+     *
+     * Callers used to get a bare false and showed "check the template name and
+     * API settings", which sent people auditing credentials that were fine. The
+     * API almost always says exactly what is wrong; this carries that out.
+     */
+    private ?string $lastError = null;
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    /**
      * Send a text message via the configured WhatsApp provider.
      */
     public function sendText(string $phone, string $message): bool
@@ -377,6 +391,7 @@ class WhatsAppService
                     ],
                 ]);
 
+            $this->lastError = null;
             $response = $post('en');
 
             if ($response->successful()) {
@@ -398,6 +413,8 @@ class WhatsAppService
                 $response = $retry;
             }
 
+            $this->lastError = $this->describeTemplateError($response->json(), $templateName);
+
             Log::warning('WhatsApp: Meta template failed', [
                 'phone' => $cleanPhone,
                 'template' => $templateName,
@@ -406,6 +423,8 @@ class WhatsAppService
             ]);
             return false;
         } catch (\Exception $e) {
+            $this->lastError = 'WhatsApp could not be reached: ' . $e->getMessage();
+
             Log::error('WhatsApp: Meta template exception', [
                 'phone' => $cleanPhone,
                 'template' => $templateName,
@@ -413,5 +432,26 @@ class WhatsAppService
             ]);
             return false;
         }
+    }
+
+    /**
+     * Turn a Meta error payload into an instruction rather than a code.
+     */
+    private function describeTemplateError(?array $json, string $templateName): string
+    {
+        $code    = (int) data_get($json, 'error.code');
+        $message = (string) data_get($json, 'error.message', 'unknown error');
+
+        return match ($code) {
+            132001 => "The template \"{$templateName}\" does not exist in your WhatsApp account "
+                . '(or is not approved yet). Create and get it approved in WhatsApp Manager, '
+                . 'or point Popup settings at the name you did approve.',
+            132000 => "The template \"{$templateName}\" was sent the wrong number of variables. "
+                . 'Its body must have exactly three: name, code and products.',
+            131047, 131026 => 'WhatsApp would not deliver to this number. It may not be on WhatsApp, '
+                . 'or it has never messaged this business and the template is not eligible.',
+            190, 102 => 'The WhatsApp API token has expired or been revoked. Reconnect it in Settings.',
+            default => $message,
+        };
     }
 }
