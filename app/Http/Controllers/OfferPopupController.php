@@ -22,6 +22,10 @@ class OfferPopupController extends Controller
 {
     private const OTP_PURPOSE = 'offer_popup';
 
+    /** Products the welcome code is valid on, named in the WhatsApp message. */
+    public const DEFAULT_PRODUCTS = 'Ashwagandha Capsules for Stress and Energy Support '
+        . 'and Pre Workout Supplement for Energy and Fitness';
+
     public function __construct(
         private OtpService $otpService,
         private WhatsAppService $whatsapp,
@@ -195,7 +199,7 @@ class OfferPopupController extends Controller
                 $lead->name ?: 'there',
                 $code,
                 $this->shopUrl(),
-                $this->offerText(),
+                $this->productsText(),
             );
         } catch (\Throwable $e) {
             Log::warning('Offer popup: coupon WhatsApp send failed', [
@@ -220,12 +224,21 @@ class OfferPopupController extends Controller
 
     private function couponCode(): string
     {
-        return strtoupper(trim((string) Setting::get('offer_popup_coupon_code', 'GRYTVIP'))) ?: 'GRYTVIP';
+        return strtoupper(trim((string) Setting::get('offer_popup_coupon_code', 'GRYTWELCOME'))) ?: 'GRYTWELCOME';
     }
 
     private function offerText(): string
     {
-        return (string) Setting::get('offer_popup_offer_text', '') ?: 'your exclusive VIP discount';
+        return (string) Setting::get('offer_popup_offer_text', '') ?: 'your exclusive welcome discount';
+    }
+
+    /**
+     * The products the code actually works on, named in the WhatsApp message so
+     * nobody discovers the restriction at checkout.
+     */
+    private function productsText(): string
+    {
+        return (string) Setting::get('offer_popup_products', '') ?: self::DEFAULT_PRODUCTS;
     }
 
     private function returningHeading(): string
