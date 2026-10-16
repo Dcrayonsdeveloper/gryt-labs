@@ -205,6 +205,13 @@ class OfferLeadController extends Controller
             $request->merge(['ids' => json_decode($ids, true) ?: []]);
         }
 
+        // Fail loudly. A malformed selection used to fall through to the
+        // validator, which redirects back with an error nothing on this page
+        // displays - so the buttons appeared to do nothing at all.
+        if (!is_array($request->input('ids')) || $request->input('ids') === []) {
+            return back()->with('error', 'Nothing was selected. Tick a row and try again.');
+        }
+
         $validated = $request->validate([
             'action' => 'required|in:delete,resend',
             'ids'    => 'required|array',

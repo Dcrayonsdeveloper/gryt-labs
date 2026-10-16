@@ -203,16 +203,19 @@
         <div x-show="selected.length > 0" x-cloak
              class="px-4 py-3 bg-gray-50 flex items-center justify-between gap-3" style="border-bottom:1px solid #e1e1e1">
             <span class="text-sm font-medium text-gray-700"><span x-text="selected.length"></span> selected</span>
-            <form method="POST" action="{{ route('admin.offer-leads.bulk-action') }}"
-                  @submit.prevent="$el.querySelector('input[name=ids]').value = JSON.stringify(selected); $el.submit()">
+            {{-- The selection is filled in on click and the browser submits
+                 natively. Intercepting submit and calling form.submit() instead
+                 drops the clicked button's name/value, so `action` never arrived
+                 and the request failed validation in silence. --}}
+            <form method="POST" action="{{ route('admin.offer-leads.bulk-action') }}">
                 @csrf
                 <input type="hidden" name="ids" value="">
                 <div class="flex items-center gap-4">
                     <button type="submit" name="action" value="resend"
-                            onclick="return confirm('Send the coupon code to the selected numbers on WhatsApp?')"
+                            @click="if (!confirm('Send the coupon code to the selected numbers on WhatsApp?')) { $event.preventDefault(); return; } $el.form.querySelector('input[name=ids]').value = JSON.stringify(selected)"
                             class="text-sm text-gray-700 hover:text-gray-900 font-medium">Resend code</button>
                     <button type="submit" name="action" value="delete"
-                            onclick="return confirm('Delete the selected leads?')"
+                            @click="if (!confirm('Delete the selected leads?')) { $event.preventDefault(); return; } $el.form.querySelector('input[name=ids]').value = JSON.stringify(selected)"
                             class="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
                 </div>
             </form>
