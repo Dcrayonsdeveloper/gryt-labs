@@ -23,7 +23,7 @@ class OfferLeadController extends Controller
     /** Settings the popup reads, with the defaults used when a row is absent. */
     private const SETTING_DEFAULTS = [
         'offer_popup_enabled'       => '1',
-        'offer_popup_delay'         => '10',
+        'offer_popup_delay'         => '5',
         'offer_popup_title'         => 'Unlock your exclusive offer',
         'offer_popup_subtitle'      => 'Drop your WhatsApp number and we will send you a VIP code you can use right away.',
         'offer_popup_button_text'   => 'Get my code on WhatsApp',
@@ -73,6 +73,7 @@ class OfferLeadController extends Controller
             'pending'   => OfferLead::pending()->count(),
             'last_7'    => OfferLead::verified()->where('verified_at', '>=', now()->subDays(7))->count(),
             'delivered' => OfferLead::where('whatsapp_status', 'sent')->count(),
+            'failed'    => OfferLead::where('whatsapp_status', 'failed')->count(),
         ];
 
         return view('admin.offer-leads.index', [
@@ -129,34 +130,48 @@ class OfferLeadController extends Controller
             return back()->with('error', 'This number has not verified its OTP yet.');
         }
 
-        $code = $offerLead->coupon_code ?: $this->couponCode();
+        $sent = $this->sendCoupon($offerLead);
+
+        return back()->with(
+            $sent ? 'success' : 'error',
+            $sent
+                ? "Code {$offerLead->coupon_code} sent to +91 {$offerLead->phone} on WhatsApp."
+                : 'WhatsApp send failed. Check the WhatsApp template name and API settings.',
+        );
+    }
+
+    /**
+     * Send (or re-send) a verified lead its code, recording the outcome.
+     *
+     * WhatsApp is the only channel the code goes out on, so a failure here means
+     * the shopper has nothing - which is why the outcome is stored per lead and
+     * the failures can be fired again in bulk once a template is approved.
+     */
+    private function sendCoupon(OfferLead $lead): bool
+    {
+        $code = $lead->coupon_code ?: $this->couponCode();
         $sent = false;
 
         try {
             $sent = app(WhatsAppService::class)->sendOfferCoupon(
-                $offerLead->msisdn(),
-                $offerLead->name ?: 'there',
+                $lead->msisdn(),
+                $lead->name ?: 'there',
                 $code,
                 url('/products'),
                 Setting::get('offer_popup_offer_text', '') ?: 'your exclusive VIP discount',
             );
         } catch (\Throwable $e) {
-            Log::warning('Offer lead resend failed', ['phone' => $offerLead->phone, 'error' => $e->getMessage()]);
+            Log::warning('Offer lead resend failed', ['phone' => $lead->phone, 'error' => $e->getMessage()]);
         }
 
-        $offerLead->forceFill([
+        $lead->forceFill([
             'coupon_code'     => $code,
             'coupon_sent_at'  => now(),
-            'coupon_channel'  => $sent ? 'whatsapp' : 'onscreen',
+            'coupon_channel'  => 'whatsapp',
             'whatsapp_status' => $sent ? 'sent' : 'failed',
         ])->save();
 
-        return back()->with(
-            $sent ? 'success' : 'error',
-            $sent
-                ? "Code {$code} sent to +91 {$offerLead->phone} on WhatsApp."
-                : 'WhatsApp send failed. Check the WhatsApp template name and API settings.',
-        );
+        return $sent;
     }
 
     public function destroy(OfferLead $offerLead): RedirectResponse
@@ -168,15 +183,45 @@ class OfferLeadController extends Controller
 
     public function bulkAction(Request $request): RedirectResponse
     {
+        // The table posts its selection as a JSON string from Alpine, not as
+        // ids[] inputs, so decode before validating - otherwise `array` rejects
+        // every submission and the buttons silently do nothing.
+        $ids = $request->input('ids');
+        if (is_string($ids)) {
+            $request->merge(['ids' => json_decode($ids, true) ?: []]);
+        }
+
         $validated = $request->validate([
-            'action' => 'required|in:delete',
+            'action' => 'required|in:delete,resend',
             'ids'    => 'required|array',
             'ids.*'  => 'integer',
         ]);
 
-        $count = OfferLead::whereIn('id', $validated['ids'])->delete();
+        if ($validated['action'] === 'delete') {
+            $count = OfferLead::whereIn('id', $validated['ids'])->delete();
 
-        return back()->with('success', "{$count} lead(s) deleted.");
+            return back()->with('success', "{$count} lead(s) deleted.");
+        }
+
+        // Resend is the recovery path for a batch that failed while a WhatsApp
+        // template was still awaiting approval, so it only touches verified rows.
+        $leads = OfferLead::whereIn('id', $validated['ids'])->verified()->get();
+        $sent  = 0;
+
+        foreach ($leads as $lead) {
+            if ($this->sendCoupon($lead)) {
+                $sent++;
+            }
+        }
+
+        $failed = $leads->count() - $sent;
+
+        return back()->with(
+            $failed > 0 ? 'error' : 'success',
+            $failed > 0
+                ? "{$sent} sent, {$failed} failed. Check the WhatsApp template name and API settings."
+                : "Code sent to {$sent} number(s) on WhatsApp.",
+        );
     }
 
     public function export(Request $request): Response

@@ -148,30 +148,33 @@ class OfferPopupController extends Controller
         ]);
         $lead->save();
 
-        $this->deliverCoupon($lead, $code);
+        $delivered = $this->deliverCoupon($lead, $code);
 
         // Remember the claim for a year so the popup stops interrupting someone
         // who has already taken the offer, even across sessions.
         Cookie::queue('offer_popup_claimed', '1', 60 * 24 * 365);
 
+        // The code itself is never returned to the browser. WhatsApp is the only
+        // place it appears, which is what makes a working number worth giving.
         return response()->json([
             'success'    => true,
             'returning'  => $returning,
-            'code'       => $code,
+            'delivered'  => $delivered,
             'offer_text' => $this->offerText(),
             'shop_url'   => $this->shopUrl(),
             'heading'    => $returning ? 'You are already on the VIP list' : 'You are on the VIP list!',
             'message'    => $returning
-                ? 'Here is your code again - use it at checkout.'
-                : 'Your exclusive code is ready. Use it at checkout.',
+                ? 'We have sent your code to WhatsApp again.'
+                : 'We have sent your exclusive code to your WhatsApp.',
         ]);
     }
 
     /**
-     * Push the code to WhatsApp as well as the screen, recording what happened
-     * so the admin list can show which numbers actually received the message.
+     * Send the code over WhatsApp - the only channel it goes out on - recording
+     * the outcome so the admin list can show who actually received it and offer
+     * a resend for the ones that did not.
      */
-    private function deliverCoupon(OfferLead $lead, string $code): void
+    private function deliverCoupon(OfferLead $lead, string $code): bool
     {
         $sent = false;
 
@@ -192,9 +195,11 @@ class OfferPopupController extends Controller
 
         $lead->forceFill([
             'coupon_sent_at'  => now(),
-            'coupon_channel'  => $sent ? 'whatsapp' : 'onscreen',
+            'coupon_channel'  => 'whatsapp',
             'whatsapp_status' => $sent ? 'sent' : 'failed',
         ])->save();
+
+        return $sent;
     }
 
     private function popupEnabled(): bool
