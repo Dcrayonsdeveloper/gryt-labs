@@ -9,7 +9,6 @@ use App\Services\OtpService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -61,8 +60,6 @@ class OfferPopupController extends Controller
         $existing = OfferLead::where('phone', $phone)->first();
 
         if ($existing && $existing->isVerified()) {
-            Cookie::queue('offer_popup_claimed', '1', 60 * 24 * 365);
-
             return response()->json([
                 'success'  => true,
                 'status'   => 'already_registered',
@@ -167,10 +164,6 @@ class OfferPopupController extends Controller
         $lead->save();
 
         $delivered = $this->deliverCoupon($lead, $code);
-
-        // Remember the claim for a year so the popup stops interrupting someone
-        // who has already taken the offer, even across sessions.
-        Cookie::queue('offer_popup_claimed', '1', 60 * 24 * 365);
 
         // The code itself is never returned to the browser. WhatsApp is the only
         // place it appears, which is what makes a working number worth giving.
