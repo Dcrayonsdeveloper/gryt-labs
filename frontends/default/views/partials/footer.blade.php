@@ -112,6 +112,8 @@
             <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                 <p class="text-xs text-gray-500">
                     &copy; {{ date('Y') }} {{ $theme->get('site_name', config('app.name')) }}. All rights reserved.
+                    <span aria-hidden="true">&middot;</span>
+                    <a href="https://dcrayon.com/" target="_blank" rel="noopener" class="underline hover:text-gray-900 transition-colors">Created by Dcrayons Inc</a>
                 </p>
                 <div class="flex items-center gap-3">
                     {{-- Visa --}}
