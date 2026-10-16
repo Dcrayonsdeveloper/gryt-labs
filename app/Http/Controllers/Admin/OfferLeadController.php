@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Coupon;
 use App\Models\OfferLead;
 use App\Models\Setting;
 use App\Services\WhatsAppService;
@@ -20,6 +19,9 @@ use Illuminate\View\View;
  */
 class OfferLeadController extends Controller
 {
+    /** Mirrors OfferPopupController::DEFAULT_PRODUCTS for resends from the admin. */
+    private const DEFAULT_PRODUCTS = \App\Http\Controllers\OfferPopupController::DEFAULT_PRODUCTS;
+
     /** Settings the popup reads, with the defaults used when a row is absent. */
     private const SETTING_DEFAULTS = [
         'offer_popup_enabled'       => '1',
@@ -31,8 +33,9 @@ class OfferLeadController extends Controller
         'offer_popup_footer_text'   => 'One code per number. You can opt out any time by replying STOP.',
         'offer_popup_returning_heading' => '',
         'offer_popup_returning_text'    => '',
-        'offer_popup_coupon_code'   => 'GRYTVIP',
-        'offer_popup_offer_text'    => 'your exclusive VIP discount',
+        'offer_popup_coupon_code'   => 'GRYTWELCOME',
+        'offer_popup_offer_text'    => 'your exclusive welcome discount',
+        'offer_popup_products'      => '',
         'whatsapp_offer_template'   => '',
     ];
 
@@ -99,6 +102,7 @@ class OfferLeadController extends Controller
             'offer_popup_returning_text'    => 'nullable|string|max:255',
             'offer_popup_coupon_code'  => 'nullable|string|max:50',
             'offer_popup_offer_text'   => 'nullable|string|max:120',
+            'offer_popup_products'     => 'nullable|string|max:255',
             'whatsapp_offer_template'  => 'nullable|string|max:100',
             'offer_popup_delay'        => 'required|integer|min:0|max:300',
         ]);
@@ -108,7 +112,7 @@ class OfferLeadController extends Controller
 
         foreach (['offer_popup_title', 'offer_popup_subtitle', 'offer_popup_button_text',
                   'offer_popup_consent_text', 'offer_popup_footer_text', 'offer_popup_offer_text',
-                  'offer_popup_returning_heading', 'offer_popup_returning_text',
+                  'offer_popup_returning_heading', 'offer_popup_returning_text', 'offer_popup_products',
                   'whatsapp_offer_template'] as $key) {
             Setting::set($key, (string) ($validated[$key] ?? ''), 'string', 'offer_popup');
         }
@@ -117,7 +121,7 @@ class OfferLeadController extends Controller
         // coupon table does, so a lowercase entry here still matches.
         Setting::set(
             'offer_popup_coupon_code',
-            strtoupper(trim((string) ($validated['offer_popup_coupon_code'] ?? ''))) ?: 'GRYTVIP',
+            strtoupper(trim((string) ($validated['offer_popup_coupon_code'] ?? ''))) ?: 'GRYTWELCOME',
             'string',
             'offer_popup',
         );
@@ -153,7 +157,13 @@ class OfferLeadController extends Controller
      */
     private function sendCoupon(OfferLead $lead): bool
     {
-        $code = $lead->coupon_code ?: $this->couponCode();
+        // A lead that was stamped with a code it never actually received is sent
+        // the current one instead. Otherwise a backlog captured before the code
+        // changed would be mailed a string that no longer exists as a discount.
+        $code = $lead->whatsapp_status === 'sent' && $lead->coupon_code
+            ? $lead->coupon_code
+            : $this->couponCode();
+
         $sent = false;
 
         try {
@@ -162,7 +172,7 @@ class OfferLeadController extends Controller
                 $lead->name ?: 'there',
                 $code,
                 url('/products'),
-                Setting::get('offer_popup_offer_text', '') ?: 'your exclusive VIP discount',
+                Setting::get('offer_popup_products', '') ?: self::DEFAULT_PRODUCTS,
             );
         } catch (\Throwable $e) {
             Log::warning('Offer lead resend failed', ['phone' => $lead->phone, 'error' => $e->getMessage()]);
@@ -290,7 +300,8 @@ class OfferLeadController extends Controller
         // written its own wording yet.
         $brand = Setting::get('site_name', '') ?: (Setting::get('store_name', '') ?: config('app.name'));
         $values['consent_placeholder'] = 'I agree to receive offers and updates from ' . $brand . ' on WhatsApp.';
-        $values['template_placeholder'] = (config('app.tenant_id', '') ?: 'store') . '_vip_offer';
+        $values['template_placeholder'] = (config('app.tenant_id', '') ?: 'store') . '_welcome_offer';
+        $values['products_placeholder'] = self::DEFAULT_PRODUCTS;
 
         // Shown as placeholders so the defaults are visible without being saved.
         $values['returning_heading_placeholder'] = 'You are already a VIP!';
@@ -302,6 +313,6 @@ class OfferLeadController extends Controller
 
     private function couponCode(): string
     {
-        return strtoupper(trim((string) Setting::get('offer_popup_coupon_code', 'GRYTVIP'))) ?: 'GRYTVIP';
+        return strtoupper(trim((string) Setting::get('offer_popup_coupon_code', 'GRYTWELCOME'))) ?: 'GRYTWELCOME';
     }
 }

@@ -141,6 +141,14 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Products the code works on</label>
+                    <input type="text" name="offer_popup_products" value="{{ old('offer_popup_products', $settings['offer_popup_products']) }}"
+                           placeholder="{{ $settings['products_placeholder'] }}"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400">
+                    <p class="text-xs text-gray-400 mt-1">Named in the WhatsApp message so nobody finds out about the restriction at checkout. One line, no line breaks &mdash; Meta rejects those.</p>
+                </div>
+
+                <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Fine print</label>
                     <input type="text" name="offer_popup_footer_text" value="{{ old('offer_popup_footer_text', $settings['offer_popup_footer_text']) }}"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400">

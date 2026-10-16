@@ -83,32 +83,35 @@ class WhatsAppService
      *
      * Meta only delivers free-form text inside the 24-hour window the customer
      * opens by messaging the business first. Someone who just received an OTP
-     * has not opened one, so this has to be a template; the popup also shows the
-     * code on screen, which is what guarantees the shopper actually gets it.
+     * has not opened one, so this has to be a template - and since the popup
+     * deliberately never prints the code on screen, this message is the only
+     * place the shopper ever sees it.
      */
     public function sendOfferCoupon(
         string $phone,
         string $name,
         string $code,
         string $shopUrl,
-        ?string $offerText = null,
+        ?string $products = null,
     ): bool {
         $templateName = Setting::get('whatsapp_offer_template', '')
-            ?: (config('app.tenant_id', '') . '_vip_offer');
+            ?: (config('app.tenant_id', '') . '_welcome_offer');
 
         $firstName = trim((string) $name) ?: 'there';
-        $offer     = trim((string) $offerText) ?: 'an exclusive member discount';
+        // Meta rejects a parameter containing newlines or tabs, so the product
+        // list has to arrive as one flat line however it is worded.
+        $items = preg_replace('/\s+/', ' ', trim((string) $products)) ?: 'our bestsellers';
 
-        // Must stay in step with the vip_offer template body:
-        // "Hi {{1}}, welcome to the VIP list! Your code {{2}} unlocks {{3}}."
+        // Must stay in step with the welcome_offer template body:
+        // "Hi {{1}}, your code {{2}} is valid on {{3}}."
         $bodyParams = [
             ['type' => 'text', 'text' => $firstName],
             ['type' => 'text', 'text' => $code],
-            ['type' => 'text', 'text' => $offer],
+            ['type' => 'text', 'text' => $items],
         ];
 
-        $fallback = "Hi {$firstName}, welcome to the VIP list! Use code {$code} at checkout to unlock {$offer}. "
-            . "Shop now: {$shopUrl}";
+        $fallback = "Hi {$firstName}, welcome to GRYT! Your code {$code} is valid on {$items}. "
+            . "Apply it at checkout: {$shopUrl}";
 
         return $this->sendTemplate($phone, $templateName, $bodyParams, $fallback);
     }
