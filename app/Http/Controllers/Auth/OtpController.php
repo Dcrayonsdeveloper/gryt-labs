@@ -85,10 +85,14 @@ class OtpController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid or expired OTP.'], 422);
         }
 
-        // Merge guest cart before session regeneration (uses old session ID)
-        $this->mergeGuestCart($request);
+        // Read the guest session id before Auth::login() migrates it, then merge
+        // after, when there is a user id to merge into. The old call sat before
+        // the login and passed Auth::id() — null at that point — so it never
+        // merged into the right cart.
+        $guestSessionId = $request->session()->getId();
 
         Auth::login($user, true);
+        \App\Models\Cart::mergeGuestCart($guestSessionId, (int) $user->id);
         $request->session()->regenerate();
 
         return response()->json([
@@ -181,7 +185,9 @@ class OtpController extends Controller
 
         session()->forget(['otp_reset_user_id', 'otp_reset_verified']);
 
+        $guestSessionId = $request->session()->getId();
         Auth::login($user);
+        \App\Models\Cart::mergeGuestCart($guestSessionId, (int) $user->id);
 
         // A reset signs the user straight in, so it lands on the storefront like
         // the other sign-in paths rather than dropping them on the dashboard.
@@ -192,45 +198,6 @@ class OtpController extends Controller
         return redirect()->route('home')->with('success', 'Password reset successfully!');
     }
 
-    private function mergeGuestCart(Request $request): void
-    {
-        $sessionId = $request->session()->getId();
-        $guestCart = \App\Models\Cart::where('session_id', $sessionId)
-            ->whereNull('user_id')
-            ->with('items')
-            ->first();
-
-        if (!$guestCart || $guestCart->items->isEmpty()) {
-            return;
-        }
-
-        $userCart = \App\Models\Cart::firstOrCreate(
-            ['user_id' => Auth::id()],
-            ['session_id' => $sessionId, 'subtotal' => 0, 'discount' => 0, 'tax' => 0, 'total' => 0]
-        );
-
-        foreach ($guestCart->items as $item) {
-            $existing = $userCart->items()
-                ->where('product_id', $item->product_id)
-                ->where('variant_id', $item->variant_id)
-                ->first();
-
-            if ($existing) {
-                $existing->update(['quantity' => $existing->quantity + $item->quantity]);
-            } else {
-                $userCart->items()->create([
-                    'product_id' => $item->product_id,
-                    'variant_id' => $item->variant_id,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ]);
-            }
-        }
-
-        $guestCart->items()->delete();
-        $guestCart->delete();
-        $userCart->recalculate();
-    }
 
     private function findUser(string $identifier): ?User
     {

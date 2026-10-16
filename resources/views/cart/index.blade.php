@@ -273,15 +273,7 @@
 
                                 <!-- Checkout Button -->
                                 <div class="p-4 pt-0">
-                                    @if(auth()->guest())
-                                        {{-- Checkout requires sign-in. Link straight at checkout.index so the
-                                             auth middleware stores the intended URL and returns them here after
-                                             login — firing the Shiprocket SDK would just 401 and fail silently. --}}
-                                        <a href="{{ route('checkout.index') }}"
-                                           class="block w-full py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold text-center rounded-lg transition-colors shadow-sm">
-                                            SIGN IN TO CHECKOUT
-                                        </a>
-                                    @elseif(\App\Models\Setting::get('shiprocket_checkout_enabled', false))
+                                    @if(\App\Models\Setting::get('shiprocket_checkout_enabled', false))
                                         <button onclick="window.__srCartCheckout ? __srCartCheckout(this) : (window.location.href='{{ route('checkout.index') }}')"
                                            class="block w-full py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold text-center rounded-lg transition-colors shadow-sm disabled:opacity-70">
                                             <span>PROCEED TO CHECKOUT</span>
@@ -398,12 +390,7 @@
                         <p class="text-[11px] text-neutral-500 leading-none mb-0.5">Total Amount</p>
                         <p class="text-base font-bold text-neutral-900 leading-none" x-text="fp(totalAmount)"></p>
                     </div>
-                    @if(auth()->guest())
-                        <a href="{{ route('checkout.index') }}"
-                           class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold text-center rounded-lg transition-colors shadow-sm">
-                            SIGN IN TO CHECKOUT
-                        </a>
-                    @elseif(\App\Models\Setting::get('shiprocket_checkout_enabled', false))
+                    @if(\App\Models\Setting::get('shiprocket_checkout_enabled', false))
                         <button onclick="window.__srCartCheckout ? __srCartCheckout(this) : (window.location.href='{{ route('checkout.index') }}')"
                            class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold text-center rounded-lg transition-colors shadow-sm disabled:opacity-70">
                             PROCEED TO CHECKOUT

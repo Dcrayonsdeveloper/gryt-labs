@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Cart extends Model
 {
@@ -326,5 +327,62 @@ class Cart extends Model
         $this->loadMissing('items.product');
 
         return (int) $this->items->sum(fn ($i) => $i->quantity * $i->unitsPerQuantity());
+    }
+
+    /**
+     * Fold a guest's session cart into the cart of the user who just signed in.
+     *
+     * Both ids are passed in rather than read from auth()/session() inside,
+     * because every caller sits next to a sign-in that moves both out from under
+     * it: Auth::attempt() and Auth::login() call SessionGuard::updateSession(),
+     * which migrates the session id, and before the sign-in there is no Auth::id()
+     * to read. The three copies of this that each read one of them live got one of
+     * the two wrong, and silently merged nothing.
+     *
+     * Quantities add up when the same product is already in the user's cart, and
+     * the emptied guest cart is removed so it cannot be merged a second time.
+     */
+    public static function mergeGuestCart(string $guestSessionId, int $userId): void
+    {
+        $guestCart = static::where('session_id', $guestSessionId)
+            ->whereNull('user_id')
+            ->with('items')
+            ->first();
+
+        if (! $guestCart || $guestCart->items->isEmpty()) {
+            return;
+        }
+
+        DB::transaction(function () use ($guestCart, $userId) {
+            // session_id null matches how CartController::getOrCreateCart() makes a
+            // signed-in cart — that lookup is by user_id, so the guest session id
+            // has no business lingering on it.
+            $userCart = static::firstOrCreate(
+                ['user_id' => $userId],
+                ['session_id' => null, 'subtotal' => 0, 'discount' => 0, 'tax' => 0, 'total' => 0]
+            );
+
+            foreach ($guestCart->items as $item) {
+                $existing = $userCart->items()
+                    ->where('product_id', $item->product_id)
+                    ->where('variant_id', $item->variant_id)
+                    ->first();
+
+                if ($existing) {
+                    $existing->update(['quantity' => $existing->quantity + $item->quantity]);
+                } else {
+                    $userCart->items()->create([
+                        'product_id' => $item->product_id,
+                        'variant_id' => $item->variant_id,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                    ]);
+                }
+            }
+
+            $guestCart->items()->delete();
+            $guestCart->delete();
+            $userCart->recalculate();
+        });
     }
 }

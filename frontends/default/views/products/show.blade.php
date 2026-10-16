@@ -615,7 +615,7 @@
                                 <span x-text="adding ? 'Adding...' : (added ? '✓ Added!' : 'Add to Cart')"></span>
                             </button>
                             <button x-data="{ buying: false }"
-                                    @click="if (document.body.dataset.authenticated !== 'true') { window.requireLoginForCart(); return; } if (typeof window.__srBuyNow === 'function') { __srBuyNow($event, $el, {{ $product->id }}, {{ $hasBundle ? '$store.pdpPack.currentQty' : 'quantity' }}); return; } if(buying) return; buying = true; const _qty = {{ $hasBundle ? '$store.pdpPack.currentQty' : 'quantity' }}; axios.post('/cart/add', { product_id: {{ $product->id }}, quantity: _qty }).then(() => { window.location.href = '{{ route('checkout.index') }}'; }).catch(e => { $store.toast.error(e.response?.data?.error || 'Failed'); buying = false; })"
+                                    @click="if (typeof window.__srBuyNow === 'function') { __srBuyNow($event, $el, {{ $product->id }}, {{ $hasBundle ? '$store.pdpPack.currentQty' : 'quantity' }}); return; } if(buying) return; buying = true; const _qty = {{ $hasBundle ? '$store.pdpPack.currentQty' : 'quantity' }}; axios.post('/cart/add', { product_id: {{ $product->id }}, quantity: _qty }).then(() => { window.location.href = '{{ route('checkout.index') }}'; }).catch(e => { $store.toast.error(e.response?.data?.error || 'Failed'); buying = false; })"
                                     :disabled="buying"
                                     class="w-full flex items-center justify-center gap-2 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] font-semibold py-2.5 rounded-full text-sm transition-colors disabled:opacity-70">
                                 <span x-text="buying ? 'Please wait...' : 'Buy Now'"></span>
@@ -1313,9 +1313,8 @@
 
             // Wire up Add to Cart
             document.getElementById('sticky-add-btn').addEventListener('click', function() {
-                // Cart writes require sign-in; prompt instead of letting the raw
-                // axios fallback below fail with an unhandled 401.
-                if (document.body.dataset.authenticated !== 'true') { window.requireLoginForCart(); return; }
+                // No sign-in check — /cart/add takes guests, so both the Alpine
+                // store path and the raw axios fallback below work signed out.
                 var qty = getQty();
                 if (window.Alpine && Alpine.store('cart')) {
                     Alpine.store('cart').add({{ $product->id }}, qty);
@@ -1326,9 +1325,8 @@
 
             // Wire up Buy Now: open Shiprocket Checkout if available, else add to cart + checkout
             document.getElementById('sticky-buy-btn').addEventListener('click', function(evt) {
-                // Both branches below need an account: the Shiprocket token endpoint
-                // is auth-gated too, so without this the SDK path fails silently.
-                if (document.body.dataset.authenticated !== 'true') { window.requireLoginForCart(); return; }
+                // Neither branch below needs an account: the Shiprocket token
+                // endpoint takes guests, and /checkout renders its guest form.
                 var qty = getQty();
                 if (typeof window.__srBuyNow === 'function') {
                     window.__srBuyNow(evt, this, {{ $product->id }}, qty);

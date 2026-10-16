@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cart;
 use App\Models\User;
 use App\Models\UserSocialAccount;
 use Illuminate\Http\RedirectResponse;
@@ -41,8 +42,9 @@ class SocialLoginController extends Controller
             ->first();
 
         if ($socialAccount) {
-            $this->mergeGuestCart(request());
+            $guestSessionId = request()->session()->getId();
             Auth::login($socialAccount->user);
+            Cart::mergeGuestCart($guestSessionId, (int) $socialAccount->user->id);
             request()->session()->regenerate();
             return redirect()->intended('/');
         }
@@ -59,8 +61,9 @@ class SocialLoginController extends Controller
                 'refresh_token' => $socialUser->refreshToken,
             ]);
 
-            $this->mergeGuestCart(request());
+            $guestSessionId = request()->session()->getId();
             Auth::login($user);
+            Cart::mergeGuestCart($guestSessionId, (int) $user->id);
             request()->session()->regenerate();
             return redirect()->intended('/');
         }
@@ -83,43 +86,14 @@ class SocialLoginController extends Controller
             'refresh_token' => $socialUser->refreshToken,
         ]);
 
-        $this->mergeGuestCart(request());
+        $guestSessionId = request()->session()->getId();
         Auth::login($user);
+        Cart::mergeGuestCart($guestSessionId, (int) $user->id);
         request()->session()->regenerate();
 
         return redirect()->intended('/')->with('success', 'Welcome to ' . config('app.name') . '!');
     }
 
-    private function mergeGuestCart($request): void
-    {
-        $sessionId = $request->session()->getId();
-        $guestCart = \App\Models\Cart::where('session_id', $sessionId)
-            ->whereNull('user_id')->with('items')->first();
-
-        if (!$guestCart || $guestCart->items->isEmpty()) return;
-
-        $userCart = \App\Models\Cart::firstOrCreate(
-            ['user_id' => Auth::id()],
-            ['session_id' => $sessionId, 'subtotal' => 0, 'discount' => 0, 'tax' => 0, 'total' => 0]
-        );
-
-        foreach ($guestCart->items as $item) {
-            $existing = $userCart->items()->where('product_id', $item->product_id)
-                ->where('variant_id', $item->variant_id)->first();
-            if ($existing) {
-                $existing->update(['quantity' => $existing->quantity + $item->quantity]);
-            } else {
-                $userCart->items()->create([
-                    'product_id' => $item->product_id, 'variant_id' => $item->variant_id,
-                    'quantity' => $item->quantity, 'price' => $item->price,
-                ]);
-            }
-        }
-
-        $guestCart->items()->delete();
-        $guestCart->delete();
-        $userCart->recalculate();
-    }
 
     private function validateProvider(string $provider): void
     {

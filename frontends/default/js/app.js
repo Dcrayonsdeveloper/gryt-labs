@@ -51,21 +51,6 @@ window.Alpine = Alpine;
 // ========================================
 // Utilities
 // ========================================
-/**
- * Send a signed-out shopper to the sign-in page for a cart action.
- *
- * Cart writes used to pop the authModal in place. A full page is clearer for
- * buying: it shows the sign-in and create-account options together rather than
- * a cramped dialog over the product.
- *
- * The current path is passed as ?redirect= so LoginController stores it as the
- * intended URL and drops them back on this product once they are signed in.
- */
-window.requireLoginForCart = function() {
-    const next = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `/login?redirect=${next}`;
-};
-
 window.formatCurrency = function(amount, currency = 'INR') {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 2,
@@ -123,10 +108,8 @@ Alpine.store('cart', {
     },
     async add(productId, quantity = 1, variantId = null) {
         if (this.isLoading) return;
-        // /cart/add requires sign-in. Check before the request so the shopper is
-        // sent to the sign-in page instead of making a round trip that ends in an
-        // error toast.
-        if (document.body.dataset.authenticated !== 'true') { window.requireLoginForCart(); return; }
+        // No sign-in check: /cart/add accepts guests and keys the cart on the
+        // session, so a signed-out shopper adds items like anyone else.
         this.isLoading = true;
         try {
             const r = await axios.post('/cart/add', { product_id: productId, variant_id: variantId, quantity });
@@ -136,7 +119,7 @@ Alpine.store('cart', {
             if (typeof fbq !== 'undefined' && r.data.fb_event) fbq('track', 'AddToCart', { content_ids: r.data.fb_event.content_ids, content_name: r.data.fb_event.content_name, content_type: r.data.fb_event.content_type, value: r.data.fb_event.value, currency: r.data.fb_event.currency }, { eventID: r.data.fb_event.event_id });
             this.open();
             this.fetch();
-        } catch (e) { if (e.response?.status === 401) { window.requireLoginForCart(); return; } Alpine.store('toast').error(e.response?.data?.error || 'Failed to add to cart'); }
+        } catch (e) { Alpine.store('toast').error(e.response?.data?.error || 'Failed to add to cart'); }
         finally { this.isLoading = false; }
     },
     async update(itemId, quantity) {

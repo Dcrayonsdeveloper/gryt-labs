@@ -264,15 +264,11 @@ Route::get('/wholesale', [App\Http\Controllers\WholesaleController::class, 'inde
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/data', [App\Http\Controllers\CartController::class, 'data'])->name('data');
     Route::get('/', [App\Http\Controllers\CartController::class, 'index'])->name('index');
-    // Sign-in required to put anything in a cart. This is the authoritative gate:
-    // the PDP "Add to cart" and "Buy Now" buttons, the quick-add buttons in the
-    // header and recommendation strips, and direct axios calls all funnel through
-    // this one route, so gating it covers every path.
-    //
-    // Only 'add' is gated. cart.data and cart.index stay open (the header cart
-    // count polls /cart/data on every page), and a guest who cannot add can never
-    // have items to update or remove.
-    Route::post('/add', [App\Http\Controllers\CartController::class, 'add'])->middleware('auth')->name('add');
+    // Open to guests. Signing in is never required to put something in a cart:
+    // getOrCreateCart() keys the cart on user_id when signed in and on session_id
+    // otherwise, and LoginController/OtpController merge the session cart into the
+    // user's cart on sign-in, so a guest who signs in later keeps their items.
+    Route::post('/add', [App\Http\Controllers\CartController::class, 'add'])->name('add');
     Route::post('/apply-coupon', [App\Http\Controllers\CartController::class, 'applyCoupon'])->name('apply-coupon');
     Route::delete('/remove-coupon', [App\Http\Controllers\CartController::class, 'removeCoupon'])->name('remove-coupon');
     Route::delete('/', [App\Http\Controllers\CartController::class, 'clear'])->name('clear');
@@ -318,14 +314,13 @@ Route::post('/api/abandoned-capture', [App\Http\Controllers\CheckoutController::
     ->middleware('throttle:20,1')
     ->name('checkout.abandoned.capture');
 
-// Checkout — sign-in required to START checkout.
-// 'auth' is applied to the two entry points only, NOT the whole group: the payment
-// callbacks below (cashfree return/webhook, success, failed) are hit by the gateway
-// or by a redirect that may not carry the session, and gating those would break live
-// payments. Browsing and adding to cart stay open to guests on purpose.
+// Checkout — open to guests. CheckoutController branches on $isGuest throughout:
+// index() renders the contact + shipping form instead of the saved-address picker,
+// and process() validates guest_name/guest_email/guest_phone plus a shipping address
+// and writes the order with user_id = null. Signing in is offered, never required.
 Route::prefix('checkout')->name('checkout.')->group(function () {
-    Route::get('/', [App\Http\Controllers\CheckoutController::class, 'index'])->middleware('auth')->name('index');
-    Route::post('/process', [App\Http\Controllers\CheckoutController::class, 'process'])->middleware(['auth', 'throttle:10,1'])->name('process');
+    Route::get('/', [App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
+    Route::post('/process', [App\Http\Controllers\CheckoutController::class, 'process'])->middleware('throttle:10,1')->name('process');
     Route::post('/gift-card/apply', [App\Http\Controllers\CheckoutController::class, 'applyGiftCard'])->middleware('throttle:10,1')->name('gift-card.apply');
     Route::post('/gift-card/remove', [App\Http\Controllers\CheckoutController::class, 'removeGiftCard'])->name('gift-card.remove');
     Route::post('/razorpay/create-order', [App\Http\Controllers\CheckoutController::class, 'createRazorpayOrder'])->middleware('throttle:10,1')->name('razorpay.create');
