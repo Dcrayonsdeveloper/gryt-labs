@@ -54,6 +54,24 @@ class OfferPopupController extends Controller
             ], 422);
         }
 
+        // One code per number. Someone who already claimed is turned away here,
+        // at the number step, rather than being walked through an OTP that would
+        // only end in "you already have this" - and their original row is left
+        // untouched, so a repeat visit cannot overwrite the consent we recorded.
+        $existing = OfferLead::where('phone', $phone)->first();
+
+        if ($existing && $existing->isVerified()) {
+            Cookie::queue('offer_popup_claimed', '1', 60 * 24 * 365);
+
+            return response()->json([
+                'success'  => true,
+                'status'   => 'already_registered',
+                'heading'  => $this->returningHeading(),
+                'message'  => $this->returningText(),
+                'shop_url' => $this->shopUrl(),
+            ]);
+        }
+
         // Record the attempt before the OTP goes out. A shopper who types their
         // number and then drops off at the OTP step is still a lead the store
         // wants in the list - the admin page separates verified from pending.
@@ -215,6 +233,18 @@ class OfferPopupController extends Controller
     private function offerText(): string
     {
         return (string) Setting::get('offer_popup_offer_text', '') ?: 'your exclusive VIP discount';
+    }
+
+    private function returningHeading(): string
+    {
+        return (string) Setting::get('offer_popup_returning_heading', '') ?: 'You are already a VIP!';
+    }
+
+    private function returningText(): string
+    {
+        return (string) Setting::get('offer_popup_returning_text', '')
+            ?: 'This number is already on our VIP list, so there is nothing more to do. '
+                . 'Your code is sitting in your WhatsApp chat - just apply it at checkout.';
     }
 
     private function consentText(): string

@@ -159,6 +159,25 @@
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400">
                 </div>
 
+                <div class="pt-2" style="border-top:1px solid #f0f0f0">
+                    <p class="text-xs font-semibold text-gray-700 mb-2">Already-registered message</p>
+                    <p class="text-xs text-gray-400 mb-3">Shown when someone enters a number that already claimed the offer. No OTP is sent and no second code is issued.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Heading</label>
+                            <input type="text" name="offer_popup_returning_heading" value="{{ old('offer_popup_returning_heading', $settings['offer_popup_returning_heading']) }}"
+                                   placeholder="{{ $settings['returning_heading_placeholder'] }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Message</label>
+                            <input type="text" name="offer_popup_returning_text" value="{{ old('offer_popup_returning_text', $settings['offer_popup_returning_text']) }}"
+                                   placeholder="{{ $settings['returning_text_placeholder'] }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400">
+                        </div>
+                    </div>
+                </div>
+
                 @if($errors->any())
                     <ul class="text-xs text-red-600 list-disc list-inside">
                         @foreach($errors->all() as $error)
