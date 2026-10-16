@@ -2,13 +2,13 @@
 @php
     $popupEnabled = filter_var($theme->get('offer_popup_enabled', '1'), FILTER_VALIDATE_BOOLEAN);
 
-    // Never interrupt a checkout, and never ask someone who already claimed
-    // (the cookie is set server-side for a year when they verify).
+    // Every visitor sees this, including people who already claimed - they get
+    // the "you are already a VIP" note when they enter their number, which is
+    // the whole point of that step. Checkout is the one exception.
     $onCheckout = request()->is('checkout*') || request()->is('admin*');
-    $alreadyClaimed = request()->cookie('offer_popup_claimed') === '1';
 @endphp
 
-@if($popupEnabled && !$onCheckout && !$alreadyClaimed)
+@if($popupEnabled && !$onCheckout)
 @php
     $brandName   = $theme->get('site_name', '') ?: ($theme->get('store_name', '') ?: config('app.name'));
     $storeLogo   = $theme->get('store_logo', '');
@@ -202,16 +202,15 @@ function offerPopup(config) {
         resendTimer: null,
 
         init() {
-            // Claimed is permanent; dismissed only quietens it for this tab session.
-            if (localStorage.getItem('offer_popup_claimed')) return;
+            // Shown to everyone - a number that already claimed is told so at the
+            // number step. Only limit is once per browsing session, so it does not
+            // reopen on every page the shopper clicks through to.
             if (sessionStorage.getItem('offer_popup_seen')) return;
 
             setTimeout(() => this.tryShow(0), (config.delay ?? 5) * 1000);
         },
 
         tryShow(attempt) {
-            if (localStorage.getItem('offer_popup_claimed')) return;
-
             // The Shiprocket checkout opens as a full-screen overlay; dropping an
             // offer on top of someone mid-payment is the one place this must not
             // appear. Wait it out rather than giving up on the lead.
@@ -298,7 +297,6 @@ function offerPopup(config) {
                     this.alreadyRegistered = true;
                     this.delivered = true;
                     this.step = 'done';
-                    localStorage.setItem('offer_popup_claimed', '1');
                     if (this.resendTimer) clearInterval(this.resendTimer);
                     return;
                 }
@@ -340,7 +338,6 @@ function offerPopup(config) {
                 this.delivered = data.delivered !== false;
                 this.step = 'done';
 
-                localStorage.setItem('offer_popup_claimed', '1');
                 if (this.resendTimer) clearInterval(this.resendTimer);
             } catch (e) {
                 this.error = 'Network error. Please try again.';
