@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cart;
 
+use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
@@ -89,6 +90,42 @@ class CartTest extends TestCase
         ]);
 
         $response->assertRedirect();
+
+        // Signing in is optional, so the guest's cart is keyed on the session.
+        // Asserting the row rather than just "a redirect happened" is the point:
+        // the /login bounce this replaced was also a redirect, so the weaker
+        // assertion passed just as happily while add-to-cart was still gated.
+        $cart = Cart::where('session_id', session()->getId())->first();
+        $this->assertNotNull($cart, 'Guest add-to-cart should create a session cart');
+        $this->assertNull($cart->user_id);
+        $this->assertDatabaseHas('cart_items', [
+            'cart_id' => $cart->id,
+            'product_id' => $this->product->id,
+            'quantity' => 1,
+        ]);
+    }
+
+    public function test_guest_cart_merges_into_user_cart_on_login(): void
+    {
+        $this->post('/cart/add', [
+            'product_id' => $this->product->id,
+            'quantity' => 2,
+        ]);
+
+        $this->post('/login', [
+            'email' => $this->user->email,
+            'password' => 'password',
+        ]);
+
+        // The reason a guest may fill a cart unauthenticated: whatever they
+        // collected has to survive the sign-in they may do later at checkout.
+        $userCart = Cart::where('user_id', $this->user->id)->first();
+        $this->assertNotNull($userCart, 'Signing in should carry the guest cart over');
+        $this->assertDatabaseHas('cart_items', [
+            'cart_id' => $userCart->id,
+            'product_id' => $this->product->id,
+            'quantity' => 2,
+        ]);
     }
 
     public function test_cannot_add_inactive_product(): void

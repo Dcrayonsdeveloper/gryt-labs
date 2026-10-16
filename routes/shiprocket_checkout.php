@@ -40,11 +40,12 @@ Route::post('/webhook/shipping-updates', [WebhookController::class, 'handle'])
 // Called when customer clicks Buy Now or Checkout.
 // Returns a token the frontend passes to shiprocketCheckoutCustomHandler().
 //
-// 'auth' here is the other half of the checkout sign-in gate. The cart button opens
-// the Shiprocket SDK rather than hitting /checkout, so gating only the native
-// checkout route would leave this path wide open.
+// Open to guests, like /checkout itself. TokenController reads the cart by
+// session_id when nobody is signed in and sends a null user_id on the abandoned-
+// checkout record; Shiprocket collects the shopper's phone and address itself, and
+// CallbackController stores the result as guest_name/guest_email/guest_phone.
 Route::post('/api/shiprocket-checkout-token', TokenController::class)
-    ->middleware(['auth', 'throttle:30,1'])
+    ->middleware('throttle:30,1')
     ->name('shiprocket.checkout.token');
 
 // ─── Success Callback (Shiprocket → browser → us) ────────────────────────────

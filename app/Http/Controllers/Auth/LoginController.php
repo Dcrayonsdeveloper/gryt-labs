@@ -14,10 +14,11 @@ class LoginController extends Controller
 {
     public function showLoginForm(Request $request): View
     {
-        // The cart auth gate bounces guests here as /login?redirect=/product/slug
-        // so they land back on the product they were adding instead of the account
-        // dashboard. Stored as the intended URL, which redirect()->intended() below
-        // already consumes.
+        // Routes that do require an account (wishlist, account pages) send guests
+        // here as /login?redirect=/the/page so they land back where they were
+        // instead of on the dashboard. Stored as the intended URL, which
+        // redirect()->intended() below already consumes. Cart and checkout no
+        // longer arrive this way — both accept guests.
         //
         // Only same-site absolute paths are accepted: a value starting with "//"
         // or containing a scheme would be an open redirect.
@@ -40,8 +41,13 @@ class LoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // Read before Auth::attempt(): a successful attempt migrates the session
+        // id, so afterwards this would be the new one and the guest's cart —
+        // stored under the old id — would never be found.
+        $guestSessionId = $request->session()->getId();
+
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $this->mergeGuestCart($request);
+            Cart::mergeGuestCart($guestSessionId, (int) Auth::id());
             $request->session()->regenerate();
 
             if ($request->wantsJson()) {
@@ -51,9 +57,9 @@ class LoginController extends Controller
             // Land on the storefront, not the account dashboard - someone who just
             // signed in is far more likely to want to carry on shopping.
             //
-            // Still intended(), so the cart auth gate keeps working: a guest who
-            // clicked "Add to cart" is returned to that product page, and only a
-            // plain sign-in with no stored destination falls through to home.
+            // Still intended(), so a guest bounced off an account-only page is
+            // returned to it; only a plain sign-in with no stored destination
+            // falls through to home.
             return redirect()->intended(route('home'));
         }
 
@@ -69,45 +75,6 @@ class LoginController extends Controller
         ])->onlyInput('email');
     }
 
-    private function mergeGuestCart(Request $request): void
-    {
-        $sessionId = $request->session()->getId();
-        $guestCart = Cart::where('session_id', $sessionId)
-            ->whereNull('user_id')
-            ->with('items')
-            ->first();
-
-        if (!$guestCart || $guestCart->items->isEmpty()) {
-            return;
-        }
-
-        $userCart = Cart::firstOrCreate(
-            ['user_id' => Auth::id()],
-            ['session_id' => $sessionId, 'subtotal' => 0, 'discount' => 0, 'tax' => 0, 'total' => 0]
-        );
-
-        foreach ($guestCart->items as $item) {
-            $existing = $userCart->items()
-                ->where('product_id', $item->product_id)
-                ->where('variant_id', $item->variant_id)
-                ->first();
-
-            if ($existing) {
-                $existing->update(['quantity' => $existing->quantity + $item->quantity]);
-            } else {
-                $userCart->items()->create([
-                    'product_id' => $item->product_id,
-                    'variant_id' => $item->variant_id,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ]);
-            }
-        }
-
-        $guestCart->items()->delete();
-        $guestCart->delete();
-        $userCart->recalculate();
-    }
 
     public function logout(Request $request): RedirectResponse
     {
