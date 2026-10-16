@@ -22,6 +22,10 @@ Schedule::command('social:publish-scheduled')->everyMinute();
 // Send abandoned cart reminders hourly (email + WhatsApp multi-touch)
 Schedule::command('cart:remind-abandoned')->hourly();
 
+// Retry offer-popup coupons whose WhatsApp delivery failed. The usual cause is a
+// template still awaiting Meta approval, so the backlog clears itself once it lands.
+Schedule::command("offer-leads:retry-failed")->hourlyAt(20);
+
 // Daily abandoned cart summary to admin at 8:30am
 Schedule::command('cart:abandoned-summary')->dailyAt('08:30');
 
