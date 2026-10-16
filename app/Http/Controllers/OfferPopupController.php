@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OfferLead;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\OfferCouponService;
 use App\Services\OtpService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
@@ -21,10 +22,6 @@ use Illuminate\Support\Facades\Log;
 class OfferPopupController extends Controller
 {
     private const OTP_PURPOSE = 'offer_popup';
-
-    /** Products the welcome code is valid on, named in the WhatsApp message. */
-    public const DEFAULT_PRODUCTS = 'Ashwagandha Capsules for Stress and Energy Support '
-        . 'and Pre Workout Supplement for Energy and Fitness';
 
     public function __construct(
         private OtpService $otpService,
@@ -151,7 +148,6 @@ class OfferPopupController extends Controller
         // verified date and original code - the unique index on phone means
         // there is exactly one lead per number however many times they return.
         $returning = $lead->exists && $lead->isVerified();
-        $code      = $returning && $lead->coupon_code ? $lead->coupon_code : $this->couponCode();
 
         $lead->fill([
             'name'         => $request->input('name') ?: $lead->name,
@@ -160,14 +156,13 @@ class OfferPopupController extends Controller
             'consent_text' => $lead->consent_text ?: $this->consentText(),
             'consent_at'   => $lead->consent_at ?: now(),
             'verified_at'  => $lead->verified_at ?: now(),
-            'coupon_code'  => $code,
             'source'       => $lead->source ?: 'offer_popup',
             'user_id'      => $lead->user_id ?: User::where('phone', $phone)->value('id'),
             'ip_address'   => $lead->ip_address ?: $request->ip(),
         ]);
         $lead->save();
 
-        $delivered = $this->deliverCoupon($lead, $code);
+        $delivered = $this->deliverCoupon($lead);
 
         // The code itself is never returned to the browser. WhatsApp is the only
         // place it appears, which is what makes a working number worth giving.
@@ -185,36 +180,11 @@ class OfferPopupController extends Controller
     }
 
     /**
-     * Send the code over WhatsApp - the only channel it goes out on - recording
-     * the outcome so the admin list can show who actually received it and offer
-     * a resend for the ones that did not.
+     * Send the code over WhatsApp - the only channel it goes out on.
      */
-    private function deliverCoupon(OfferLead $lead, string $code): bool
+    private function deliverCoupon(OfferLead $lead): bool
     {
-        $sent = false;
-
-        try {
-            $sent = $this->whatsapp->sendOfferCoupon(
-                $lead->msisdn(),
-                $lead->name ?: 'there',
-                $code,
-                $this->shopUrl(),
-                $this->productsText(),
-            );
-        } catch (\Throwable $e) {
-            Log::warning('Offer popup: coupon WhatsApp send failed', [
-                'phone' => $lead->phone,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        $lead->forceFill([
-            'coupon_sent_at'  => now(),
-            'coupon_channel'  => 'whatsapp',
-            'whatsapp_status' => $sent ? 'sent' : 'failed',
-        ])->save();
-
-        return $sent;
+        return app(OfferCouponService::class)->send($lead);
     }
 
     private function popupEnabled(): bool
@@ -222,23 +192,9 @@ class OfferPopupController extends Controller
         return filter_var(Setting::get('offer_popup_enabled', '1'), FILTER_VALIDATE_BOOLEAN);
     }
 
-    private function couponCode(): string
-    {
-        return strtoupper(trim((string) Setting::get('offer_popup_coupon_code', 'GRYTWELCOME'))) ?: 'GRYTWELCOME';
-    }
-
     private function offerText(): string
     {
         return (string) Setting::get('offer_popup_offer_text', '') ?: 'your exclusive welcome discount';
-    }
-
-    /**
-     * The products the code actually works on, named in the WhatsApp message so
-     * nobody discovers the restriction at checkout.
-     */
-    private function productsText(): string
-    {
-        return (string) Setting::get('offer_popup_products', '') ?: self::DEFAULT_PRODUCTS;
     }
 
     private function returningHeading(): string

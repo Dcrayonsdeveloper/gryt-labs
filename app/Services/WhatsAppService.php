@@ -357,16 +357,16 @@ class WhatsAppService
         $cleanPhone = $this->cleanPhone($phone);
 
         try {
-            $response = Http::withToken($token)
+            $post = fn (string $language) => Http::withToken($token)
                 ->timeout(10)
-                ->retry(2, 500)
+                ->retry(2, 500, throw: false)
                 ->post("https://graph.facebook.com/v21.0/{$phoneId}/messages", [
                     'messaging_product' => 'whatsapp',
                     'to' => $cleanPhone,
                     'type' => 'template',
                     'template' => [
                         'name' => $templateName,
-                        'language' => ['code' => 'en'],
+                        'language' => ['code' => $language],
                         'components' => array_merge(
                             [[
                                 'type' => 'body',
@@ -377,8 +377,25 @@ class WhatsAppService
                     ],
                 ]);
 
+            $response = $post('en');
+
             if ($response->successful()) {
                 return true;
+            }
+
+            // 132001 is "template name does not exist in the translation" - which
+            // Meta returns both for a missing template AND for one that exists in
+            // a different locale. Templates approved as "English (US)" are filed
+            // under en_US, so a single retry rescues the most common misconfig.
+            if ((int) $response->json('error.code') === 132001) {
+                $retry = $post('en_US');
+
+                if ($retry->successful()) {
+                    Log::info('WhatsApp: Meta template sent as en_US', ['template' => $templateName]);
+                    return true;
+                }
+
+                $response = $retry;
             }
 
             Log::warning('WhatsApp: Meta template failed', [

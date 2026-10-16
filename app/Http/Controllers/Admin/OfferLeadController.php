@@ -19,8 +19,8 @@ use Illuminate\View\View;
  */
 class OfferLeadController extends Controller
 {
-    /** Mirrors OfferPopupController::DEFAULT_PRODUCTS for resends from the admin. */
-    private const DEFAULT_PRODUCTS = \App\Http\Controllers\OfferPopupController::DEFAULT_PRODUCTS;
+    /** Placeholder for the products field; the service owns the real default. */
+    private const DEFAULT_PRODUCTS = \App\Services\OfferCouponService::DEFAULT_PRODUCTS;
 
     /** Settings the popup reads, with the defaults used when a row is absent. */
     private const SETTING_DEFAULTS = [
@@ -157,35 +157,7 @@ class OfferLeadController extends Controller
      */
     private function sendCoupon(OfferLead $lead): bool
     {
-        // A lead that was stamped with a code it never actually received is sent
-        // the current one instead. Otherwise a backlog captured before the code
-        // changed would be mailed a string that no longer exists as a discount.
-        $code = $lead->whatsapp_status === 'sent' && $lead->coupon_code
-            ? $lead->coupon_code
-            : $this->couponCode();
-
-        $sent = false;
-
-        try {
-            $sent = app(WhatsAppService::class)->sendOfferCoupon(
-                $lead->msisdn(),
-                $lead->name ?: 'there',
-                $code,
-                url('/products'),
-                Setting::get('offer_popup_products', '') ?: self::DEFAULT_PRODUCTS,
-            );
-        } catch (\Throwable $e) {
-            Log::warning('Offer lead resend failed', ['phone' => $lead->phone, 'error' => $e->getMessage()]);
-        }
-
-        $lead->forceFill([
-            'coupon_code'     => $code,
-            'coupon_sent_at'  => now(),
-            'coupon_channel'  => 'whatsapp',
-            'whatsapp_status' => $sent ? 'sent' : 'failed',
-        ])->save();
-
-        return $sent;
+        return app(\App\Services\OfferCouponService::class)->send($lead);
     }
 
     public function destroy(OfferLead $offerLead): RedirectResponse
