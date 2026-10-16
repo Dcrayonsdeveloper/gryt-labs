@@ -79,6 +79,41 @@ class WhatsAppService
     }
 
     /**
+     * Send the storefront offer-popup coupon to a freshly verified number.
+     *
+     * Meta only delivers free-form text inside the 24-hour window the customer
+     * opens by messaging the business first. Someone who just received an OTP
+     * has not opened one, so this has to be a template; the popup also shows the
+     * code on screen, which is what guarantees the shopper actually gets it.
+     */
+    public function sendOfferCoupon(
+        string $phone,
+        string $name,
+        string $code,
+        string $shopUrl,
+        ?string $offerText = null,
+    ): bool {
+        $templateName = Setting::get('whatsapp_offer_template', '')
+            ?: (config('app.tenant_id', '') . '_vip_offer');
+
+        $firstName = trim((string) $name) ?: 'there';
+        $offer     = trim((string) $offerText) ?: 'an exclusive member discount';
+
+        // Must stay in step with the vip_offer template body:
+        // "Hi {{1}}, welcome to the VIP list! Your code {{2}} unlocks {{3}}."
+        $bodyParams = [
+            ['type' => 'text', 'text' => $firstName],
+            ['type' => 'text', 'text' => $code],
+            ['type' => 'text', 'text' => $offer],
+        ];
+
+        $fallback = "Hi {$firstName}, welcome to the VIP list! Use code {$code} at checkout to unlock {$offer}. "
+            . "Shop now: {$shopUrl}";
+
+        return $this->sendTemplate($phone, $templateName, $bodyParams, $fallback);
+    }
+
+    /**
      * Check if WhatsApp is configured for the current tenant.
      */
     public function isConfigured(): bool

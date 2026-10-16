@@ -962,6 +962,7 @@
 
     <x-whatsapp-button />
     <x-instagram-button />
+    <x-offer-popup />
     <x-exit-intent-popup />
 
     <!-- Keep session alive + refresh CSRF token (Shopify-style) -->

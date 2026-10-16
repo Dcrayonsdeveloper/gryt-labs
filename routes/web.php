@@ -400,6 +400,10 @@ Route::post('/sell/register', [App\Http\Controllers\Seller\RegistrationControlle
 // Newsletter
 Route::post('/newsletter/subscribe', [App\Http\Controllers\NewsletterController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
 
+// Offer popup (WhatsApp-verified phone capture)
+Route::post('/offer-popup/send-otp', [App\Http\Controllers\OfferPopupController::class, 'sendOtp'])->middleware('throttle:6,1')->name('offer-popup.send-otp');
+Route::post('/offer-popup/verify-otp', [App\Http\Controllers\OfferPopupController::class, 'verifyOtp'])->middleware('throttle:12,1')->name('offer-popup.verify-otp');
+
 // OTP Login & Password Reset
 Route::post('/otp/send-login', [App\Http\Controllers\Auth\OtpController::class, 'sendLoginOtp'])->middleware('throttle:20,5')->name('otp.send-login');
 Route::post('/otp/verify-login', [App\Http\Controllers\Auth\OtpController::class, 'verifyLoginOtp'])->middleware('throttle:30,5')->name('otp.verify-login');

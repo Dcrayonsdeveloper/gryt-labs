@@ -129,6 +129,14 @@
         </a>
         @endif
 
+        <!-- Offer popup leads -->
+        @if($user->canAccessSection('marketing'))
+        <a href="{{ route('admin.offer-leads.index') }}" class="{{ $linkClass }} {{ $isActive(['admin.offer-leads.*']) ? $activeClass : $normalClass }}">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/></svg>
+            WhatsApp Leads
+        </a>
+        @endif
+
         <!-- Influencers -->
         @if($user->canAccessSection('marketing'))
         <a href="{{ route('admin.influencers.index') }}" class="{{ $linkClass }} {{ $isActive(['admin.influencers.*']) ? $activeClass : $normalClass }}">

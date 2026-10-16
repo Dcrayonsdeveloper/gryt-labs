@@ -459,6 +459,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::get('/export', [App\Http\Controllers\Admin\NewsletterController::class, 'export'])->name('export');
             });
 
+            // Offer popup leads (WhatsApp-verified phone capture)
+            Route::prefix('offer-leads')->name('offer-leads.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Admin\OfferLeadController::class, 'index'])->name('index');
+                Route::get('/export', [App\Http\Controllers\Admin\OfferLeadController::class, 'export'])->name('export');
+                Route::put('/settings', [App\Http\Controllers\Admin\OfferLeadController::class, 'updateSettings'])->name('settings');
+                Route::post('/bulk-action', [App\Http\Controllers\Admin\OfferLeadController::class, 'bulkAction'])->name('bulk-action');
+                Route::post('/{offerLead}/resend', [App\Http\Controllers\Admin\OfferLeadController::class, 'resend'])->name('resend');
+                Route::delete('/{offerLead}', [App\Http\Controllers\Admin\OfferLeadController::class, 'destroy'])->name('destroy');
+            });
+
             // Abandoned-cart email templates (Reminder 1 / 2 / 3)
             Route::get('/abandoned-cart-templates', [App\Http\Controllers\Admin\AbandonedCartTemplateController::class, 'index'])->name('abandoned-cart-templates.edit');
             Route::put('/abandoned-cart-templates', [App\Http\Controllers\Admin\AbandonedCartTemplateController::class, 'update'])->name('abandoned-cart-templates.update');
