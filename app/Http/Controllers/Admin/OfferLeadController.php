@@ -83,7 +83,6 @@ class OfferLeadController extends Controller
             'stats'        => $stats,
             'settings'     => $this->currentSettings(),
             'couponCode'   => $couponCode,
-            'couponExists' => Coupon::where('code', $couponCode)->exists(),
             'whatsappOk'   => app(WhatsAppService::class)->isConfigured(),
         ]);
     }

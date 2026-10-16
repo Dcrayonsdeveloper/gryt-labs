@@ -31,21 +31,8 @@
         </div>
     @endunless
 
-    @if($stats['failed'] > 0)
-        <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg">
-            <span class="font-semibold">{{ number_format($stats['failed']) }} shopper(s) never received their code.</span>
-            The code is only sent on WhatsApp, so a failed send means they got nothing. Once the
-            <span class="font-mono text-xs">{{ $settings['whatsapp_offer_template'] ?: $settings['template_placeholder'] }}</span>
-            template is approved, tick those rows and use <span class="font-medium">Resend code</span> to send the backlog.
-        </div>
-    @endif
-
-    @unless($couponExists)
-        <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg">
-            No active discount called <span class="font-semibold">{{ $couponCode }}</span> exists yet, so the code handed out by the popup will be rejected at checkout.
-            <a href="{{ route('admin.coupons.create') }}" class="underline font-medium">Create it under Discounts</a>.
-        </div>
-    @endunless
+    {{-- Failed deliveries and a missing coupon stay visible in the stats row and
+         the WhatsApp column rather than as banners across the top of the page. --}}
 
     {{-- Stats --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
