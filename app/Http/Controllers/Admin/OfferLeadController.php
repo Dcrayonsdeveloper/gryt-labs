@@ -29,6 +29,8 @@ class OfferLeadController extends Controller
         'offer_popup_button_text'   => 'Get my code on WhatsApp',
         'offer_popup_consent_text'  => '',
         'offer_popup_footer_text'   => 'One code per number. You can opt out any time by replying STOP.',
+        'offer_popup_returning_heading' => '',
+        'offer_popup_returning_text'    => '',
         'offer_popup_coupon_code'   => 'GRYTVIP',
         'offer_popup_offer_text'    => 'your exclusive VIP discount',
         'whatsapp_offer_template'   => '',
@@ -94,6 +96,8 @@ class OfferLeadController extends Controller
             'offer_popup_button_text'  => 'nullable|string|max:60',
             'offer_popup_consent_text' => 'nullable|string|max:255',
             'offer_popup_footer_text'  => 'nullable|string|max:255',
+            'offer_popup_returning_heading' => 'nullable|string|max:120',
+            'offer_popup_returning_text'    => 'nullable|string|max:255',
             'offer_popup_coupon_code'  => 'nullable|string|max:50',
             'offer_popup_offer_text'   => 'nullable|string|max:120',
             'whatsapp_offer_template'  => 'nullable|string|max:100',
@@ -105,6 +109,7 @@ class OfferLeadController extends Controller
 
         foreach (['offer_popup_title', 'offer_popup_subtitle', 'offer_popup_button_text',
                   'offer_popup_consent_text', 'offer_popup_footer_text', 'offer_popup_offer_text',
+                  'offer_popup_returning_heading', 'offer_popup_returning_text',
                   'whatsapp_offer_template'] as $key) {
             Setting::set($key, (string) ($validated[$key] ?? ''), 'string', 'offer_popup');
         }
@@ -287,6 +292,11 @@ class OfferLeadController extends Controller
         $brand = Setting::get('site_name', '') ?: (Setting::get('store_name', '') ?: config('app.name'));
         $values['consent_placeholder'] = 'I agree to receive offers and updates from ' . $brand . ' on WhatsApp.';
         $values['template_placeholder'] = (config('app.tenant_id', '') ?: 'store') . '_vip_offer';
+
+        // Shown as placeholders so the defaults are visible without being saved.
+        $values['returning_heading_placeholder'] = 'You are already a VIP!';
+        $values['returning_text_placeholder'] = 'This number is already on our VIP list, so there is nothing more to do. '
+            . 'Your code is sitting in your WhatsApp chat - just apply it at checkout.';
 
         return $values;
     }

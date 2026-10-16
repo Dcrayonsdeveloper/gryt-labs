@@ -142,10 +142,12 @@
                 </div>
             </div>
 
-            {{-- Step 3: the code --}}
+            {{-- Step 3: confirmation. Two flavours - code just sent, or this
+                 number claimed the offer once already and is being welcomed back. --}}
             <div x-show="step === 'done'" x-cloak class="text-center">
                 <div class="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-3" style="background-color: {{ $accentLight }};">
-                    <svg class="w-7 h-7 text-neutral-900" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    <svg x-show="!alreadyRegistered" class="w-7 h-7 text-neutral-900" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    <svg x-show="alreadyRegistered" x-cloak class="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.6 5.6 6.1.8-4.5 4.2 1.2 6.1L12 15.8 6.6 18.7l1.2-6.1L3.3 8.4l6.1-.8L12 2z"/></svg>
                 </div>
 
                 <h2 class="text-xl font-extrabold text-neutral-900 leading-snug" x-text="heading"></h2>
@@ -157,7 +159,7 @@
                      style="border-color: {{ $accent }}; background-color: {{ $accentLight }}1a;">
                     <svg class="w-6 h-6 shrink-0 mt-0.5" fill="#25D366" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.2-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5 0-.2 0-.4-.1-.5 0-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3M12 2a10 10 0 00-8.6 15L2 22l5.1-1.3A10 10 0 1012 2z"/></svg>
                     <div>
-                        <p class="text-sm font-bold text-neutral-900">Sent on WhatsApp</p>
+                        <p class="text-sm font-bold text-neutral-900" x-text="alreadyRegistered ? 'Already in your WhatsApp' : 'Sent on WhatsApp'"></p>
                         <p class="text-xs text-neutral-600 mt-0.5 leading-relaxed">
                             Your coupon code is in your chat on <span class="font-semibold" x-text="'+91 ' + phone"></span>. Apply it in the coupon box at checkout to claim <span x-text="offerText"></span>.
                         </p>
@@ -168,8 +170,11 @@
                    class="block w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white text-center transition-opacity hover:opacity-90"
                    style="background-color: {{ $accent }};">Start shopping</a>
 
-                <p x-show="!delivered" x-cloak class="text-[11px] text-neutral-400 mt-3 leading-relaxed">
+                <p x-show="!delivered && !alreadyRegistered" x-cloak class="text-[11px] text-neutral-400 mt-3 leading-relaxed">
                     Not there yet? It can take a minute to arrive.
+                </p>
+                <p x-show="alreadyRegistered" x-cloak class="text-[11px] text-neutral-400 mt-3 leading-relaxed">
+                    Cannot find it? Message us on WhatsApp and we will resend it.
                 </p>
             </div>
         </div>
@@ -192,6 +197,7 @@ function offerPopup(config) {
         error: '',
         busy: false,
         delivered: true,
+        alreadyRegistered: false,
         resendIn: 0,
         resendTimer: null,
 
@@ -280,6 +286,20 @@ function offerPopup(config) {
 
                 if (!ok) {
                     this.error = data.message || 'Could not send the code. Please try again.';
+                    return;
+                }
+
+                // This number claimed the offer before: no OTP was sent, and it
+                // goes straight to a welcome-back note rather than a dead end.
+                if (data.status === 'already_registered') {
+                    this.heading = data.heading || 'You are already a VIP!';
+                    this.message = data.message || '';
+                    this.shopUrl = data.shop_url || this.shopUrl;
+                    this.alreadyRegistered = true;
+                    this.delivered = true;
+                    this.step = 'done';
+                    localStorage.setItem('offer_popup_claimed', '1');
+                    if (this.resendTimer) clearInterval(this.resendTimer);
                     return;
                 }
 
