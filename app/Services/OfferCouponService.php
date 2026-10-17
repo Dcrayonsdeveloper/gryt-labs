@@ -23,8 +23,8 @@ class OfferCouponService
      * Fitness Workouts" seven times over) would run past 380 characters and read
      * like a sitemap. The admin override for this is capped at 255 anyway.
      */
-    public const DEFAULT_PRODUCTS = 'Vanilla Whey Protein, Creatine Monohydrate, Pre Workout, '
-        . 'and our Steel, Storm, Blue and Red shaker bottles';
+    public const DEFAULT_PRODUCTS = '💪 Vanilla Whey Protein, ⚡ Creatine Monohydrate, 🔥 Pre Workout, '
+        . 'and 🥤 our Steel, Storm, Blue and Red shaker bottles';
 
     public function __construct(private WhatsAppService $whatsapp) {}
 
