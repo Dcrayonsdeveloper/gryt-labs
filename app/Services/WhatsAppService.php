@@ -124,8 +124,13 @@ class WhatsAppService
             ['type' => 'text', 'text' => $items],
         ];
 
-        $fallback = "Hi {$firstName}, welcome to GRYT! Your code {$code} is valid on {$items}. "
-            . "Apply it at checkout: {$shopUrl}";
+        // Only non-Meta providers ever send this - sendTemplate() drops it on the
+        // Meta path, where the wording lives in the approved template instead. It
+        // is free text rather than a template parameter, so unlike $items it can
+        // carry line breaks and *bold*.
+        $fallback = "🎉 Hi {$firstName}, welcome to GRYT!\n\n"
+            . "Your code *{$code}* is valid on {$items}.\n\n"
+            . "🛒 Apply it at checkout: {$shopUrl}";
 
         return $this->sendTemplate($phone, $templateName, $bodyParams, $fallback);
     }

@@ -15,9 +15,16 @@ use Illuminate\Support\Facades\Log;
  */
 class OfferCouponService
 {
-    /** Products the welcome code is valid on, named in the WhatsApp message. */
-    public const DEFAULT_PRODUCTS = 'Ashwagandha Capsules for Stress and Energy Support '
-        . 'and Pre Workout Supplement for Energy and Fitness';
+    /**
+     * Products the welcome code is valid on, named in the WhatsApp message.
+     *
+     * Shortened from the catalog titles on purpose. These land mid-sentence in
+     * "your code X is valid on {{3}}", so the full SEO names ("... for Gym and
+     * Fitness Workouts" seven times over) would run past 380 characters and read
+     * like a sitemap. The admin override for this is capped at 255 anyway.
+     */
+    public const DEFAULT_PRODUCTS = '💪 Vanilla Whey Protein, ⚡ Creatine Monohydrate, 🔥 Pre Workout, '
+        . 'and 🥤 our Steel, Storm, Blue and Red shaker bottles';
 
     public function __construct(private WhatsAppService $whatsapp) {}
 
