@@ -4,8 +4,10 @@
 
     // Every visitor sees this, including people who already claimed - they get
     // the "you are already a VIP" note when they enter their number, which is
-    // the whole point of that step. Checkout is the one exception.
-    $onCheckout = request()->is('checkout*') || request()->is('admin*');
+    // the whole point of that step. Checkout is the one exception, and so is /v:
+    // that page is reached by scanning the QR on a product already bought, and the
+    // popup lands on top of the product drawer the scan was for.
+    $onCheckout = request()->is('checkout*') || request()->is('admin*') || request()->is('v');
 @endphp
 
 @if($popupEnabled && !$onCheckout)
