@@ -1,6 +1,8 @@
 <x-layouts.app>
     @php
-        $storeName = $theme->get('store_name', config('app.name'));
+        // store_name is blank on prod, and a default only applies when the key is missing,
+        // not when it is set to ''. Same fallback chain the offer popup uses.
+        $storeName = $theme->get('site_name', '') ?: ($theme->get('store_name', '') ?: config('app.name'));
         $whatsappNumber = $theme->get('whatsapp_number', $theme->get('contact_phone', ''));
         $placeholder = asset('images/placeholder-product.svg');
 
