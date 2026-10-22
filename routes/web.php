@@ -481,6 +481,11 @@ Route::redirect('/about-us', '/pages/about-us', 301);
 Route::redirect('/contact', '/pages/contact', 301);
 Route::redirect('/offers', '/pages/offers', 301);
 
+// Product QR landing — one static QR is printed on every pack and points here.
+// Keep this URL short and parameter-less: printed labels can never change, this page can.
+Route::get('/v', [App\Http\Controllers\PageController::class, 'verify'])->name('verify');
+Route::redirect('/verify', '/v', 301);
+
 // Static/CMS Pages
 Route::get('/faq', [App\Http\Controllers\PageController::class, 'faq'])->name('faq');
 Route::get('/blog', [App\Http\Controllers\PageController::class, 'blog'])->name('blog');

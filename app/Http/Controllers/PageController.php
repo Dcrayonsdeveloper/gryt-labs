@@ -43,6 +43,25 @@ class PageController extends Controller
         return view('pages.contact');
     }
 
+    /**
+     * Post-purchase QR landing page.
+     *
+     * One static QR is printed on every pack and points here. The URL carries no
+     * product identity, so the buyer picks what they bought from the list and the
+     * drawer shows that product's details.
+     */
+    public function verify(): View
+    {
+        $products = Product::query()
+            ->where('is_active', true)
+            ->with(['category', 'brand', 'primaryImage'])
+            ->orderByDesc('sales_count')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('pages.verify', compact('products'));
+    }
+
     public function bmi(): View
     {
         // Restrict to ayurvexa tenant only

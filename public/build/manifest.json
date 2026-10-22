@@ -4,7 +4,7 @@
     "name": "module.esm"
   },
   "frontends/ayurvexa/css/app.css": {
-    "file": "assets/app-DhwIxLIK.css",
+    "file": "assets/app-Br3jB41S.css",
     "src": "frontends/ayurvexa/css/app.css",
     "isEntry": true
   },
@@ -23,7 +23,7 @@
     ]
   },
   "frontends/default/css/app.css": {
-    "file": "assets/app-DmOdfU4S.css",
+    "file": "assets/app-BpuZbr95.css",
     "src": "frontends/default/css/app.css",
     "isEntry": true
   },
@@ -42,7 +42,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-DrJVPLAv.css",
+    "file": "assets/app-DkhJl4BP.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
