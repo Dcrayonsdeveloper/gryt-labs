@@ -26,6 +26,29 @@
         <meta name="robots" content="noindex, follow">
     @endpush
 
+    @push('styles')
+    <style>
+        .gryt-confetti {
+            position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px;
+            opacity: 0; animation: gryt-fall 2.6s linear infinite;
+        }
+        @keyframes gryt-fall {
+            0%   { transform: translateY(-12px) rotate(0deg);   opacity: 0; }
+            12%  { opacity: 1; }
+            100% { transform: translateY(420px) rotate(540deg); opacity: 0; }
+        }
+        .gryt-pop { animation: gryt-pop-in .45s cubic-bezier(.34,1.56,.64,1) both; }
+        @keyframes gryt-pop-in {
+            0%   { transform: scale(0);   opacity: 0; }
+            100% { transform: scale(1);   opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .gryt-confetti, .gryt-pop { animation: none; }
+            .gryt-confetti { display: none; }
+        }
+    </style>
+    @endpush
+
     <div class="bg-neutral-50 min-h-screen">
 
         {{-- Hero — first thing seen after a scan, so keep it short and reassuring.
@@ -52,6 +75,7 @@
                 items: @js($items),
                 q: '',
                 selected: null,
+                welcome: true,
                 get filtered() {
                     const q = this.q.trim().toLowerCase();
                     if (!q) return this.items;
@@ -62,7 +86,9 @@
                 money(n) { return '₹' + Number(n || 0).toLocaleString('en-IN'); },
                 open(item) { this.selected = item; document.body.style.overflow = 'hidden'; },
                 close() { this.selected = null; document.body.style.overflow = ''; },
-             }">
+                startPicking() { this.welcome = false; document.body.style.overflow = ''; },
+             }"
+             x-init="document.body.style.overflow = 'hidden'">
             <div class="max-w-5xl mx-auto">
 
                 <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
@@ -128,6 +154,53 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Congrats popup — the first beat after a scan. Teleported for the same
+                 `contain: layout style` reason as the drawer below. --}}
+            <template x-teleport="body">
+                <div x-show="welcome" x-cloak
+                     class="fixed inset-0 z-[110] flex items-center justify-center p-4"
+                     style="display:none;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);"
+                     x-transition.opacity.duration.300ms
+                     role="dialog" aria-modal="true" aria-labelledby="gryt-congrats-title">
+
+                    <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden text-center"
+                         x-show="welcome"
+                         x-transition:enter="transition ease-out duration-400"
+                         x-transition:enter-start="opacity-0 scale-90"
+                         x-transition:enter-end="opacity-100 scale-100">
+
+                        {{-- Confetti, CSS only — no library, no layout shift --}}
+                        <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+                            @foreach([['8%','0s','#4D7C0F'],['20%','.35s','#B8DC24'],['33%','.1s','#F8931D'],['46%','.5s','#4D7C0F'],['59%','.2s','#B8DC24'],['72%','.45s','#F8931D'],['85%','.05s','#4D7C0F'],['94%','.3s','#B8DC24']] as [$left, $delay, $color])
+                                <span class="gryt-confetti" style="left:{{ $left }};animation-delay:{{ $delay }};background:{{ $color }}"></span>
+                            @endforeach
+                        </div>
+
+                        <div class="relative px-6 pt-8 pb-6">
+                            <div class="gryt-pop mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-5"
+                                 style="background:rgba(6,125,98,0.1)">
+                                <svg class="w-11 h-11" style="color:#067D62" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                                </svg>
+                            </div>
+
+                            <h2 id="gryt-congrats-title" class="text-2xl font-extrabold text-neutral-900 mb-2">Congratulations!</h2>
+                            <p class="text-sm text-neutral-600 leading-relaxed mb-1">
+                                Thanks for choosing <span class="font-semibold text-neutral-900">{{ $storeName }}</span>.
+                            </p>
+                            <p class="text-sm text-neutral-500 leading-relaxed">
+                                You have got the real thing, straight from us. Tell us which one you bought and we will show you how to get the most out of it.
+                            </p>
+
+                            <button type="button" @click="startPicking()"
+                                    class="mt-6 w-full px-4 py-3 rounded-lg bg-primary-600 text-white text-sm font-bold hover:bg-primary-700 transition-colors">
+                                Show me my product
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
 
             {{-- Detail drawer — bottom sheet on mobile, centred card on desktop.
                  Teleported to <body> because app.css applies `contain: layout style` to
